@@ -29,7 +29,6 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->config.mask_max_rt   = 0;
     param->config.mask_tx_ds    = 0;
     param->config.mask_rx_dr    = 0;
-
     /* EN_AA */
     param->en_aa.p0 = 1;
     param->en_aa.p1 = 1;
@@ -51,7 +50,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* SET_RETR */
     param->setup_retr.arc = 15;
-    param->setup_retr.ard = ADR_1Mbps;
+    param->setup_retr.ard = ADR_2Mbps;
 
     /* RF_CH */
     param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
@@ -67,9 +66,9 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->dynpd.p0 = 1;
     param->dynpd.p1 = 1;
     param->dynpd.p2 = 1;
-    param->dynpd.p3 = 1;
-    param->dynpd.p4 = 1;
-    param->dynpd.p5 = 1;
+    param->dynpd.p3 = 0;
+    param->dynpd.p4 = 0;
+    param->dynpd.p5 = 0;
 
     /* FEATURE */
     param->feature.en_dyn_ack = 1;
@@ -77,15 +76,16 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->feature.en_dpl     = 1;
 
 
-    rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x03 };
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x99 };
+    rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
+    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x98 };
     rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
+
     for(int16_t i = 0; i < 5; i++){
         param->txaddr[i] = tx_addr[i];
         param->rx_addr_p0[i] = rx_addr_pipe0[i];
         param->rx_addr_p1[i] = rx_addr_pipe1[i];
     }
-    param->rx_addr_p2 = 2;
+    param->rx_addr_p2 = 3;
 
     param->rx_addr_p3 = 9;
     param->rx_addr_p4 = 9;
@@ -432,7 +432,6 @@ void nRF24L01_Enter_Power_Up_Mode(nrf24_t nrf24)
 }
 
 
-
 /***
  * @brief 设置nRF24L01的待机模式
  * @note
@@ -457,13 +456,11 @@ void nRF24L01_Standby_Set(nrf24_t nrf24, nrf24_standby_et mode)
 
 
 
-
 /***
  * @brief 发送一包数据，若未收到 ACK，会重发（最多 RETR 次）
  */
 void nRF24L01_Write_Tx_Payload_Ack(nrf24_t nrf24, const uint8_t *buf, uint8_t len)
 {
-
     uint8_t cmd = NRF24CMD_W_TX_PLOAD_ACK;
     nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, buf, len);
 }
@@ -566,6 +563,7 @@ int nRF24L01_Send_Packet(nrf24_t nrf24, uint8_t *data, uint8_t len, uint8_t pipe
         return RT_ERROR;
     }
 
+
    // 如果是发送端（PTX）
     if (nrf24->nrf24_cfg.config.prim_rx == ROLE_PTX && ack_mode == nRF24_SEND_NEED_ACK){
         nRF24L01_Write_Tx_Payload_Ack(nrf24, data, len);
@@ -637,6 +635,8 @@ void nRF24L01_Ensure_RWW_Features_Activated(nrf24_t nrf24)
         nrf24->nrf24_flags.activated_features = RT_TRUE;
     }
 }
+
+
 
 
 

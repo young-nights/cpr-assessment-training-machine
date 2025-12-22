@@ -232,6 +232,7 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
                 //----------------------------------------------------------------------------------------------------
                 case FRAME_NRF24_CONNECT_CTRL_PANEL_CMD:
                 {
+                    LOG_I("Receive: Connect cmd.");
                     Record.nrf_connected = 1;
                     Record.nRF24_tx_pending = 1;
 

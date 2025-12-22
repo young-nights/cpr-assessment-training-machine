@@ -99,7 +99,6 @@ void nRF24L01_Thread_entry(void* parameter)
 
     /* 9. 解锁高级扩展功能 */
     nRF24L01_Ensure_RWW_Features_Activated(_nrf24);
-
     /* 10. 更新寄存器参数 */
     if (nRF24L01_Update_Parameter(_nrf24) != RT_EOK){
         LOG_E("LOG:%d. nRF24L01 update_onchip_config false.",Record.ulog_cnt++);
@@ -127,9 +126,8 @@ void nRF24L01_Thread_entry(void* parameter)
     nRF24L01_Enter_Power_Up_Mode(_nrf24);
     _nrf24->nrf24_ops.nrf24_set_ce();
     LOG_I("LOG:%d. Successfully initialized",Record.ulog_cnt++);
-    rt_kprintf("\r\n\r\n");
     rt_kprintf("----------------------------------\r\n");
-    rt_kprintf("[nrf24/demo] running transmitter.\r\n");
+    rt_kprintf("nrf24l01 running receiver.\r\n");
 
 
     for(;;)
@@ -137,6 +135,7 @@ void nRF24L01_Thread_entry(void* parameter)
 
         // 1. 如果使用IRQ中断，则获取信号量等待释放
         if(_nrf24->nrf24_flags.using_irq == RT_TRUE){
+            rt_kprintf("RT_WAITING_FOREVER\n");
             rt_sem_take(nrf24_irq_sem, RT_WAITING_FOREVER);
         }
 
@@ -144,13 +143,11 @@ void nRF24L01_Thread_entry(void* parameter)
         _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
         nRF24L01_Clear_Status_Register(_nrf24, NRF24BITMASK_RX_DR | NRF24BITMASK_TX_DS | NRF24BITMASK_MAX_RT);
 
-        // 3. 分析哪条信道接收的数据
-        uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
 
-        // 4. 角色 = 发送端（PTX）
+        // 3. 角色 = 发送端（PTX）
         if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PTX)
         {
-            // 4.1 读取status寄存器的 NRF24BITMASK_MAX_RT位，如果为1，说明达到最大重发次数，发送失败
+            // 3.1 读取status寄存器的 NRF24BITMASK_MAX_RT位，如果为1，说明达到最大重发次数，发送失败
             if(_nrf24->nrf24_flags.status & NRF24BITMASK_MAX_RT){
                 nRF24L01_Flush_TX_FIFO(_nrf24);
                 nRF24L01_Clear_Status_Register(_nrf24, NRF24BITMASK_MAX_RT);
@@ -159,17 +156,38 @@ void nRF24L01_Thread_entry(void* parameter)
                 }
             }
 
-            /* 4.2 收到 ACK 带载荷（PTX 也能收） */
+            // 3.2 分析哪条信道接收的数据
+            uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
+            if(pipe == 0x07){
+                LOG_I("RX FIFO Empty.\n");
+            }
+            else if(pipe == 0x06){
+                LOG_I("Not used.\n");
+            }
+            else{
+                LOG_I("Data pipe number(p%d).\n",pipe);
+            }
+
+
+            /* 3.3 收到 ACK 带载荷（PTX 也能收） */
             if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR){
                 uint8_t rec_data[32];
                 uint8_t len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+                LOG_I("ACK Receive length = %d. \n",len);
                 nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
+                if(nrf24l01_portocol_get_command(rec_data,len) == CMD_TRUE){
+                    LOG_I("ACK Protocol parse succeed.\n");
+                }
+                else{
+                    LOG_W("ACK Protocol parse failed.\n");
+                }
+
                 if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
                     _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
                 }
             }
 
-            /* 4.3 发送完成 */
+            /* 3.4 发送完成 */
             if(_nrf24->nrf24_flags.status & NRF24BITMASK_TX_DS){
                 if(_nrf24->nrf24_cb.nrf24l01_tx_done){
                     _nrf24->nrf24_cb.nrf24l01_tx_done(_nrf24, pipe);
@@ -177,24 +195,40 @@ void nRF24L01_Thread_entry(void* parameter)
             }
         }
 
-        // 5. 角色 = 接收端（PRX）
+
+        // 4. 角色 = 接收端（PRX）
         if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX)
         {
+            rt_kprintf("in\n");
+            // 4.1 分析哪条信道接收的数据
+            uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
+            if(pipe == 0x07){
+                LOG_I("RX FIFO Empty.\n");
+            }
+            else if(pipe == 0x06){
+                LOG_I("Not used.\n");
+            }
+            else{
+                LOG_I("Data pipe number(p%d).\n",pipe);
+            }
+
             if(pipe < 5){
                 uint8_t data_buf[32];
                 uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+                LOG_I("Receive length = %d. \n",length);
                 nRF24L01_Read_Rx_Payload(_nrf24, data_buf, length);
 
-                if(nrf24l01_portocol_get_command(data_buf,length)){
-                    rt_kprintf("Analysis completed!\n");
+                if(nrf24l01_portocol_get_command(data_buf,length) == CMD_TRUE){
+                    LOG_I("Protocol parse succeed.\n");
                 }
                 else{
-                    rt_kprintf("Analysis failed!\n");
+                    LOG_W("Protocol parse failed.\n");
                 }
 
                 if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
                     _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, data_buf, length, pipe);
                 }
+
             }
         }
 
@@ -213,6 +247,7 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
     {
         /* 主循环 PTX 段末尾（发完询问包之后） */
         if (Record.nRF24_tx_pending) {
+            rt_kprintf("now ptx pening\n");
             Record.nRF24_tx_pending = 0;              /* 先清标志，防止重入 */
 
             _nrf24->nrf24_ops.nrf24_reset_ce();
@@ -256,7 +291,7 @@ int nRF24L01_Thread_Init(void)
 
 
 
-    nRF24L01_Decode_Task_Handle = rt_thread_create("nRF24L01_Decode_Thread_entry", nRF24L01_Decode_Thread_entry, RT_NULL, 4096, 9, 50);
+    nRF24L01_Decode_Task_Handle = rt_thread_create("nRF24L01_Decode_Thread_entry", nRF24L01_Decode_Thread_entry, RT_NULL, 4096, 8, 50);
     /* 检查是否创建成功,成功就启动线程 */
     if(nRF24L01_Decode_Task_Handle != RT_NULL)
     {

@@ -253,7 +253,7 @@ void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : nRF24L01_IRQ_Pin */
   GPIO_InitStruct.Pin = nRF24L01_IRQ_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(nRF24L01_IRQ_GPIO_Port, &GPIO_InitStruct);
 
@@ -270,6 +270,7 @@ void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
 
 
 #ifdef  USE_FULL_ASSERT

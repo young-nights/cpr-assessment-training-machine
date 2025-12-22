@@ -145,7 +145,7 @@ void nRF24L01_Thread_entry(void* parameter)
          // 3. 角色 = 发送端（PTX）
          if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PTX)
          {
-             // 4.1 读取status寄存器的 NRF24BITMASK_MAX_RT位，如果为1，说明达到最大重发次数，发送失败
+             // 3.1 读取status寄存器的 NRF24BITMASK_MAX_RT位，如果为1，说明达到最大重发次数，发送失败
              if(_nrf24->nrf24_flags.status & NRF24BITMASK_MAX_RT){
                  nRF24L01_Flush_TX_FIFO(_nrf24);
                  nRF24L01_Clear_Status_Register(_nrf24, NRF24BITMASK_MAX_RT);
@@ -154,7 +154,7 @@ void nRF24L01_Thread_entry(void* parameter)
                  }
              }
 
-             // 4.2 分析哪条信道接收的数据
+             // 3.2 分析哪条信道接收的数据
              uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
              if(pipe == 0x07){
                  LOG_I("RX FIFO Empty.\n");
@@ -167,7 +167,7 @@ void nRF24L01_Thread_entry(void* parameter)
              }
 
 
-             /* 4.3 收到 ACK 带载荷（PTX 也能收） */
+             /* 3.3 收到 ACK 带载荷（PTX 也能收） */
              if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR){
                  uint8_t rec_data[32];
                  uint8_t len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
@@ -185,7 +185,7 @@ void nRF24L01_Thread_entry(void* parameter)
                  }
              }
 
-             /* 4.4 发送完成 */
+             /* 3.4 发送完成 */
              if(_nrf24->nrf24_flags.status & NRF24BITMASK_TX_DS){
                  if(_nrf24->nrf24_cb.nrf24l01_tx_done){
                      _nrf24->nrf24_cb.nrf24l01_tx_done(_nrf24, pipe);
@@ -194,10 +194,10 @@ void nRF24L01_Thread_entry(void* parameter)
          }
 
 
-         // 5. 角色 = 接收端（PRX）
+         // 4. 角色 = 接收端（PRX）
          if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX)
          {
-             // 5.1 分析哪条信道接收的数据
+             // 4.1 分析哪条信道接收的数据
              uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
              if(pipe == 0x07){
                  LOG_I("RX FIFO Empty.\n");

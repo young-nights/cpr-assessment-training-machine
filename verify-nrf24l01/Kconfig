@@ -18,7 +18,7 @@ config PKGS_DIR
 config PLATFORM_DIR
     string
     option env="PLATFORM_DIR"
-    default  "I:/GitHub-young-nights/cpr-assessment-training-machine/verify-nrf24l01/platform"
+    default "C:/Users/18452/Documents/GitHub-young-whites/CPR-Assessment-Comprehensive-Training-System/verify-nrf24l01/platform"
 
 source "$RTT_DIR/Kconfig"
 source "$PKGS_DIR/Kconfig"

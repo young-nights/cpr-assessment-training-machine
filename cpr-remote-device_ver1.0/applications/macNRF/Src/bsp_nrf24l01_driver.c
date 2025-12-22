@@ -51,7 +51,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* SET_RETR */
     param->setup_retr.arc = 15;
-    param->setup_retr.ard = ADR_1Mbps;
+    param->setup_retr.ard = ADR_2Mbps;
 
     /* RF_CH */
     param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
