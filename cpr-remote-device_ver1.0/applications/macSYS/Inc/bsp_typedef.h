@@ -26,6 +26,8 @@ typedef struct {
     rt_uint8_t  nrf_connect_failed;              // 连接失败标志(0: 未进行连接  1：连接失败)
     //------------------------------------------------------------
     rt_uint8_t  menu_index;                      // 菜单页面索引(0：主页面  1：菜单页面  2：其他子页面)
+    rt_uint8_t  mode_data_in;                    // 数据模式(0：未进行数据传输   1：考核模式   2：竞赛模式    3：训练模式)
+    rt_uint8_t  mode_data_in_set;                // 数据模式设置(0：未收到对方回复继续设置   1：收到对方回复停止设置)
     rt_uint16_t set_work_time;                   // 需要设置的工作时间(在设置页面设置)
     rt_uint16_t set_air_rate;                    // 需要设置的潮气达标率
     rt_uint16_t set_press_rate;                  // 需要设置的按压达标率

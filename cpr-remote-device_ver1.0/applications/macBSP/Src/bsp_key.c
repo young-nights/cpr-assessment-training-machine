@@ -127,6 +127,8 @@ void MyCustomKeyHandler(key_event_t event) {
             // 执行页面切换到 menu（使用提供的 ui_load_scr_animation 函数）
             ui_load_scr_animation(&guider_lvgl, &guider_lvgl.screen_menu, guider_lvgl.screen_menu_del, current_del, setup_scr_screen_menu, LV_SCR_LOAD_ANIM_NONE, 0, 100, true, true);
             Record.menu_index = 1;
+            Record.mode_data_in = 0;
+            Record.mode_data_in_set = 0;
         }
 
         //-------------------------------------------------------------------------------------------------------------------------

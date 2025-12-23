@@ -437,6 +437,8 @@ static void screen_menu_img_1_assess_event_handler (lv_event_t *e)
     {
         ui_load_scr_animation(ui, &ui->screen_data, ui->screen_data_del, &ui->screen_menu_del, setup_scr_screen_data, LV_SCR_LOAD_ANIM_NONE, 0, 0, true, true);
         Record.menu_index = 2;
+        Record.mode_data_in = 1;
+        Record.mode_data_in_set = 1;
         break;
     }
     default:
@@ -454,6 +456,8 @@ static void screen_menu_img_2_competation_event_handler (lv_event_t *e)
     {
         ui_load_scr_animation(ui, &ui->screen_data, ui->screen_data_del, &ui->screen_menu_del, setup_scr_screen_data, LV_SCR_LOAD_ANIM_NONE, 0, 0, true, true);
         Record.menu_index = 2;
+        Record.mode_data_in = 2;
+        Record.mode_data_in_set = 1;
         break;
     }
     default:
@@ -471,6 +475,8 @@ static void screen_menu_img_3_train_event_handler (lv_event_t *e)
     {
         ui_load_scr_animation(ui, &ui->screen_data, ui->screen_data_del, &ui->screen_menu_del, setup_scr_screen_data, LV_SCR_LOAD_ANIM_NONE, 0, 0, true, true);
         Record.menu_index = 2;
+        Record.mode_data_in = 3;
+        Record.mode_data_in_set = 1;
         break;
     }
     default:

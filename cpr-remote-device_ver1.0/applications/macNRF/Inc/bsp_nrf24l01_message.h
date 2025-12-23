@@ -38,8 +38,8 @@
 
 // 指令宏------------------------------------------------------------
 #define      FRAME_NRF24_CONNECT_CTRL_PANEL_CMD                  (0x01)      // 设置：连接控制面板指令
-
-
+#define      FRAME_NRF24_MODE_DATA_IN_CMD                        (0x02)      // 设置：进入考核/竞赛/训练模式指令
+#define      FRAME_NRF24_MODE_DATA_OUT_CMD                       (0x03)      // 设置：退出考核/竞赛/训练模式指令
 
 
 
@@ -68,6 +68,9 @@ typedef enum
 typedef enum
 {
     Order_nRF24L01_ASK_Connect_Control_Panel = 0,
+
+    Order_nRF24L01_ASK_Data_Mode_In = 50,
+    Order_nRF24L01_ASK_Data_Mode_Out,
 
 
 }nRF24L01_Order_StructType;

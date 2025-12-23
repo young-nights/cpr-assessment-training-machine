@@ -39,7 +39,7 @@
 
 
 extern const struct nRF24L01_FUNC_OPS g_nrf24_func_ops;
-
+extern rt_sem_t nrf24_irq_sem;
 
 #endif
 

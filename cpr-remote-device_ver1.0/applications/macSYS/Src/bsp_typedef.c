@@ -25,9 +25,10 @@ rt_event_t nrf24l01_events;
 
 void system_param_init(void)
 {
-    Record.nrf_if_connected = 0;
-
     Record.menu_index = 0;
+    Record.nrf_if_connected = 0;
+    Record.mode_data_in_set = 3;
+
 }
 
 

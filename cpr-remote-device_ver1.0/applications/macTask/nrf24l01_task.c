@@ -222,11 +222,36 @@ void nRF24L01_Thread_entry(void* parameter)
 
 
 
+
+
+void nRF24L01_Decode_Thread_entry(void* parameter)
+{
+
+    for(;;)
+    {
+        if(Record.mode_data_in_set == 1){
+            nrf24l01_order_to_pipe(_nrf24 ,Order_nRF24L01_ASK_Data_Mode_In, NRF24_PIPE_2);
+        }
+        else if(Record.mode_data_in_set == 0){
+            nrf24l01_order_to_pipe(_nrf24 ,Order_nRF24L01_ASK_Data_Mode_Out, NRF24_PIPE_2);
+        }
+
+
+        rt_thread_mdelay(200);
+    }
+}
+
+
+
+
+
+
 /**
   * @brief  This is a Initialization for nRF24L01
   * @retval int
   */
 rt_thread_t nRF24L01_Task_Handle = RT_NULL;
+rt_thread_t nRF24L01_Decode_Task_Handle = RT_NULL;
 int nRF24L01_Thread_Init(void)
 {
     nRF24L01_Task_Handle = rt_thread_create("nRF24L01_Thread_entry", nRF24L01_Thread_entry, RT_NULL, 4096, 9, 100);
@@ -238,6 +263,18 @@ int nRF24L01_Thread_Init(void)
     }
     else {
         LOG_E("LOG:%d. nRF24L01_Thread_entry is Failed",Record.ulog_cnt++);
+    }
+
+
+    nRF24L01_Decode_Task_Handle = rt_thread_create("nRF24L01_Decode_Thread_entry", nRF24L01_Decode_Thread_entry, RT_NULL, 4096, 9, 50);
+    /* 检查是否创建成功,成功就启动线程 */
+    if(nRF24L01_Decode_Task_Handle != RT_NULL)
+    {
+        LOG_I("[nRF24L01]nRF24L01_Decode_Thread_entry is Succeed!! \r\n");
+        rt_thread_startup(nRF24L01_Decode_Task_Handle);
+    }
+    else {
+        LOG_E("[nRF24L01]nRF24L01_Decode_Thread_entry is Failed \r\n");
     }
 
     return RT_EOK;

@@ -238,6 +238,19 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
 
                 }break;
                 //----------------------------------------------------------------------------------------------------
+                case FRAME_NRF24_MODE_DATA_IN_CMD:
+                {
+                    LOG_I("Receive: Mode Data In.");
+                    Record.mode_data_in = *(CmdBuf + 6);
+
+                }break;
+                //----------------------------------------------------------------------------------------------------
+                case FRAME_NRF24_MODE_DATA_OUT_CMD:
+                {
+                    LOG_I("Receive: Mode Data Out.");
+
+
+                }break;
 
                 default:    break;
             }
@@ -275,6 +288,36 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
         }break;
 
+
+        //  响应进入数据模式设置指令：55 AA 05 00 04 31 02
+        case Order_nRF24L01_ACK_Connect_Control_Panel:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_MODE_DATA_IN_CMD;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
+            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+        }break;
+
+
+        //  响应进入数据模式设置指令：55 AA 05 00 04 31 03
+        case Order_nRF24L01_ACK_Connect_Control_Panel:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_MODE_DATA_OUT_CMD;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
+            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+        }break;
+
+
+        // 主动发送压力数据
+        case Order_nRF24L01_SEND_Press_Data:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_SEND_PRESS_DATA_CMD;
+            emptyBuf[1] = Record.pressed;
+            emptyBuf[2] = Record.pressed_data;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_POST, FRAME_STATE_ACK, emptyBuf, 3, frame_package);
+        }
 
         default: break;
     }

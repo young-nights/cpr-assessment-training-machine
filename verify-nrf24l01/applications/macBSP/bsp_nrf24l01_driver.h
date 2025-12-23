@@ -300,10 +300,15 @@ struct nRF24L01_STRUCT
 
 
 
-// 外部信号量声明 -------------------------------------------------------------------
+// 外部信号量/事件声明 -------------------------------------------------------------------
 extern rt_sem_t nrf24_send_sem;
-extern rt_sem_t nrf24_irq_sem;
+extern rt_event_t nrf24_event;
 extern nrf24_t _nrf24;
+
+// 事件组位定义
+#define NRF_EVENT_IRQ           (1 << 0)
+#define NRF_EVENT_SEND_CMD      (1 << 1)
+#define NRF_EVENT_SEND_PRESS    (1 << 2)
 
 // 函数声明 -------------------------------------------------------------------
 int nRF24L01_Param_Config(nrf24_param_t param);

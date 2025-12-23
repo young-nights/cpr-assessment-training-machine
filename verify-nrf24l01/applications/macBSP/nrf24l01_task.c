@@ -247,7 +247,7 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
     {
         /* 主循环 PTX 段末尾（发完询问包之后） */
         if (Record.nRF24_tx_pending) {
-            rt_kprintf("now ptx pening\n");
+            rt_kprintf("now nrf24_tx_pening\n");
             Record.nRF24_tx_pending = 0;              /* 先清标志，防止重入 */
 
             _nrf24->nrf24_ops.nrf24_reset_ce();
@@ -256,12 +256,31 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
             nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Connect_Control_Panel, NRF24_PIPE_2);
 
             _nrf24->nrf24_ops.nrf24_set_ce();
-            rt_thread_mdelay(1);             /* 1 ms 足够发完 */
+            rt_thread_mdelay(1);
             _nrf24->nrf24_ops.nrf24_reset_ce();
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
             _nrf24->nrf24_ops.nrf24_set_ce();
-            /* 后面继续正常 PRX 窗口即可 */
         }
+
+
+
+        if(Record.nRF24_tx_pressing == 1){
+            rt_kprintf("now nrf_tx_pressing\n");
+            Record.nRF24_tx_pressing = 0;
+
+            _nrf24->nrf24_ops.nrf24_reset_ce();
+            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+
+            nrf24l01_order_to_pipe(Order_nRF24L01_SEND_Press_Data, NRF24_PIPE_2);
+
+            _nrf24->nrf24_ops.nrf24_set_ce();
+            rt_thread_mdelay(1);
+            _nrf24->nrf24_ops.nrf24_reset_ce();
+            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+            _nrf24->nrf24_ops.nrf24_set_ce();
+        }
+
+
         rt_thread_mdelay(200);
     }
 }
@@ -290,8 +309,7 @@ int nRF24L01_Thread_Init(void)
     }
 
 
-
-    nRF24L01_Decode_Task_Handle = rt_thread_create("nRF24L01_Decode_Thread_entry", nRF24L01_Decode_Thread_entry, RT_NULL, 4096, 8, 50);
+    nRF24L01_Decode_Task_Handle = rt_thread_create("nRF24L01_Decode_Thread_entry", nRF24L01_Decode_Thread_entry, RT_NULL, 4096, 9, 50);
     /* 检查是否创建成功,成功就启动线程 */
     if(nRF24L01_Decode_Task_Handle != RT_NULL)
     {

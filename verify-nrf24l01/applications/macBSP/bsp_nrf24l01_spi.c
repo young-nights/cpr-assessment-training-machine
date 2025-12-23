@@ -8,6 +8,7 @@
  * 2025-07-29     Administrator       the first version
  */
 #include <bsp_nrf24l01_spi.h>
+#include <bsp_nrf24l01_driver.h>
 #include <rtdbg.h>
 
 

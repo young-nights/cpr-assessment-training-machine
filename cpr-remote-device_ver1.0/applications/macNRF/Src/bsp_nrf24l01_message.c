@@ -236,6 +236,18 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
                     Record.nrf_if_connected = 1;
                 }break;
                 //----------------------------------------------------------------------------------------------------
+                case FRAME_NRF24_MODE_DATA_IN_CMD:
+                {
+                    LOG_I("Receive: FRAME_NRF24_MODE_DATA_IN_CMD.");
+                    Record.mode_data_in_set = 3;
+                }break;
+                //----------------------------------------------------------------------------------------------------
+                case FRAME_NRF24_MODE_DATA_OUT_CMD:
+                {
+                    LOG_I("Receive: FRAME_NRF24_MODE_DATA_OUT_CMD.");
+                    Record.mode_data_in_set = 3;
+                }break;
+
 
                 default:    break;
             }
@@ -257,8 +269,6 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
  * @param   order   指令码
  * @retval  None
  */
-extern rt_uint8_t largeid_buf[8];
-extern rt_uint8_t smallid_buf[8];
 void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num)
 {
     uint8_t emptyBuf[20] = {0};
@@ -275,6 +285,24 @@ void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num)
             package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ASK,emptyBuf,1,frame_package);
             nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             Record.nrf_sending = 1;
+        }break;
+
+
+        case Order_nRF24L01_ASK_Data_Mode_In:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_MODE_DATA_IN_CMD;
+            emptyBuf[1] = Record.mode_data_in;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+        }break;
+
+        case Order_nRF24L01_ASK_Data_Mode_Out:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_MODE_DATA_OUT_CMD;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 1, frame_package);
+            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
         }break;
 
 
