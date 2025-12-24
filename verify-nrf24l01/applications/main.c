@@ -50,7 +50,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
-
+  all_project_event_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */

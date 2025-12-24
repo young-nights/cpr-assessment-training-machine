@@ -71,7 +71,8 @@ typedef enum
 typedef enum
 {
     Order_nRF24L01_ACK_Connect_Control_Panel = 0,
-
+    Order_nRF24L01_ACK_Mode_Data_In,
+    Order_nRF24L01_ACK_Mode_Data_Out,
 
 
     Order_nRF24L01_SEND_Press_Data = 50,

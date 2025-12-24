@@ -54,7 +54,15 @@ typedef enum
 
 
 
+/* nRF24L01 Event Group */
+extern rt_event_t nrf24l01_events;
+#define EVENT_NRF24_ACK_MODE_DATA_IN    (1 << 0)
+#define EVENT_NRF24_ACK_MODE_DATA_OUT   (1 << 1)
 
+
+
+
+void all_project_event_init(void);
 
 
 

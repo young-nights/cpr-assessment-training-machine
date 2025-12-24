@@ -245,6 +245,7 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
 
     for(;;)
     {
+        //---------------------------------------------------------------------------------------------------
         /* 主循环 PTX 段末尾（发完询问包之后） */
         if (Record.nRF24_tx_pending) {
             rt_kprintf("now nrf24_tx_pening\n");
@@ -261,24 +262,13 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
             _nrf24->nrf24_ops.nrf24_set_ce();
         }
-
-
-
-        if(Record.nRF24_tx_pressing == 1){
-            rt_kprintf("now nrf_tx_pressing\n");
-            Record.nRF24_tx_pressing = 0;
-
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-
-            nrf24l01_order_to_pipe(Order_nRF24L01_SEND_Press_Data, NRF24_PIPE_2);
-
-            _nrf24->nrf24_ops.nrf24_set_ce();
-            rt_thread_mdelay(1);
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
-            _nrf24->nrf24_ops.nrf24_set_ce();
+        //---------------------------------------------------------------------------------------------------
+        /*  */
+        result = rt_event_recv(&event1, FLAG_A | FLAG_B,RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR,0, &recved1);
+        if (result == RT_EOK){
+            rt_kprintf("处理事件组1的事件: 0x%x\n", recved1);
         }
+
 
 
         rt_thread_mdelay(200);

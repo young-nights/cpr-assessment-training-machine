@@ -242,13 +242,20 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
                 {
                     LOG_I("Receive: Mode Data In.");
                     Record.mode_data_in = *(CmdBuf + 6);
+                    // 触发事件集
+                    if(nrf24l01_events != RT_NULL){
+                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_DATA_IN);
+                    }
 
                 }break;
                 //----------------------------------------------------------------------------------------------------
                 case FRAME_NRF24_MODE_DATA_OUT_CMD:
                 {
                     LOG_I("Receive: Mode Data Out.");
-
+                    // 触发事件集
+                    if(nrf24l01_events != RT_NULL){
+                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_DATA_OUT);
+                    }
 
                 }break;
 
@@ -290,7 +297,7 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
 
 
         //  响应进入数据模式设置指令：55 AA 05 00 04 31 02
-        case Order_nRF24L01_ACK_Connect_Control_Panel:
+        case Order_nRF24L01_ACK_Mode_Data_In:
         {
             rt_memset(emptyBuf, 0, sizeof(emptyBuf));
             emptyBuf[0] = FRAME_NRF24_MODE_DATA_IN_CMD;
@@ -300,7 +307,7 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
 
 
         //  响应进入数据模式设置指令：55 AA 05 00 04 31 03
-        case Order_nRF24L01_ACK_Connect_Control_Panel:
+        case Order_nRF24L01_ACK_Mode_Data_Out:
         {
             rt_memset(emptyBuf, 0, sizeof(emptyBuf));
             emptyBuf[0] = FRAME_NRF24_MODE_DATA_OUT_CMD;
