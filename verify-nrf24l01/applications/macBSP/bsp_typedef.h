@@ -22,11 +22,11 @@ typedef struct {
     rt_uint8_t   nrf_connected;
     rt_uint8_t   nRF24_tx_pending;
     rt_uint8_t   nRF24_tx_pressing;
-    rt_uint8_t   mode_data_in;
+    rt_uint8_t   mode_data_in;                   // 数据模式(0：未进行数据传输   1：考核模式   2：竞赛模式    3：训练模式)
     rt_uint8_t   pressed;
-    rt_uint8_t   pressed_data;                   // 百分比
+    rt_uint8_t   pressed_data;
     rt_uint8_t   tidal;
-    rt_uint8_t   tidal_data;                     // 百分比
+    rt_uint8_t   tidal_data;
 
 
 }RecordStruct;
