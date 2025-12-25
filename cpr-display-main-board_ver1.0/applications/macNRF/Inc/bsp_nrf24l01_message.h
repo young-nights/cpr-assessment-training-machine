@@ -38,7 +38,10 @@
 
 // 指令宏------------------------------------------------------------
 #define      FRAME_NRF24_CONNECT_CTRL_PANEL_CMD                  (0x01)      // 设置：连接控制面板指令
-
+#define      FRAME_NRF24_MODE_DATA_IN_CMD                        (0x02)      // 设置：进入考核/竞赛/训练模式指令
+#define      FRAME_NRF24_MODE_DATA_OUT_CMD                       (0x03)      // 设置：退出考核/竞赛/训练模式指令
+#define      FRAME_NRF24_SEND_PRESS_DATA_CMD                     (0x04)      // 上报：主动上报压力数据
+#define      FRAME_NRF24_SEND_TIDAL_DATA_CMD                     (0x05)      // 上报：主动上报潮气数据
 
 
 
@@ -68,6 +71,12 @@ typedef enum
 typedef enum
 {
     Order_nRF24L01_ACK_Connect_Control_Panel = 0,
+    Order_nRF24L01_ACK_Mode_Data_In,
+    Order_nRF24L01_ACK_Mode_Data_Out,
+
+
+    Order_nRF24L01_SEND_Press_Data = 50,
+    Order_nRF24L01_SEND_Tidal_Data,
 
 
 }nRF24L01_Order_StructType;

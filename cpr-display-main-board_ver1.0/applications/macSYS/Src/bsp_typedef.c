@@ -11,8 +11,15 @@
 #include "bsp_typedef.h"
 
 
+// 与nRF24L01通讯相关的全局事件集
+rt_event_t nrf24l01_events = RT_NULL;
+// 与rs485通讯相关的全局事件集
+rt_event_t rs485_decode_events = RT_NULL;
+
 
 RecordStruct Record;
+
+
 
 
 System_Config_t MySysCfg = {
@@ -108,6 +115,15 @@ void system_events_init(void)
         LED_Off(LED_Name_Start);
         LED_On(LED_Name_Reset);
         LED_On(LED_Name_Train);
+    }
+
+    //-------------------------------------------------------------------
+    nrf24l01_events = rt_event_create("nrf24_evt", RT_IPC_FLAG_FIFO);
+    if(nrf24l01_events == RT_NULL){
+        LOG_E("Failed to create nrf24_event.");
+    }
+    else{
+        LOG_I("Succeed to create nrf24_event.");
     }
 }
 

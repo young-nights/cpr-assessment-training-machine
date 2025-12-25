@@ -242,10 +242,13 @@ void nRF24L01_Thread_entry(void* parameter)
 void nRF24L01_Decode_entry(void* parameter)
 {
 
+    rt_uint32_t recved = 0;
+    rt_err_t nrf_event_result;
 
     for(;;)
     {
-        /* 主循环 PTX 段末尾（发完询问包之后） */
+        //---------------------------------------------------------------------------------------------------
+        /* 处理连接应答的 PTX 短暂切换（发送 ACK 连接帧） */
         if (Record.nRF24_tx_pending) {
             Record.nRF24_tx_pending = 0;              /* 先清标志，防止重入 */
 
@@ -261,7 +264,45 @@ void nRF24L01_Decode_entry(void* parameter)
             _nrf24->nrf24_ops.nrf24_set_ce();
             /* 后面继续正常 PRX 窗口即可 */
         }
-        rt_thread_mdelay(200);
+
+        //---------------------------------------------------------------------------------------------------
+        /* 处理事件集：来自协议解析线程触发的各种命令事件 */
+        nrf_event_result = rt_event_recv( nrf24l01_events,
+                                EVENT_NRF24_ACK_MODE_DATA_IN | EVENT_NRF24_ACK_MODE_DATA_OUT,
+                                RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, // 只要有一个事件来到，就返回； 并且成功接收后，就自动清除标志
+                                RT_WAITING_NO,  // 非阻塞，立即返回
+                                &recved);
+
+        if(nrf_event_result == RT_EOK)
+        {
+            if(recved & EVENT_NRF24_ACK_MODE_DATA_IN){
+                rt_kprintf("Event: Received MODE_DATA_IN command, sending ACK\n");
+                // 短暂切换为 PTX 发送应答
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+                nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Mode_Data_In, NRF24_PIPE_2);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+                rt_thread_mdelay(1);
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+            }
+
+
+
+            if(recved & EVENT_NRF24_ACK_MODE_DATA_OUT){
+                rt_kprintf("Event: Received MODE_DATA_OUT command, sending ACK\n");
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+                nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Mode_Data_Out, NRF24_PIPE_2);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+                rt_thread_mdelay(1);
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+            }
+        }
+        rt_thread_mdelay(50);
     }
 }
 

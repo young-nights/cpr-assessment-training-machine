@@ -13,6 +13,13 @@
 #include "bsp_sys.h"
 
 
+/* nRF24L01 Event Group */
+extern rt_event_t nrf24l01_events;
+#define EVENT_NRF24_ACK_MODE_DATA_IN    (1 << 0)
+#define EVENT_NRF24_ACK_MODE_DATA_OUT   (1 << 1)
+
+
+
 // 以下为移植时必须需要的结构体等的初始化---------------------------------------------------------------------------------------------------------
 typedef struct {
     rt_uint8_t   Empty;                          // 空值
@@ -20,6 +27,7 @@ typedef struct {
     rt_uint16_t  ulog_cnt;                       // 用于日志序列
     //------------------------------------------------------------
     rt_uint8_t  nRF24_tx_pending;                // 接收到信号后，发送回调
+    rt_uint8_t  mode_data_in;                    // 数据模式(0：未进行数据传输   1：考核模式   2：竞赛模式    3：训练模式)
     rt_uint8_t  touch_set_cnt;                   // 按下次数：设置按键
 
 }RecordStruct;

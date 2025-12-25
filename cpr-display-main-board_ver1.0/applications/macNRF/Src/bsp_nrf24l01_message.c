@@ -11,25 +11,13 @@
 #include "bsp_nrf24l01_driver.h"
 
 
-/*****************************************************************************
-* 功能:       CRC校验码计算（采用Crc16Modbus标准多项式）
-* 说明:       校验步骤：
-            1、 设置 CRC 寄存器， 并给其赋值 FFFF(hex)
-            2、 将数据的第一个 8-bit 字符与 16 位 CRC 寄存器的低 8 位进行异或， 并把结果 存入 CRC 寄存器
-            3、 CRC 寄存器向右移一位， MSB 补零， 移出并检查 LSB
-            4、 如果 LSB 为 0， 重复第三步； 若 LSB 为 1， CRC 寄存器与多项式码相异或
-            5、 重复第 3 与第 4 步直到 8 次移位全部完成。 此时一个 8-bit 数据处理完毕
-            6、 重复第 2 至第 5 步直到所有数据全部处理完成
-            7、 最终 CRC 寄存器的内容即为 CRC 值
-            8、 CRC(16 位)多项式为 X16+X15+X2+1， 其对应校验二进制位列为 1 1000 0000 0000 0101
-*****************************************************************************/
 uint16_t CrcCalc_Crc16Modbus(uint8_t *dat,uint8_t len)
 {
     uint16_t    CRC_index = 0xffff;
     uint16_t    buffer;
     volatile    uint8_t i = 0, j = 0;
     for(i = 0; i < len; i++){
-        buffer = dat[i];                            // 把数据取出来放在缓冲区
+        buffer = dat[i];
         CRC_index ^= buffer;
         for(j = 0; j < 8; j++){
             if(CRC_index & 0x0001){
@@ -236,6 +224,26 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
                     Record.nRF24_tx_pending = 1;
                 }break;
                 //----------------------------------------------------------------------------------------------------
+                case FRAME_NRF24_MODE_DATA_IN_CMD:
+                {
+                    LOG_I("Receive: Mode Data In.");
+                    Record.mode_data_in = *(CmdBuf + 6);
+                    if(nrf24l01_events != RT_NULL){
+                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_DATA_IN);
+                    }
+
+                }break;
+                //----------------------------------------------------------------------------------------------------
+                case FRAME_NRF24_MODE_DATA_OUT_CMD:
+                {
+                    LOG_I("Receive: Mode Data Out.");
+                    Record.mode_data_in = 0;
+                    if(nrf24l01_events != RT_NULL){
+                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_DATA_OUT);
+                    }
+
+                }break;
+
 
                 default:    break;
             }
