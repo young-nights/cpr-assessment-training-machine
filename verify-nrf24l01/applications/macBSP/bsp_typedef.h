@@ -63,7 +63,7 @@ extern rt_event_t nrf24l01_events;
 
 
 void all_project_event_init(void);
-
+int nRF24L01_Thread_Init(void);
 
 
 

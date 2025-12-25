@@ -51,6 +51,7 @@ int main(void)
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
   all_project_event_init();
+  nRF24L01_Thread_Init();
   /* USER CODE END 2 */
 
   /* Infinite loop */

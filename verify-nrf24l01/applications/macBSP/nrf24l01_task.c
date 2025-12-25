@@ -364,19 +364,17 @@ int nRF24L01_Thread_Init(void)
 
     //---------------------------------------------------------------------------------------------------------------------------
     nRF24L01_Data_Transmit_Task_Handle = rt_thread_create("nRF24L01_Data_Transmit_Thread_entry", nRF24L01_Data_Transmit_Thread_entry, RT_NULL, 2048, 10, 50);
-    if(nRF24L01_Decode_Task_Handle != RT_NULL)
+    if(nRF24L01_Data_Transmit_Task_Handle != RT_NULL)
     {
         LOG_I("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Succeed!! \r\n");
-        rt_thread_startup(nRF24L01_Decode_Task_Handle);
+        rt_thread_startup(nRF24L01_Data_Transmit_Task_Handle);
     }
     else {
         LOG_E("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Failed \r\n");
     }
 
-
     return RT_EOK;
 }
-INIT_APP_EXPORT(nRF24L01_Thread_Init);
 
 
 
