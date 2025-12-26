@@ -16,8 +16,6 @@ void update_left_bar(lvgl_ui_t *ui, int percentage);
 void update_right_bar(lvgl_ui_t *ui, int percentage);
 lv_color_t get_gradient_color(int percentage);
 
-static void test_anim_timer_cb(lv_timer_t *t);
-
 void setup_scr_screen_data(lvgl_ui_t *ui)
 {
     // ==================== 创建屏幕 ====================
@@ -106,7 +104,7 @@ void setup_scr_screen_data(lvgl_ui_t *ui)
     const int GRID_COUNT    = 40;      // 40格
     const int GRID_HEIGHT   = 4;       // 每格高4px
     const int GRID_GAP      = 2;       // 间隙2px → 每格占6px
-    const int BAR_WIDTH     = 20;
+    const int BAR_WIDTH     = 30;
 
     // ---- 左边进度条（从底部向上点亮）----
     ui->screen_data_bar_left_grid = lv_obj_create(ui->screen_data_cont_data);
@@ -151,9 +149,6 @@ void setup_scr_screen_data(lvgl_ui_t *ui)
     // ==================== 初始化为0% ====================
     update_left_bar(ui, 100);
     update_right_bar(ui, 50);
-
-    // ==================== 启动动画测试 Demo (50ms刷新) ====================
-//    lv_timer_create(test_anim_timer_cb, 50, ui);
 
     // ==================== 更新布局 ====================
     lv_obj_update_layout(ui->screen_data);
@@ -398,37 +393,3 @@ void update_circle_by_index(lvgl_ui_t *ui, int index, int color_type)
     update_circle_color(circle, color_type);
 }
 
-/*========================== 9. 动画测试 Demo ==========================*/
-static void test_anim_timer_cb(lv_timer_t *t)
-{
-    lvgl_ui_t *ui = (lvgl_ui_t *)t->user_data;
-    
-    // 静态变量保存状态
-    static int16_t val_left = 0;
-    static int16_t step_left = 5;
-    
-    static int16_t val_right = 100;
-    static int16_t step_right = -8;
-
-    // 左边：0 -> 100 -> 0 往复运动
-    val_left += step_left;
-    if (val_left >= 100) {
-        val_left = 100;
-        step_left = -5;
-    } else if (val_left <= 0) {
-        val_left = 0;
-        step_left = 5;
-    }
-    update_left_bar(ui, val_left);
-
-    // 右边：100 -> 0 -> 100 往复运动，步长不同
-    val_right += step_right;
-    if (val_right >= 100) {
-        val_right = 100;
-        step_right = -8;
-    } else if (val_right <= 0) {
-        val_right = 0;
-        step_right = 8;
-    }
-    update_right_bar(ui, val_right);
-}
