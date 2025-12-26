@@ -225,7 +225,6 @@ void nRF24L01_Thread_entry(void* parameter)
                  if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
                      _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, data_buf, length, pipe);
                  }
-
              }
          }
         rt_thread_mdelay(500);
@@ -287,8 +286,6 @@ void nRF24L01_Decode_entry(void* parameter)
                 nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
                 _nrf24->nrf24_ops.nrf24_set_ce();
             }
-
-
 
             if(recved & EVENT_NRF24_ACK_MODE_DATA_OUT){
                 rt_kprintf("Event: Received MODE_DATA_OUT command, sending ACK\n");

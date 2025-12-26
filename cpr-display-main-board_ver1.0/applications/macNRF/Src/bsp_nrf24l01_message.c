@@ -282,6 +282,26 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
         }break;
 
 
+        //  响应进入数据模式设置指令：55 AA 05 00 04 31 02 90 3D
+        case Order_nRF24L01_ACK_Mode_Data_In:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_MODE_DATA_IN_CMD;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
+            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+        }break;
+
+
+        //  响应进入数据模式设置指令：55 AA 05 00 04 31 03 50 FC
+        case Order_nRF24L01_ACK_Mode_Data_Out:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_MODE_DATA_OUT_CMD;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
+            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+        }break;
+
+
         default: break;
     }
 }

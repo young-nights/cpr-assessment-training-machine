@@ -153,7 +153,7 @@ void setup_scr_screen_data(lvgl_ui_t *ui)
     update_right_bar(ui, 50);
 
     // ==================== 启动动画测试 Demo (50ms刷新) ====================
-    lv_timer_create(test_anim_timer_cb, 50, ui);
+//    lv_timer_create(test_anim_timer_cb, 50, ui);
 
     // ==================== 更新布局 ====================
     lv_obj_update_layout(ui->screen_data);
