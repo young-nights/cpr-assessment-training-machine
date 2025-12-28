@@ -180,6 +180,14 @@ void nRF24L01_Thread_entry(void* parameter)
                      LOG_W("ACK Protocol parse failed.\n");
                  }
 
+                 if(nrf24l01_portocol_get_sensor_command(rec_data,len) == CMD_TRUE){
+                     LOG_I("ACK sensor protocol parse succeed.\n");
+                 }
+                 else{
+                     LOG_W("ACK sensor protocol parse failed.\n");
+                 }
+
+
                  if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
                      _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
                  }

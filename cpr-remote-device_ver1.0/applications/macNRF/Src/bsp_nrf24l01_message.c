@@ -241,6 +241,7 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
                 {
                   LOG_I("Receive: FRAME_NRF24_PRESS_LED_CTRL_CMD.");
                   Record.set_press_led = *(CmdBuf + 6);
+                  Record.set_press_led_color = *(CmdBuf + 7);
                   if(nrf24l01_events != RT_NULL){
                       rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_BODY_LED);
                   }

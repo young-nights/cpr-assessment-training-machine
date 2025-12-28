@@ -29,6 +29,7 @@ typedef struct {
     rt_uint8_t  mode_data_in;                    // 数据模式(0：未进行数据传输   1：考核模式   2：竞赛模式    3：训练模式)
     rt_uint8_t  mode_data_in_set;                // 数据模式设置(0：未收到对方回复继续设置   1：收到对方回复停止设置)
     rt_uint8_t  set_press_led;                   // 数据模式中的按压LED的设置(0: 不亮   1~7：映射关系详看原理图 )
+    rt_uint8_t  set_press_led_color;             // 数据模式中的按压LED的颜色信息(0：透明  1：红色  2：黄色  3：绿色)
     rt_uint16_t set_work_time;                   // 需要设置的工作时间(在设置页面设置)
     rt_uint16_t set_air_rate;                    // 需要设置的潮气达标率
     rt_uint16_t set_press_rate;                  // 需要设置的按压达标率
@@ -51,6 +52,19 @@ typedef struct {
 
 }FlagStruct;
 extern FlagStruct Flag;
+
+
+
+typedef enum
+{
+    Circle_Name_Body1 = 1,
+    Circle_Name_Body2,
+    Circle_Name_Body3,
+    Circle_Name_Body4,
+    Circle_Name_Body5,
+    Circle_Name_Body6,
+    Circle_Name_Body7,
+}Circle_Name_TypeDef;
 
 
 void system_param_init(void);

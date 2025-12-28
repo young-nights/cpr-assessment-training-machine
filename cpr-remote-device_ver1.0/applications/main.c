@@ -47,7 +47,7 @@ int main(void)
   /* USER CODE BEGIN 2 */
   sysTimer_Init();
   system_param_init();
-
+  all_project_event_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */

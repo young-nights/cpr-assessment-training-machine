@@ -395,13 +395,13 @@ void update_circle_by_index(lvgl_ui_t *ui, int index, int color_type)
 {
     lv_obj_t *circle = NULL;
     switch(index) {
-        case 1: circle = ui->screen_data_circle_1; break;
-        case 2: circle = ui->screen_data_circle_2; break;
-        case 3: circle = ui->screen_data_circle_3; break;
-        case 4: circle = ui->screen_data_circle_4; break;
-        case 5: circle = ui->screen_data_circle_5; break;
-        case 6: circle = ui->screen_data_circle_6; break;
-        case 7: circle = ui->screen_data_circle_7; break;
+        case Circle_Name_Body1: circle = ui->screen_data_circle_1; break;
+        case Circle_Name_Body2: circle = ui->screen_data_circle_2; break;
+        case Circle_Name_Body3: circle = ui->screen_data_circle_3; break;
+        case Circle_Name_Body4: circle = ui->screen_data_circle_4; break;
+        case Circle_Name_Body5: circle = ui->screen_data_circle_5; break;
+        case Circle_Name_Body6: circle = ui->screen_data_circle_6; break;
+        case Circle_Name_Body7: circle = ui->screen_data_circle_7; break;
         default: return; // 索引越界
     }
     update_circle_color(circle, color_type);
