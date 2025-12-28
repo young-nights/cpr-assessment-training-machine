@@ -127,7 +127,7 @@ void lv_user_gui_init(void);
 #define CIRCLE_COLOR_GREEN   3
 void update_circle_color(lv_obj_t *circle, int color_type);
 void update_circle_by_index(lvgl_ui_t *ui, int index, int color_type);
-
+void cleanup_data_screen_animation(void);
 
 /* setup_scr_screen.c文件 */
 void setup_scr_screen_main(lvgl_ui_t *ui);
@@ -135,6 +135,7 @@ void setup_scr_screen_menu(lvgl_ui_t *ui);
 void setup_scr_screen_data(lvgl_ui_t *ui);
 void setup_scr_screen_setting(lvgl_ui_t *ui);
 void setup_scr_screen_operation(lvgl_ui_t *ui);
+
 
 /* lvgl_events.c文件 */
 void events_init_screen_main (lvgl_ui_t *ui);

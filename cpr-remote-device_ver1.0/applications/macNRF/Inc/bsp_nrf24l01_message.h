@@ -40,6 +40,7 @@
 #define      FRAME_NRF24_CONNECT_CTRL_PANEL_CMD                  (0x01)      // 设置：连接控制面板指令
 #define      FRAME_NRF24_MODE_DATA_IN_CMD                        (0x02)      // 设置：进入考核/竞赛/训练模式指令
 #define      FRAME_NRF24_MODE_DATA_OUT_CMD                       (0x03)      // 设置：退出考核/竞赛/训练模式指令
+#define      FRAME_NRF24_PRESS_LED_CTRL_CMD                      (0x04)      // 设置：根据接收的指令控制数据页面的按压位置圆形填充色
 
 
 

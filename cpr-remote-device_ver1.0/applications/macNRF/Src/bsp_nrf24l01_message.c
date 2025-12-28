@@ -228,15 +228,23 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
                 case FRAME_NRF24_MODE_DATA_IN_CMD:
                 {
                     LOG_I("Receive: FRAME_NRF24_MODE_DATA_IN_CMD.");
-                    Record.mode_data_in_set = 3;
+                    Record.mode_data_in_set = 3; // 退出重发
                 }break;
                 //----------------------------------------------------------------------------------------------------
                 case FRAME_NRF24_MODE_DATA_OUT_CMD:
                 {
                     LOG_I("Receive: FRAME_NRF24_MODE_DATA_OUT_CMD.");
-                    Record.mode_data_in_set = 3;
+                    Record.mode_data_in_set = 3; // 退出重发
                 }break;
-
+                //----------------------------------------------------------------------------------------------------
+                case FRAME_NRF24_PRESS_LED_CTRL_CMD:
+                {
+                  LOG_I("Receive: FRAME_NRF24_PRESS_LED_CTRL_CMD.");
+                  Record.set_press_led = *(CmdBuf + 6);
+                  if(nrf24l01_events != RT_NULL){
+                      rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_BODY_LED);
+                  }
+                }break;
 
                 default:    break;
             }

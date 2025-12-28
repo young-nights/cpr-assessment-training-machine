@@ -35,7 +35,7 @@ void system_param_init(void)
 
 void all_project_event_init(void)
 {
-    rt_event_init(&nrf24l01_events, "nrf_lvgl", RT_IPC_FLAG_FIFO);
+    rt_event_init(&nrf24l01_events, (char *)"nrf_lvgl", RT_IPC_FLAG_FIFO);
 }
 
 
