@@ -14,7 +14,7 @@
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
-
+#if 0
 
 /***
  * @param dev
@@ -249,7 +249,7 @@ INIT_DEVICE_EXPORT(rs485_dev_create);
 
 
 
-
+#endif
 
 
 

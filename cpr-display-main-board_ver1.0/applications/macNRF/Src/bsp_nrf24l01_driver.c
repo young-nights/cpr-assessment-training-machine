@@ -50,7 +50,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* SET_RETR */
     param->setup_retr.arc = 15;
-    param->setup_retr.ard = ADR_2Mbps;
+    param->setup_retr.ard = ADR_1Mbps;
 
     /* RF_CH */
     param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
@@ -77,7 +77,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
 
     rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x98 };
+    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x99 };
     rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
 
     for(int16_t i = 0; i < 5; i++){
@@ -85,9 +85,9 @@ int nRF24L01_Param_Config(nrf24_param_t param)
         param->rx_addr_p0[i] = rx_addr_pipe0[i];
         param->rx_addr_p1[i] = rx_addr_pipe1[i];
     }
-    param->rx_addr_p2 = 3;
+    param->rx_addr_p2 = 2;
+    param->rx_addr_p3 = 3;
 
-    param->rx_addr_p3 = 9;
     param->rx_addr_p4 = 9;
     param->rx_addr_p5 = 9;
 

@@ -115,6 +115,8 @@ void adc128s102_thread_entry(void *parameter)
     for(;;)
     {
         adc128s102_read_and_print(ADC128S_Channel_1);
+
+
         rt_thread_mdelay(500);
     }
 }
