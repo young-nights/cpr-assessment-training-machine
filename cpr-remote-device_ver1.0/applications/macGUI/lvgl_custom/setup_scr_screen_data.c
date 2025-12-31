@@ -147,8 +147,8 @@ void setup_scr_screen_data(lvgl_ui_t *ui)
     }
 
     // ==================== 初始化为0% ====================
-    update_left_bar(ui, 100);
-    update_right_bar(ui, 50);
+//    update_left_bar(ui, 100);
+//    update_right_bar(ui, 50);
 
     // ==================== 更新布局 ====================
     lv_obj_update_layout(ui->screen_data);
@@ -202,7 +202,7 @@ lv_color_t get_gradient_color(int percentage)
 #define GRID_COUNT      40
 #define GRID_HEIGHT     4
 #define GRID_GAP        2
-#define BAR_WIDTH       20
+#define BAR_WIDTH       30
 #define BAR_TOTAL_H     (GRID_COUNT * (GRID_HEIGHT + GRID_GAP))
 
 typedef struct {
@@ -218,15 +218,28 @@ static bar_anim_t anim_right = {0};
 
 
 /*========================== 5. 单格呼吸灯动画 ==========================*/
+/**
+ * @brief 单元格点亮动画效果
+ * @param cell 要执行动画的单元格对象
+ * 
+ * 功能说明：
+ * 1. 先将缩放恢复到100%（256 = 100%）
+ * 2. 设置背景不透明度动画（保持255，确保完全显示）
+ * 3. 执行缩放弹跳动画：从100%放大到110%，然后回弹到100%
+ */
 static void cell_light_up(lv_obj_t *cell)
 {
     lv_obj_set_style_transform_zoom(cell, 256, 0);  // 恢复 100%
 
+    // 第一个动画：背景不透明度动画（确保完全显示）
     lv_anim_t a;
     lv_anim_init(&a);
+    // 把动画绑定到cell对象上
     lv_anim_set_var(&a, cell);
     lv_anim_set_values(&a, 255, 255);
+    // 动画执行时间200ms
     lv_anim_set_time(&a, 200);
+    // 设置动画执行时的回调函数
     lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_style_bg_opa);
     lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
     lv_anim_start(&a);
@@ -244,6 +257,7 @@ static void cell_light_up(lv_obj_t *cell)
 
 static void cell_light_down(lv_obj_t *cell)
 {
+
     lv_anim_t a;
     lv_anim_init(&a);
     lv_anim_set_var(&a, cell);
@@ -381,15 +395,35 @@ void update_circle_by_index(lvgl_ui_t *ui, int index, int color_type)
 {
     lv_obj_t *circle = NULL;
     switch(index) {
-        case 1: circle = ui->screen_data_circle_1; break;
-        case 2: circle = ui->screen_data_circle_2; break;
-        case 3: circle = ui->screen_data_circle_3; break;
-        case 4: circle = ui->screen_data_circle_4; break;
-        case 5: circle = ui->screen_data_circle_5; break;
-        case 6: circle = ui->screen_data_circle_6; break;
-        case 7: circle = ui->screen_data_circle_7; break;
+        case Circle_Name_Body1: circle = ui->screen_data_circle_1; break;
+        case Circle_Name_Body2: circle = ui->screen_data_circle_2; break;
+        case Circle_Name_Body3: circle = ui->screen_data_circle_3; break;
+        case Circle_Name_Body4: circle = ui->screen_data_circle_4; break;
+        case Circle_Name_Body5: circle = ui->screen_data_circle_5; break;
+        case Circle_Name_Body6: circle = ui->screen_data_circle_6; break;
+        case Circle_Name_Body7: circle = ui->screen_data_circle_7; break;
         default: return; // 索引越界
     }
     update_circle_color(circle, color_type);
 }
 
+
+
+void cleanup_data_screen_animation(void)
+{
+    // 停止左条动画
+    if (anim_left.anim_running && anim_left.timer != NULL) {
+        lv_timer_del(anim_left.timer);
+        anim_left.timer = NULL;
+        anim_left.anim_running = false;
+        anim_left.current_filled = 0;  // 可选：复位
+    }
+
+    // 停止右条动画
+    if (anim_right.anim_running && anim_right.timer != NULL) {
+        lv_timer_del(anim_right.timer);
+        anim_right.timer = NULL;
+        anim_right.anim_running = false;
+        anim_right.current_filled = 0;
+    }
+}

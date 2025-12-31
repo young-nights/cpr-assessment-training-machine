@@ -15,6 +15,12 @@
 #define DEVICE_ID_H     0x00
 #define DEVICE_ID_L     0x04
 
+
+#define DEVICE_SENSOR_ID_H  0x00
+#define DEVICE_SENSOR_ID_L  0x05
+
+
+
 /* 函数进行解析指令后的返回宏 */
 #define CMD_ERROR   0
 #define CMD_TRUE    1
@@ -78,15 +84,26 @@ typedef enum
     Order_nRF24L01_SEND_Press_Data = 50,
     Order_nRF24L01_SEND_Tidal_Data,
 
-
 }nRF24L01_Order_StructType;
+
+
+/**
+  * @brief  枚举类型,设备类型
+  * @param  None
+  */
+typedef enum
+{
+    Device_Sensor_Type = 1,
+    Device_Remote_Type,
+}DeviceType_et;
 
 
 
 uint16_t CrcCalc_Crc16Modbus(uint8_t *dat, uint8_t len);
 rt_uint8_t nrf24l01_build_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *data, uint8_t data_len,uint8_t *out_frame);
+rt_uint8_t nrf24l01_build_sensor_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *data, uint8_t data_len,uint8_t *out_frame);
 void nrf24l01_protocol_operation(uint8_t* CmdBuf);
 uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLength);
-
+uint8_t nrf24l01_portocol_get_sensor_command(const uint8_t *s_cmdBuf,const uint16_t s_cmdLength);
 
 #endif /* APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_ */

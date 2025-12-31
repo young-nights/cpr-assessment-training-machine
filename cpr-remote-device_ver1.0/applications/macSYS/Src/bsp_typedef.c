@@ -35,7 +35,15 @@ void system_param_init(void)
 
 void all_project_event_init(void)
 {
-    rt_event_init(&nrf24l01_events, "nrf_lvgl", RT_IPC_FLAG_FIFO);
+
+    //-------------------------------------------------------------------
+    nrf24l01_events = rt_event_create("nrf24_evt", RT_IPC_FLAG_FIFO);
+    if(nrf24l01_events == RT_NULL){
+        LOG_E("Failed to create nrf24l01_events.");
+    }
+    else{
+        LOG_I("Succeed to create nrf24l01_events.");
+    }
 }
 
 

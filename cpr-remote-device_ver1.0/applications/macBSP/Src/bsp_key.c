@@ -117,8 +117,10 @@ void MyCustomKeyHandler(key_event_t event) {
             lv_obj_t *current_scr = lv_scr_act();
             // 确定当前屏幕的 del 标志（根据 guider_lvgl 结构匹配）
             bool *current_del = NULL;
+
             if (current_scr == guider_lvgl.screen_data) {
                 current_del = &guider_lvgl.screen_data_del;
+                cleanup_data_screen_animation();
             } else if (current_scr == guider_lvgl.screen_setting) {
                 current_del = &guider_lvgl.screen_setting_del;
             } else if (current_scr == guider_lvgl.screen_operation) {

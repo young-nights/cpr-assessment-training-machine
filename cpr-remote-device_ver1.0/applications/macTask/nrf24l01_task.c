@@ -9,6 +9,7 @@
  */
 #include "bsp_sys.h"
 #include "bsp_nrf24l01_driver.h"
+#include "setup_scr_screen.h"
 
 #define DBG_TAG "nRF24"
 #define DBG_LVL DBG_LOG
@@ -226,6 +227,9 @@ void nRF24L01_Thread_entry(void* parameter)
 void nRF24L01_Decode_Thread_entry(void* parameter)
 {
 
+    rt_uint32_t recved = 0;
+    rt_err_t nrf_event_result;
+
     for(;;)
     {
         if(Record.mode_data_in_set == 1){
@@ -235,8 +239,34 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
             nrf24l01_order_to_pipe(_nrf24 ,Order_nRF24L01_ASK_Data_Mode_Out, NRF24_PIPE_2);
         }
 
+        //---------------------------------------------------------------------------------------------------
+        /* 处理事件集：来自协议解析线程触发的各种命令事件 */
+        nrf_event_result = rt_event_recv(   nrf24l01_events,
+                                            EVENT_NRF24_ACK_BODY_LED,
+                                            RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR,
+                                            RT_WAITING_NO,
+                                            &recved);
 
-        rt_thread_mdelay(200);
+        if(nrf_event_result == RT_EOK)
+        {
+            if(recved & EVENT_NRF24_ACK_BODY_LED){
+                /* 处理圆圈LED颜色更新事件 */
+                if(Record.set_press_led == 0)
+                {
+                    /* 如果索引为0，表示不亮，跳过更新或设置为白色 */
+                    /* 这里可以选择跳过，或者将所有圆圈设置为白色 */
+                }
+                else if(Record.set_press_led >= 1 && Record.set_press_led <= 7)
+                {
+                    /* 使用接收到的索引和颜色更新对应的圆圈 */
+                    /* Record.set_press_led: 1-7 对应 Circle_Name_Body1 到 Circle_Name_Body7 */
+                    /* Record.set_press_led_color: 0-3 对应 CIRCLE_COLOR_WHITE/RED/YELLOW/GREEN */
+                    update_circle_by_index(&guider_lvgl, Record.set_press_led, Record.set_press_led_color);
+                }
+            }
+        }
+
+        rt_thread_mdelay(50);
     }
 }
 

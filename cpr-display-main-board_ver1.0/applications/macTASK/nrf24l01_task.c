@@ -180,6 +180,14 @@ void nRF24L01_Thread_entry(void* parameter)
                      LOG_W("ACK Protocol parse failed.\n");
                  }
 
+                 if(nrf24l01_portocol_get_sensor_command(rec_data,len) == CMD_TRUE){
+                     LOG_I("ACK sensor protocol parse succeed.\n");
+                 }
+                 else{
+                     LOG_W("ACK sensor protocol parse failed.\n");
+                 }
+
+
                  if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
                      _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
                  }
@@ -305,6 +313,31 @@ void nRF24L01_Decode_entry(void* parameter)
 
 
 
+/**
+  * @brief  This thread entry is used for nRF24L01 data transmit
+  * @retval void
+  */
+void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
+{
+
+    for(;;)
+    {
+        if(Record.mode_data_in == 1)
+        {
+
+        }
+        else if(Record.mode_data_in == 2){
+
+        }
+        else if(Record.mode_data_in == 3){
+
+        }
+
+        rt_thread_mdelay(50);
+    }
+}
+
+
 
 /**
   * @brief  This is a Initialization for nRF24L01
@@ -312,10 +345,10 @@ void nRF24L01_Decode_entry(void* parameter)
   */
 rt_thread_t nRF24L01_Task_Handle = RT_NULL;
 rt_thread_t nRF24L01_Decode_Handle = RT_NULL;
+rt_thread_t nRF24L01_Data_Transmit_Task_Handle = RT_NULL;
 int nRF24L01_Thread_Init(void)
 {
     nRF24L01_Task_Handle = rt_thread_create("nRF24L01_Thread_entry", nRF24L01_Thread_entry, RT_NULL, 4096, 9, 50);
-    /* 检查是否创建成功,成功就启动线程 */
     if(nRF24L01_Task_Handle != RT_NULL)
     {
         LOG_I("nRF24L01_Thread_entry is Succeed!! \r\n");
@@ -327,7 +360,6 @@ int nRF24L01_Thread_Init(void)
 
     //----------------------------------------------------------------------------------------------------------------
     nRF24L01_Decode_Handle = rt_thread_create("nRF24L01_Decode_entry", nRF24L01_Decode_entry, RT_NULL, 1024, 8, 50);
-    /* 检查是否创建成功,成功就启动线程 */
     if(nRF24L01_Decode_Handle != RT_NULL)
     {
         LOG_I("nRF24L01_Decode_entry is Succeed!! \r\n");
@@ -336,6 +368,18 @@ int nRF24L01_Thread_Init(void)
     else {
         LOG_E("nRF24L01_Decode_entry is Failed \r\n");
     }
+    //---------------------------------------------------------------------------------------------------------------------------
+    nRF24L01_Data_Transmit_Task_Handle = rt_thread_create("nRF24L01_Data_Transmit_Thread_entry", nRF24L01_Data_Transmit_Thread_entry, RT_NULL, 2048, 10, 50);
+    if(nRF24L01_Data_Transmit_Task_Handle != RT_NULL)
+    {
+        LOG_I("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Succeed!! \r\n");
+        rt_thread_startup(nRF24L01_Data_Transmit_Task_Handle);
+    }
+    else {
+        LOG_E("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Failed \r\n");
+    }
+
+
 
     return RT_EOK;
 }
