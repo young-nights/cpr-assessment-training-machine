@@ -94,7 +94,6 @@ void uart2_thread_entry(void* parameter)
     char recDat = 0;
     rt_size_t sizeValue = 0;
     uint8_t decodeStatus = 0;
-    uint8_t usartID = 2;
     while(1)
     {
         sizeValue = rt_device_read(serial2, RT_NULL, &recDat, 1);

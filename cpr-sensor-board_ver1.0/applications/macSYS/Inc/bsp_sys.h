@@ -36,7 +36,6 @@
 #include "bsp_nrf24l01_driver.h"
 #include "bsp_nrf24l01_spi.h"
 #include "bsp_nrf24l01_message.h"
-#include "bsp_nrf24l01_debug.h"
 /* macSYS 头文件 */
 #include "bsp_typedef.h"
 
