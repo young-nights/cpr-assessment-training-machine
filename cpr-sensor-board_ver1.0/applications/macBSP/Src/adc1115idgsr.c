@@ -9,12 +9,13 @@
  */
 #include "adc1115idgsr.h"
 
-
+#include "rtdbg.h"
 
 iicStructure_t ads1115_iic = {
         .i2c_name       = "i2c1",   /* 设备结点 */
         .i2c_addr       = ADS1115_GND_ADDR,     /* ads1115的iic地址 */
 };
+
 
 
 

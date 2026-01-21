@@ -1,18 +1,22 @@
 {
-  "configurations": [
-    {
-      "name": "windows-gcc-x64",
-      "includePath": [
-        "${workspaceFolder}/**"
-      ],
-      "compilerPath": "D:/MinGW/mingw64/bin/gcc.exe",
-      "cStandard": "${default}",
-      "cppStandard": "${default}",
-      "intelliSenseMode": "windows-gcc-x64",
-      "compilerArgs": [
-        ""
-      ]
-    }
-  ],
-  "version": 4
+    "configurations": [
+        {
+            "name": "STM8 IAR",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "D:\\Program Files (x86)\\IAR Systems\\Embedded Workbench 8.0\\stm8\\inc\\c"
+            ],
+            "compilerPath": "D:/MinGW/mingw64/bin/gcc.exe",
+            "cStandard": "${default}",
+            "cppStandard": "${default}",
+            "intelliSenseMode": "windows-gcc-x64",
+            "compilerArgs": [
+                ""
+            ],
+            "defines": [
+                "__ICCSTM8__"
+            ]
+        }
+    ],
+    "version": 4
 }

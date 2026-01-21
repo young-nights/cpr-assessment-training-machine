@@ -129,6 +129,7 @@
 #define ULOG_OUTPUT_TIME
 #define ULOG_OUTPUT_LEVEL
 #define ULOG_OUTPUT_TAG
+#define ULOG_OUTPUT_THREAD_NAME
 /* end of log format */
 #define ULOG_BACKEND_USING_CONSOLE
 /* end of Utilities */
@@ -259,6 +260,10 @@
 /* HPMicro SDK */
 
 /* end of HPMicro SDK */
+
+/* FT32 HAL & SDK Drivers */
+
+/* end of FT32 HAL & SDK Drivers */
 /* end of HAL & SDK Drivers */
 
 /* sensors drivers */

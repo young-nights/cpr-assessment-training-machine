@@ -2483,7 +2483,9 @@ typedef struct
 
 /**
   * @}
-  */
+  */#ifdef __IAR_SYSTEMS_ICC__
+#include <intrinsics.h>
+#endif
 
 /** @addtogroup CAN_Registers_Reset_Value
   * @{

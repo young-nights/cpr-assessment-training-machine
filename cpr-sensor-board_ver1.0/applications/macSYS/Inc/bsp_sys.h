@@ -19,6 +19,7 @@
 #include <rthw.h>
 #include <drv_spi.h>
 #include <rtdbg.h>
+#include <ulog.h>
 #include <stdio.h>
 
 /* 该头文件包含了所有CubeMX自动生成的初始化引脚 */

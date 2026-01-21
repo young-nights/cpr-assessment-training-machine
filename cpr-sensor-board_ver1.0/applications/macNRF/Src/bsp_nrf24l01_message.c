@@ -30,7 +30,7 @@ uint16_t CrcCalc_Crc16Modbus(uint8_t *dat,uint8_t len)
     uint16_t    buffer;
     volatile    uint8_t i = 0, j = 0;
     for(i = 0; i < len; i++){
-        buffer = dat[i];                            // 把数据取出来放在缓冲区
+        buffer = dat[i];
         CRC_index ^= buffer;
         for(j = 0; j < 8; j++){
             if(CRC_index & 0x0001){
