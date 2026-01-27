@@ -72,6 +72,10 @@ void MX_USART2_UART_Init(void);
 /* Private defines -----------------------------------------------------------*/
 #define DEBUG_LED_Pin GPIO_PIN_0
 #define DEBUG_LED_GPIO_Port GPIOC
+#define SPHYGMUS_CTRL2_Pin GPIO_PIN_2
+#define SPHYGMUS_CTRL2_GPIO_Port GPIOC
+#define SPHYGMUS_CTRL1_Pin GPIO_PIN_3
+#define SPHYGMUS_CTRL1_GPIO_Port GPIOC
 #define SPI1_NSS_Pin GPIO_PIN_4
 #define SPI1_NSS_GPIO_Port GPIOA
 #define SPHYGMUS_KEY2_Pin GPIO_PIN_1

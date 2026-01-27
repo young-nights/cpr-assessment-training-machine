@@ -48,6 +48,15 @@ typedef struct {
 extern FlagStruct Flag;
 
 
+
+typedef enum
+{
+    ON = 8,
+    OFF = 0,
+}SWITCH_et;
+
+
+
 void system_param_init(void);
 
 extern rt_event_t nrf24l01_events;

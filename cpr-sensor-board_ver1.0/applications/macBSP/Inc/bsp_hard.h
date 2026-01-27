@@ -14,11 +14,16 @@
 
 
 
+typedef enum
+{
+    Coreless_motor_1 = 1,
+    Coreless_motor_2,
+}MOTOR_NAME_et;
 
 
 
-
-
+char coreless_motolr_read_key1(void);
+char coreless_motolr_read_key2(void);
 
 
 

@@ -18,7 +18,7 @@ extern "C"
 #endif
 
 
-#define RS485_USING_TEST            //使用测试功能
+//#define RS485_USING_TEST            //使用测试功能
 //#define RS485_USING_SAMPLE_SLAVE    //使用从机示例
 //#define RS485_USING_SAMPLE_MASTER   //使用主机示例
 #define RS485_USING_DMA_RX          //使用DMA接收

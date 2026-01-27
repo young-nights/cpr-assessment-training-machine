@@ -137,7 +137,7 @@ int adc128s102_thread_init(void)
 
     return RT_EOK;
 }
-INIT_ENV_EXPORT(adc128s102_thread_init);
+//INIT_ENV_EXPORT(adc128s102_thread_init);
 
 
 
