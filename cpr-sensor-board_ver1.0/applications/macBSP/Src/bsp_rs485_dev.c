@@ -14,7 +14,7 @@
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
-#if 1
+#if 0
 
 /***
  * @param dev

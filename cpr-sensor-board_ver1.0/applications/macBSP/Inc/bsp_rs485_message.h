@@ -13,8 +13,10 @@
 #include "bsp_sys.h"
 
 
-#define RS485_SLAVE_ADDR    0x01
-
+#define RS485_SLAVE_ADDR        0x01
+#define MODBUS_READ_HOLDING     0x03   // 读保持寄存器（最常用读 AO）
+#define MODBUS_WRITE_SINGLE     0x06   // 写单个寄存器
+#define MODBUS_WRITE_MULTIPLE   0x10   // 写多个寄存器（批量写 AO）
 
 
 

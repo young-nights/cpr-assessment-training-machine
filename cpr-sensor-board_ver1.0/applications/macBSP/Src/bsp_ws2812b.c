@@ -8,7 +8,7 @@
  * 2026-01-26     Administrator       the first version
  */
 
-#include "bsp_ws2812b.c"
+#include "bsp_ws2812b.h"
 
 
 
