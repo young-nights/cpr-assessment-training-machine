@@ -19,7 +19,7 @@ extern "C"
 
 //rs485-device-name, serial-device-name, baudrate, parity(0~2), control-pin, send-level(0~1)
 #define RS485_DEV_CFG_TABLE {                     \
-    {"rs485-1", "uart3",    115200, 0,  -1,  -1}, \
+    {"rs485-1", "uart3",    9600, 0,  -1,  -1}, \
 }
 
 #define RS485_CTRL_CFG              0
@@ -212,6 +212,9 @@ typedef struct {
      */
     rs485_inst_t *hinst;
 } rs485_dev_t;
+
+
+
 
 #ifdef __cplusplus
 }

@@ -14,15 +14,17 @@
 
 // Define holding registers (example: 100 registers, uint16_t)
 #define MAX_HOLDING_REGS 100
-static uint16_t holding_regs[MAX_HOLDING_REGS] = {0};  // Initialize to 0, can be modified as needed
+// Initialize to 0, can be modified as needed
+static uint16_t holding_regs[MAX_HOLDING_REGS] = {0};
 
 // Modbus exception codes
-#define EXC_ILLEGAL_FUNCTION 0x01
-#define EXC_ILLEGAL_ADDRESS  0x02
-#define EXC_ILLEGAL_VALUE    0x03
-#define EXC_SERVER_FAILURE   0x04
+#define EXC_ILLEGAL_FUNCTION 0x01   // 非法功能码
+#define EXC_ILLEGAL_ADDRESS  0x02   // 非法数据地址
+#define EXC_ILLEGAL_VALUE    0x03   // 非法数据值
+#define EXC_SERVER_FAILURE   0x04   // 从机服务器设备故障
 
 
+rs485_inst_t *rs485_hinst;
 //-----------------------------------------------------------------------------------------------------
 
 static uint16_t crc16_modbus(uint8_t *dat,uint8_t len)
@@ -44,42 +46,6 @@ static uint16_t crc16_modbus(uint8_t *dat,uint8_t len)
     }
     return CRC_index;
 }
-
-//-----------------------------------------------------------------------------------------------------
-
-#ifndef RS485_SERIAL
-#define RS485_SERIAL       "uart3"         //default test serial
-#endif
-
-#ifndef RS485_BAUDRATE
-#define RS485_BAUDRATE     9600            //defalut test baudrate
-#endif
-
-#ifndef RS485_PARITY
-#define RS485_PARITY       0               //defalut test parity
-#endif
-
-#ifndef RS485_PIN
-#define RS485_PIN          -1              // 表示“无引脚” → 硬件自动切换
-#endif
-
-#ifndef RS485_LEVEL
-#define RS485_LEVEL        -1              // 表示“无电平” → 硬件自动切换
-#endif
-
-#ifndef RS485_BUF_SIZE
-#define RS485_BUF_SIZE     1024            //default test buffer size
-#endif
-
-#ifndef RS485_RECV_TMO
-#define RS485_RECV_TMO     30000           //default test recicve timeout
-#endif
-
-
-static rs485_inst_t * bsp_rs485_hinst = RT_NULL;
-
-
-
 
 
 
@@ -126,13 +92,12 @@ void my_protocol_decode(uint8_t *frame, int len, int port_idx)
     {
         case MODBUS_READ_HOLDING:  // Read Holding Registers
         {
-            if (len != 8) {  // Expected: Addr(1) + Func(1) + Start(2) + Num(2) + CRC(2)
-                if (need_response) send_exception_response(NULL, addr, func, EXC_ILLEGAL_VALUE);  // hinst will be passed later
-                return;
-            }
+            // 计算寄存器的起始地址
             uint16_t start = (frame[2] << 8) | frame[3];
+            // 计算要读取的连续寄存器数量
             uint16_t num = (frame[4] << 8) | frame[5];
 
+            // 不允许读取的寄存器数为0，并且起始地址加上操作的寄存器数量不能超过实际定义的寄存器数组大小
             if (num == 0 || start + num > MAX_HOLDING_REGS) {
                 if (need_response) send_exception_response(NULL, addr, func, EXC_ILLEGAL_ADDRESS);
                 return;
@@ -156,16 +121,12 @@ void my_protocol_decode(uint8_t *frame, int len, int port_idx)
 
             if (need_response) {
                 // Send response (hinst needs to be available, will be in thread context)
-                // Placeholder: rs485_send(hinst, resp, resp_len);
+//                rs485_send(bsp_rs485_hinst, resp, resp_len);
             }
         } break;
 
-        case 0x10:  // Write Multiple Registers
+        case MODBUS_WRITE_MULTIPLE:  // Write Multiple Registers
         {
-            if (len < 11) {  // Min: Addr(1)+Func(1)+Start(2)+Num(2)+ByteCount(1)+Data(min2)+CRC(2)
-                if (need_response) send_exception_response(NULL, addr, func, EXC_ILLEGAL_VALUE);
-                return;
-            }
             uint16_t start = (frame[2] << 8) | frame[3];
             uint16_t num = (frame[4] << 8) | frame[5];
             uint8_t byte_count = frame[6];
@@ -209,20 +170,26 @@ void my_protocol_decode(uint8_t *frame, int len, int port_idx)
 
 
 
-
-
-
-
-
-
 void rs485_decode_thread_entry(void *paragram)
 {
 
+    rt_device_t rs485_dev = rt_device_find("rs485-1");
+    if (rs485_dev == RT_NULL) {
+        rt_kprintf("RS485 device not found!\n");
+    }
+    if (rt_device_open(rs485_dev, RT_DEVICE_FLAG_RDWR) != RT_EOK) {
+        rt_kprintf("RS485 open failed!\n");
+    }
+    rs485_dev_t *pdev = (rs485_dev_t *)rs485_dev;
+    rs485_hinst = pdev->hinst;
+    rs485_dev_tmo_param_t tmo = { .ack_tmo_ms = 500, .byte_tmo_ms = 10 };
+    rt_device_control(rs485_dev, RS485_CTRL_SET_TMO, &tmo);
 
-
+    rt_uint8_t buf[2] = {0x01,0x02};
     while(1)
     {
-        rt_thread_mdelay(10);
+        rs485_send(rs485_hinst, buf, 2);
+        rt_thread_mdelay(500);
     }
 
 }
@@ -233,31 +200,6 @@ void rs485_decode_thread_entry(void *paragram)
 rt_thread_t rs485_decode_thread_handle;
 int rs485_decode_thread_init(void)
 {
-
-    // 默认参数（可通过宏配置）
-    char *serial = RS485_SERIAL;
-    int baudrate = RS485_BAUDRATE;
-    int parity = RS485_PARITY;
-    int pin = RS485_PIN;
-    int level = RS485_LEVEL;
-
-    bsp_rs485_hinst = rs485_create(serial, baudrate, parity, pin, level);
-
-    if (bsp_rs485_hinst != NULL)
-    {
-        rt_kprintf("rs485 instance create success.\n");
-        rt_kprintf("rs485 serial            : %s \n", serial);
-        rt_kprintf("rs485 baudrate          : %d \n", baudrate);
-        rt_kprintf("rs485 parity            : %d \n", parity);
-        rt_kprintf("rs485 control pin       : %d \n", pin);
-        rt_kprintf("rs485 send mode level   : %d \n", level);
-
-        // 设置默认接收超时
-        rs485_set_recv_tmo(bsp_rs485_hinst, RS485_RECV_TMO);
-        rt_kprintf("rs485 receive timeout   : %d \n", RS485_RECV_TMO);
-    }
-
-
     // 接收解码线程------------------------------------------------------------------------------------------
     rs485_decode_thread_handle = rt_thread_create(" rs485_decode_thread_entry",
                                                     rs485_decode_thread_entry,
@@ -272,10 +214,6 @@ int rs485_decode_thread_init(void)
 
     return RT_EOK;
 }
-
-
-
-
 
 
 

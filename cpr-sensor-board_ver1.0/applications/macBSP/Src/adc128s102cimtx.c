@@ -95,6 +95,7 @@ rt_err_t adc128s102_read_and_print(adc128s_channel_et ch)
 {
     rt_uint16_t raw;
     rt_err_t ret = adc128s102_read_raw(ch, &raw);
+
     if (ret != RT_EOK) {
         rt_kprintf("CH%u read error!\n", ch);
         return ret;
@@ -115,8 +116,6 @@ void adc128s102_thread_entry(void *parameter)
     for(;;)
     {
         adc128s102_read_and_print(ADC128S_Channel_1);
-
-
         rt_thread_mdelay(500);
     }
 }

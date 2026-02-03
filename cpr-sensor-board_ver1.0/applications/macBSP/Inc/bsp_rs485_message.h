@@ -19,8 +19,12 @@
 #define MODBUS_WRITE_MULTIPLE   0x10   // 写多个寄存器（批量写 AO）
 
 
+// 保持寄存器地址定义（从 0 开始）
+#define REG_PRESSURE          1     // 压力值，uint16_t
 
 
+int rs485_decode_thread_init(void);
+void update_sensors(void);
 
 
 

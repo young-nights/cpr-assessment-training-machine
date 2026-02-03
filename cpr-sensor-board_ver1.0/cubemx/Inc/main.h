@@ -64,7 +64,6 @@ void MX_USART2_UART_Init(void);
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
-
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
