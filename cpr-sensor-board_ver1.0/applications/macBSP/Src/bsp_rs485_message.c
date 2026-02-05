@@ -185,10 +185,9 @@ void rs485_decode_thread_entry(void *paragram)
     rs485_dev_tmo_param_t tmo = { .ack_tmo_ms = 500, .byte_tmo_ms = 10 };
     rt_device_control(rs485_dev, RS485_CTRL_SET_TMO, &tmo);
 
-    rt_uint8_t buf[2] = {0x01,0x02};
     while(1)
     {
-        rs485_send(rs485_hinst, buf, 2);
+        rs485_send(rs485_hinst, "OK\n", 3);
         rt_thread_mdelay(500);
     }
 
@@ -214,7 +213,7 @@ int rs485_decode_thread_init(void)
 
     return RT_EOK;
 }
-
+INIT_APP_EXPORT(rs485_decode_thread_init);
 
 
 

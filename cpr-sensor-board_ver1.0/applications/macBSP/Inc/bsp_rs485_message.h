@@ -26,6 +26,7 @@
 int rs485_decode_thread_init(void);
 void update_sensors(void);
 
+extern rs485_inst_t *rs485_hinst;
 
 
 #endif /* APPLICATIONS_MACBSP_INC_BSP_RS485_MESSAGE_H_ */

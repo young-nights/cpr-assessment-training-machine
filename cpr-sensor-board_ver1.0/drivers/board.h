@@ -77,8 +77,8 @@ extern "C"
 #define BSP_USING_UART3
 #define BSP_UART3_TX_PIN       "PB10"
 #define BSP_UART3_RX_PIN       "PB11"
-#define BSP_UART3_RX_USING_DMA
-#define BSP_UART3_TX_USING_DMA
+//#define BSP_UART3_RX_USING_DMA
+//#define BSP_UART3_TX_USING_DMA
 
 
 /*-------------------------- UART CONFIG END --------------------------*/

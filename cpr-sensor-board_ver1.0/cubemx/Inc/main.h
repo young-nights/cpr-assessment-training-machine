@@ -64,6 +64,8 @@ void MX_USART2_UART_Init(void);
 /* USER CODE END EM */
 
 /* Exported functions prototypes ---------------------------------------------*/
+
+
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
@@ -81,10 +83,6 @@ void MX_USART2_UART_Init(void);
 #define SPHYGMUS_KEY2_GPIO_Port GPIOB
 #define SPHYGMUS_KEY1_Pin GPIO_PIN_2
 #define SPHYGMUS_KEY1_GPIO_Port GPIOB
-#define nRF24L01_IRQ_Pin GPIO_PIN_10
-#define nRF24L01_IRQ_GPIO_Port GPIOB
-#define nRF24L01_CE_Pin GPIO_PIN_11
-#define nRF24L01_CE_GPIO_Port GPIOB
 #define nRF24_IRQ_Pin GPIO_PIN_2
 #define nRF24_IRQ_GPIO_Port GPIOD
 #define nRF24_CSN_Pin GPIO_PIN_6

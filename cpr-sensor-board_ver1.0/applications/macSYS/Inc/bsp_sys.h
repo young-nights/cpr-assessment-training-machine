@@ -42,7 +42,7 @@
 #include "bsp_nrf24l01_message.h"
 /* macSYS 头文件 */
 #include "bsp_typedef.h"
-
+#include "uart3_protocol.h"
 
 
 

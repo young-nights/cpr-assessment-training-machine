@@ -7,14 +7,20 @@
  * Date           Author       Notes
  * 2025-11-03     Administrator       the first version
  */
+
+#if 1
+
 #include "bsp_sys.h"
 #include "bsp_rs485_drv.h"
+#include "bsp_rs485_dev.h"
 
 #define DBG_TAG "rs485.dev"
 #define DBG_LVL DBG_INFO
 #include <rtdbg.h>
 
-#if 1
+
+
+
 
 /***
  * @param dev
@@ -185,6 +191,7 @@ static const rs485_dev_cfg_t rs485_dev_cfg_table[] = RS485_DEV_CFG_TABLE;
  *
  * @return rt_err_t  RT_EOK 成功，-RT_ENOMEM 内存不足
  */
+
 static int rs485_dev_create(void)
 {
     // 计算设备数量
@@ -247,16 +254,7 @@ INIT_DEVICE_EXPORT(rs485_dev_create);
 
 
 
-
-
 #endif
-
-
-
-
-
-
-
 
 
 

@@ -7,6 +7,9 @@
  * Date           Author       Notes
  * 2025-11-03     Administrator       the first version
  */
+
+#if 1
+
 #include "bsp_sys.h"
 #include "bsp_rs485_drv.h"
 
@@ -1011,6 +1014,9 @@ static void rs485_test(int argc, char **argv)
 MSH_CMD_EXPORT_ALIAS(rs485_test, rs485, test rs485 module functions);
 
 
+
+
+#endif
 
 
 #endif
