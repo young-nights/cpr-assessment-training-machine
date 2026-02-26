@@ -13,6 +13,8 @@
 #include "bsp_sys.h"
 
 
+#if 0
+
 // ADS1115 I2C 地址（根据 ADDR 引脚）
 #define ADS1115_GND_ADDR    0x48    // ADDR引脚接GND时，芯片的IIC地址
 #define ADS1115_VCC_ADDR    0x49    // ADDR引脚接VCC时，芯片的IIC地址
@@ -103,7 +105,7 @@ float ads1115_get_ain0(void);
 float ads1115_get_ain1(void);
 
 
-
+#endif
 
 
 #endif /* APPLICATIONS_MACBSP_INC_ADC1115IDGSR_H_ */

@@ -11,6 +11,9 @@
 
 #include "rtdbg.h"
 
+
+#if 0
+
 iicStructure_t ads1115_iic = {
         .i2c_name       = "i2c1",   /* 设备结点 */
         .i2c_addr       = ADS1115_GND_ADDR,     /* ads1115的iic地址 */
@@ -255,15 +258,5 @@ float ads1115_get_ain1(void)
 
 
 
-
-
-
-
-
-
-
-
-
-
-
+#endif
 
