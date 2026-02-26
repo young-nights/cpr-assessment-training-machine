@@ -402,19 +402,32 @@ void MX_GPIO_Init(void)
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
-  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOC_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, DEBUG_LED_Pin|SPHYGMUS_CTRL2_Pin|SPHYGMUS_CTRL1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, MAGNETIC_CTRL_Pin|DEBUG_LED_Pin|SPHYGMUS_CTRL2_Pin|SPHYGMUS_CTRL1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_NSS_GPIO_Port, SPI1_NSS_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, SPI1_NSS_Pin|DEBUG_LEDA15_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOB, nRF24_CSN_Pin|nRF24_CE_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pins : SPHYGMUS_KEY2_Pin SPHYGMUS_KEY1_Pin */
+  GPIO_InitStruct.Pin = SPHYGMUS_KEY2_Pin|SPHYGMUS_KEY1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : MAGNETIC_CTRL_Pin */
+  GPIO_InitStruct.Pin = MAGNETIC_CTRL_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(MAGNETIC_CTRL_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : DEBUG_LED_Pin */
   GPIO_InitStruct.Pin = DEBUG_LED_Pin;
@@ -422,6 +435,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(DEBUG_LED_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : MAGNETIC_STAT_Pin */
+  GPIO_InitStruct.Pin = MAGNETIC_STAT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(MAGNETIC_STAT_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : SPHYGMUS_CTRL2_Pin SPHYGMUS_CTRL1_Pin */
   GPIO_InitStruct.Pin = SPHYGMUS_CTRL2_Pin|SPHYGMUS_CTRL1_Pin;
@@ -437,11 +456,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(SPI1_NSS_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : SPHYGMUS_KEY2_Pin SPHYGMUS_KEY1_Pin */
-  GPIO_InitStruct.Pin = SPHYGMUS_KEY2_Pin|SPHYGMUS_KEY1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+  /*Configure GPIO pin : DEBUG_LEDA15_Pin */
+  GPIO_InitStruct.Pin = DEBUG_LEDA15_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  HAL_GPIO_Init(DEBUG_LEDA15_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : nRF24_IRQ_Pin */
   GPIO_InitStruct.Pin = nRF24_IRQ_Pin;
@@ -454,6 +474,12 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : SHAKE_DOUT1_Pin SHAKE_DOUT0_Pin */
+  GPIO_InitStruct.Pin = SHAKE_DOUT1_Pin|SHAKE_DOUT0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */

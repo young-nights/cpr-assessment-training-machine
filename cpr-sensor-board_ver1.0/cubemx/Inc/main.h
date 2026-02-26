@@ -65,30 +65,39 @@ void MX_USART2_UART_Init(void);
 
 /* Exported functions prototypes ---------------------------------------------*/
 
-
 /* USER CODE BEGIN EFP */
 
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
+#define SPHYGMUS_KEY2_Pin GPIO_PIN_13
+#define SPHYGMUS_KEY2_GPIO_Port GPIOC
+#define SPHYGMUS_KEY1_Pin GPIO_PIN_14
+#define SPHYGMUS_KEY1_GPIO_Port GPIOC
+#define MAGNETIC_CTRL_Pin GPIO_PIN_15
+#define MAGNETIC_CTRL_GPIO_Port GPIOC
 #define DEBUG_LED_Pin GPIO_PIN_0
 #define DEBUG_LED_GPIO_Port GPIOC
+#define MAGNETIC_STAT_Pin GPIO_PIN_1
+#define MAGNETIC_STAT_GPIO_Port GPIOC
 #define SPHYGMUS_CTRL2_Pin GPIO_PIN_2
 #define SPHYGMUS_CTRL2_GPIO_Port GPIOC
 #define SPHYGMUS_CTRL1_Pin GPIO_PIN_3
 #define SPHYGMUS_CTRL1_GPIO_Port GPIOC
 #define SPI1_NSS_Pin GPIO_PIN_4
 #define SPI1_NSS_GPIO_Port GPIOA
-#define SPHYGMUS_KEY2_Pin GPIO_PIN_1
-#define SPHYGMUS_KEY2_GPIO_Port GPIOB
-#define SPHYGMUS_KEY1_Pin GPIO_PIN_2
-#define SPHYGMUS_KEY1_GPIO_Port GPIOB
+#define DEBUG_LEDA15_Pin GPIO_PIN_15
+#define DEBUG_LEDA15_GPIO_Port GPIOA
 #define nRF24_IRQ_Pin GPIO_PIN_2
 #define nRF24_IRQ_GPIO_Port GPIOD
 #define nRF24_CSN_Pin GPIO_PIN_6
 #define nRF24_CSN_GPIO_Port GPIOB
 #define nRF24_CE_Pin GPIO_PIN_7
 #define nRF24_CE_GPIO_Port GPIOB
+#define SHAKE_DOUT1_Pin GPIO_PIN_8
+#define SHAKE_DOUT1_GPIO_Port GPIOB
+#define SHAKE_DOUT0_Pin GPIO_PIN_9
+#define SHAKE_DOUT0_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
 
