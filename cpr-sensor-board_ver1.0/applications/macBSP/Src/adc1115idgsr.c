@@ -19,8 +19,6 @@ iicStructure_t ads1115_iic = {
 
 
 
-
-
 /**
  * @brief  向 ADS1115 的指定寄存器写入 16bit 配置数据（高字节在前）
  * @param  reg   : 寄存器地址（0x00 ~ 0x03）
