@@ -24,7 +24,7 @@ typedef enum
 
 char coreless_motolr_read_key1(void);
 char coreless_motolr_read_key2(void);
-
+char CC6201_Hall_Sensor_Dout(void);
 
 
 

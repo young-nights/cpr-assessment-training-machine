@@ -56,8 +56,9 @@ typedef enum
 }SWITCH_et;
 
 
-
 void system_param_init(void);
+void Debug_LED_Ctrl(SWITCH_et sta);
+void CC6201_Hall_Sensor_Ctrl(SWITCH_et sta);
 
 extern rt_event_t nrf24l01_events;
 

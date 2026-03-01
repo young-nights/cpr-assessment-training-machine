@@ -10,9 +10,13 @@
 
 #include "bsp_ws2812b.h"
 
+#if USE_SPI_METHOD
 
 
 
+#elif USE_PWM_METHOD
 
 
+
+#endif
 

@@ -60,6 +60,7 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
+
       rt_thread_mdelay(500);
     /* USER CODE BEGIN 3 */
   }

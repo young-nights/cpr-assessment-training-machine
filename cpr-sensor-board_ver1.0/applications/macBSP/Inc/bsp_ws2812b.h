@@ -14,7 +14,8 @@
 #include "bsp_sys.h"
 
 
-
+#define USE_PWM_METHOD  0
+#define USE_SPI_METHOD  1
 
 
 
