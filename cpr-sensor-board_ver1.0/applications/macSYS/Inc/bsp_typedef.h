@@ -51,7 +51,7 @@ extern FlagStruct Flag;
 
 typedef enum
 {
-    ON = 8,
+    ON = 1,
     OFF = 0,
 }SWITCH_et;
 
