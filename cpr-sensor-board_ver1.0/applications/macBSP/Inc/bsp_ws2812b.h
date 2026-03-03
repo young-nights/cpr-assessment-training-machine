@@ -18,6 +18,67 @@
 #define USE_SPI_METHOD  1
 
 
+#if USE_SPI_METHOD
+
+/* SPI引脚 -- NSS */
+#define     WS2812B_NSS_PORT     SPI1_NSS_GPIO_Port
+#define     WS2812B_NSS_PIN      SPI1_NSS_Pin
+
+
+#define     WS2812B_NSS_SET(bit) if(bit) \
+                                 HAL_GPIO_WritePin ( WS2812B_NSS_PORT, WS2812B_NSS_PIN , GPIO_PIN_SET );\
+                                 else \
+                                 HAL_GPIO_WritePin ( WS2812B_NSS_PORT, WS2812B_NSS_PIN , GPIO_PIN_RESET );
+
+
+
+extern struct rt_spi_device *ws2812b_spi_dev;
+
+// 函数声明 ------------------------------------------------------------
+int WS2812B_SPI_Init(void);
+
+
+#ifndef WS2812B_LED_NUMS
+#define WS2812B_LED_NUMS 77
+#endif
+
+#define WS2812B_RGB_BITS 24 // 每颗灯 24 位数据（GRB 各 8 位）
+#define WS2812B_CODE_0 0xC0 // 用 SPI 发 0b11000000，模拟 0 码（高 220 ns）
+#define WS2812B_CODE_1 0xF0 // 用 SPI 发 0b11110000，模拟 1 码（高 580 ns）
+
+
+#define WS2812B_COLOR_BLACK     0x000000    // 熄灭
+#define WS2812B_COLOR_RED       0xFF0000    // 正红
+#define WS2812B_COLOR_ORANGE    0xF08784    // 暖橙
+#define WS2812B_COLOR_YELLOW    0xFF7F27    // 金黄
+#define WS2812B_COLOR_GREEN     0x7FFF00    // 翠绿
+#define WS2812B_COLOR_CYAN      0x00FFFF    // 青色
+#define WS2812B_COLOR_BLUE      0x0000FF    // 正蓝
+#define WS2812B_COLOR_PURPLE    0x8B00FF    // 紫色
+#define WS2812B_COLOR_WHITE     0xFFFFFF    // 正白
+
+
+// 函数声明 -------------------------------------------------------
+void ws2812b_table_init(void);
+void ws2812b_set_brightness(uint8_t brightness);
+void ws2812b_set_color(uint16_t index, uint32_t color);
+void ws2812b_show(void);
+void ws2812b_clear(void);
+void ws2812b_set_all(uint32_t color);
+
+
+// 测试函数------------------------------------------------------
+void ws2812b_full_color_test(void);
+void ws2812b_waterfall_light_test(void);
+void ws2812b_brightness_gradient_test(void);
+void ws2812b_breathing_light_test(void);
+
+
+#elif USE_PWM_METHOD
+
+
+
+#endif
 
 
 #endif /* APPLICATIONS_MACBSP_INC_BSP_WS2812B_H_ */
