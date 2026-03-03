@@ -14,9 +14,9 @@
 
 
 /* 宏定义SPI名称 */
-#define     WS2812B_SPI_NAME    "ws2812b_spi1"
+#define     WS2812B_SPI_NAME    "ws2812b_spi2"
 /* 宏定义SPI总线 */
-#define     WS2812B_SPI_BUS     "spi1"
+#define     WS2812B_SPI_BUS     "spi2"
 /* 创建SPI设备句柄 */
 struct rt_spi_device *ws2812b_spi_dev = RT_NULL;
 

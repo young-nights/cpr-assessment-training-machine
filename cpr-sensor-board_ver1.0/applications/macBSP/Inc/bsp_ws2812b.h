@@ -14,8 +14,8 @@
 #include "bsp_sys.h"
 
 
-#define USE_PWM_METHOD  0
-#define USE_SPI_METHOD  1
+#define USE_PWM_METHOD  1
+#define USE_SPI_METHOD  0
 
 
 #if USE_SPI_METHOD
@@ -76,7 +76,10 @@ void ws2812b_breathing_light_test(void);
 
 #elif USE_PWM_METHOD
 
+// LED 灯珠数目
+#define NUM_LEDS    30
 
+//
 
 #endif
 
