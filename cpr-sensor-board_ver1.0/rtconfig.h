@@ -108,6 +108,7 @@
 
 /* end of Interprocess Communication (IPC) */
 /* end of POSIX (Portable Operating System Interface) layer */
+#define RT_USING_CPLUSPLUS
 /* end of C/C++ and POSIX layer */
 
 /* Network */
@@ -267,6 +268,11 @@
 
 /* sensors drivers */
 
+#define PKG_USING_MPU6XXX
+#define PKG_USING_MPU6XXX_V111
+#define PKG_USING_MPU6XXX_ACCE
+#define PKG_USING_MPU6XXX_GYRO
+#define PKG_USING_MPU6XXX_MAG
 /* end of sensors drivers */
 
 /* touch drivers */

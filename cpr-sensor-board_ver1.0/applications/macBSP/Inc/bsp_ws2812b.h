@@ -76,10 +76,15 @@ void ws2812b_breathing_light_test(void);
 
 #elif USE_PWM_METHOD
 
-// LED 灯珠数目
-#define NUM_LEDS    30
+// 最多支持的 LED 数量
+#define MAX_LED         60
+// >50us 低电平复位（50 * 1.25us = 62.5us）
+#define RESET_PULSE     50
 
-//
+void WS2812B_Init(void);
+void WS2812B_SetPixel(uint16_t num, uint8_t r, uint8_t g, uint8_t b);  // GRB 顺序
+void WS2812B_Show(void);        // 发送一次，阻塞式（耗时很短，<3ms）
+
 
 #endif
 

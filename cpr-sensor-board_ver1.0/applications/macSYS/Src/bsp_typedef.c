@@ -21,6 +21,8 @@ FlagStruct Flag;
 rt_event_t nrf24l01_events;
 // 与rs485通讯相关的全局事件集
 rt_event_t rs485_decode_events;
+// mpu6050的相关参数结构体
+mpu6xxxStruct mpu6xxxParameter;
 
 
 void system_param_init(void)

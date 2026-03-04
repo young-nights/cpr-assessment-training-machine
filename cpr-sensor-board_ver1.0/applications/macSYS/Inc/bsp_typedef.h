@@ -38,6 +38,49 @@ extern RecordStruct Record;
 
 
 
+
+typedef struct {
+
+    rt_uint8_t  if_start_master_cali_process;       // 是否开启总校准流程            （0： 不开启       1：开启）
+    rt_uint8_t  if_finish_master_cali_process;      // 是否完成总校准流程            （0： 未完成       1：已完成）
+    rt_uint8_t  if_start_gyro_cali_process;         // 是否开启陀螺仪静态校准    （0： 不开启       1：开启）
+    rt_uint8_t  if_finish_gyro_cali_process;        // 是否完成陀螺仪静态校准    （0： 未完成       1：已完成）
+    rt_uint8_t  if_start_x_axis_positive_process;   // 是否开启x轴正方向校准      （0： 不开启       1：开启）
+    rt_uint8_t  if_finih_x_axis_negetive_process;   // 是否完成x轴正方向校准      （0： 未完成       1：已完成）
+    rt_uint8_t  if_start_y_axis_positive_process;   // 是否开启y轴正方向校准      （0： 不开启       1：开启）
+    rt_uint8_t  if_finih_y_axis_negetive_process;   // 是否完成y轴正方向校准      （0： 未完成       1：已完成）
+    rt_uint8_t  if_start_z_axis_positive_process;   // 是否开启z轴正方向校准      （0： 不开启       1：开启）
+    rt_uint8_t  if_finih_z_axis_negetive_process;   // 是否完成z轴正方向校准      （0： 未完成       1：已完成）
+
+}mpu6xxxStruct;
+extern mpu6xxxStruct mpu6xxxParameter;
+
+
+
+
+// 欧拉角数据结构体
+typedef struct {
+    float pitch;
+    float roll;
+    float yaw;
+}EulerAngles;
+extern EulerAngles carEulerAngles;
+
+
+/**
+  * @brief  枚举类型
+  * @param  None
+  */
+typedef enum
+{
+    nothing = 0,
+    x_axis_interchangeable_y_axis,
+
+}transform_coordinates_StructType;
+
+
+
+
 // 以下为移植时必须需要的结构体等的初始化---------------------------------------------------------------------------------------------------------
 typedef struct {
     rt_uint8_t   air_rate_set;      // 潮气达标率设置标志(0：未处于设置状态   1：处于设置状态)

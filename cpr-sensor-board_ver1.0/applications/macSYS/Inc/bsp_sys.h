@@ -20,8 +20,13 @@
 #include <drv_spi.h>
 #include <rtdbg.h>
 #include <ulog.h>
-#include <stdio.h>
-#include <string.h>
+
+/* 标准库头文件 */
+#include "string.h"
+#include "stdio.h"
+#include "float.h"
+#include "math.h"
+#include "stdlib.h"
 
 /* 该头文件包含了所有CubeMX自动生成的初始化引脚 */
 #include "main.h"
@@ -44,6 +49,14 @@
 #include "bsp_typedef.h"
 #include "uart3_protocol.h"
 
+/* macMPU中的头文件 */
+#include "bsp_mpu6050_euler_angles.h"
+#include "bsp_mpu6050.h"
+
+
+/* Packages头文件 */
+#include "mpu6xxx.h"
+#include "mpu6xxx_reg.h"
 
 
 
