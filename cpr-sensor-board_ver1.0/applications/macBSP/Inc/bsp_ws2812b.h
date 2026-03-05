@@ -76,14 +76,24 @@ void ws2812b_breathing_light_test(void);
 
 #elif USE_PWM_METHOD
 
-// 最多支持的 LED 数量
-#define MAX_LED         60
-// >50us 低电平复位（50 * 1.25us = 62.5us）
-#define RESET_PULSE     50
+#define LED_COUNT 10  // LED 数量
+#define BITS_PER_LED 24  // 每个 LED 24 比特 (GRB)
+#define RESET_BITS 50  // 复位脉冲 (至少 50μs, 对应 ~40 比特)
 
-void WS2812B_Init(void);
-void WS2812B_SetPixel(uint16_t num, uint8_t r, uint8_t g, uint8_t b);  // GRB 顺序
-void WS2812B_Show(void);        // 发送一次，阻塞式（耗时很短，<3ms）
+#define PWM_HI 60  // '1' 比特占空比 (2/3 * 90)
+#define PWM_LO 30  // '0' 比特占空比 (1/3 * 90)
+#define PWM_RESET 0  // 复位低电平
+
+typedef struct {
+    uint8_t g;  // Green
+    uint8_t r;  // Red
+    uint8_t b;  // Blue
+} ws_rgb_t;
+extern ws_rgb_t leds[LED_COUNT];
+
+void ws2812b_init(void);
+void ws2812b_update(void);
+void ws2812b_set_color(uint16_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t brightness);
 
 
 #endif

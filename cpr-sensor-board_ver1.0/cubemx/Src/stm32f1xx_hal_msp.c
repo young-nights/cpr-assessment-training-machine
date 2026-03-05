@@ -23,7 +23,7 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
-extern DMA_HandleTypeDef hdma_tim1_ch1;
+
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */

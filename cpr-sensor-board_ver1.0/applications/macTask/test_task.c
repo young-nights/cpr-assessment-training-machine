@@ -20,17 +20,12 @@ void Test_Thread_entry(void* parameter)
 
     for(;;)
     {
-//        if(CC6201_Hall_Sensor_Dout() == 1){
-//            Debug_LED_Ctrl(OFF);
-//        }
-//        else if(CC6201_Hall_Sensor_Dout() == 0){
-//            Debug_LED_Ctrl(ON);
-//        }
-
-        Debug_LED_Ctrl(ON);
-        rt_thread_mdelay(500);
-        Debug_LED_Ctrl(OFF);
-        rt_thread_mdelay(500);
+        if(CC6201_Hall_Sensor_Dout() == 1){
+            Debug_LED_Ctrl(ON);
+        }
+        else if(CC6201_Hall_Sensor_Dout() == 0){
+            Debug_LED_Ctrl(OFF);
+        }
     }
 }
 

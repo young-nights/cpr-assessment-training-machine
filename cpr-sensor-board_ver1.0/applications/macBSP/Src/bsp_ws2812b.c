@@ -8,7 +8,7 @@
  * 2026-01-26     Administrator       the first version
  */
 
-#include "bsp_ws2812b.h"
+#include "bsp_sys.h"
 
 #if USE_SPI_METHOD
 
@@ -337,7 +337,62 @@ MSH_CMD_EXPORT(cmd1, WS2812B_demo);
 
 #elif USE_PWM_METHOD
 
+#define TOTAL_BITS (LED_COUNT * BITS_PER_LED + RESET_BITS)
+uint16_t pwm_buffer[TOTAL_BITS];  // PWM 占空比缓冲区 (16-bit)
 
+ws_rgb_t leds[LED_COUNT] = {0};  // 全局颜色数组
+
+// 初始化
+void ws2812b_init(void) {
+    // CubeMX 已初始化 htim1 和 hdma_tim1_ch1
+    HAL_TIM_PWM_Start(&htim1, TIM_CHANNEL_1);  // 启动 PWM
+}
+
+
+// 更新 LED 数据到 PWM 缓冲区
+void ws2812b_update(void) {
+    uint32_t idx = 0;
+    for (uint16_t i = 0; i < LED_COUNT; i++) {
+        // GRB 顺序，每个颜色 8 比特，从 MSB 发送
+        for (int8_t bit = 7; bit >= 0; bit--) {
+            pwm_buffer[idx++] = (leds[i].g & (1 << bit)) ? PWM_HI : PWM_LO;
+        }
+        for (int8_t bit = 7; bit >= 0; bit--) {
+            pwm_buffer[idx++] = (leds[i].r & (1 << bit)) ? PWM_HI : PWM_LO;
+        }
+        for (int8_t bit = 7; bit >= 0; bit--) {
+            pwm_buffer[idx++] = (leds[i].b & (1 << bit)) ? PWM_HI : PWM_LO;
+        }
+    }
+    // 添加复位脉冲
+    for (uint32_t i = 0; i < RESET_BITS; i++) {
+        pwm_buffer[idx++] = PWM_RESET;
+    }
+
+    // 停止当前 DMA，然后启动新传输
+    HAL_DMA_Abort(&hdma_tim1_ch1);
+    HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t *)pwm_buffer, TOTAL_BITS);
+}
+
+
+// 设置单个 LED 颜色和亮度 (亮度 0-255)
+void ws2812b_set_color(uint16_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t brightness) {
+    if (index >= LED_COUNT) return;
+    // 应用亮度缩放
+    leds[index].r = (r * brightness) / 255;
+    leds[index].g = (g * brightness) / 255;
+    leds[index].b = (b * brightness) / 255;
+}
+
+// DMA 半传输/完成中断 (在 main.c 或 hal 中注册)
+void DMA1_Channel2_IRQHandler(void) {
+    HAL_DMA_IRQHandler(&hdma_tim1_ch1);
+}
+
+// TIM 中断 (可选，用于同步)
+void TIM1_CC_IRQHandler(void) {
+    HAL_TIM_IRQHandler(&htim1);
+}
 
 
 

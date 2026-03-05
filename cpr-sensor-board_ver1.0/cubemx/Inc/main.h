@@ -83,8 +83,6 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 #define SPHYGMUS_KEY1_GPIO_Port GPIOC
 #define MAGNETIC_CTRL_Pin GPIO_PIN_15
 #define MAGNETIC_CTRL_GPIO_Port GPIOC
-#define DEBUG_LED_Pin GPIO_PIN_0
-#define DEBUG_LED_GPIO_Port GPIOC
 #define MAGNETIC_STAT_Pin GPIO_PIN_1
 #define MAGNETIC_STAT_GPIO_Port GPIOC
 #define SPHYGMUS_CTRL2_Pin GPIO_PIN_2
@@ -93,8 +91,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 #define SPHYGMUS_CTRL1_GPIO_Port GPIOC
 #define SPI1_NSS_Pin GPIO_PIN_4
 #define SPI1_NSS_GPIO_Port GPIOA
-#define DEBUG_LEDA15_Pin GPIO_PIN_15
-#define DEBUG_LEDA15_GPIO_Port GPIOA
+#define DEBUG_LED_Pin GPIO_PIN_15
+#define DEBUG_LED_GPIO_Port GPIOA
 #define nRF24_IRQ_Pin GPIO_PIN_2
 #define nRF24_IRQ_GPIO_Port GPIOD
 #define nRF24_CSN_Pin GPIO_PIN_6
