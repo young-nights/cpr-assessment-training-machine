@@ -20,12 +20,14 @@ void Test_Thread_entry(void* parameter)
 
     for(;;)
     {
-        if(CC6201_Hall_Sensor_Dout() == 1){
-            Debug_LED_Ctrl(ON);
-        }
-        else if(CC6201_Hall_Sensor_Dout() == 0){
-            Debug_LED_Ctrl(OFF);
-        }
+//        if(CC6201_Hall_Sensor_Dout() == 1){
+//            Debug_LED_Ctrl(ON);
+//        }
+//        else if(CC6201_Hall_Sensor_Dout() == 0){
+//            Debug_LED_Ctrl(OFF);
+//        }
+
+        rt_thread_mdelay(500);
     }
 }
 
@@ -37,7 +39,7 @@ void Test_Thread_entry(void* parameter)
 rt_thread_t Test_Task_Handle = RT_NULL;
 int Test_Thread_Init(void)
 {
-    Test_Task_Handle = rt_thread_create("Test_Thread_entry", Test_Thread_entry, RT_NULL, 4096, 8, 100);
+    Test_Task_Handle = rt_thread_create("Test_Thread_entry", Test_Thread_entry, RT_NULL, 4096, 23, 100);
     /* 检查是否创建成功,成功就启动线程 */
     if(Test_Task_Handle != RT_NULL)
     {

@@ -104,7 +104,7 @@ rt_err_t adc128s102_read_and_print(adc128s_channel_et ch)
     rt_uint16_t mv = adc128s102_raw_to_mv(raw);
     float       v  = adc128s102_raw_to_volt(raw);
 
-    rt_kprintf("CH%u raw = %u  ->  %u mV  (%.3f V)\n", ch, raw, mv, v);
+//    rt_kprintf("CH%u raw = %u  ->  %u mV  (%.3f V)\n", ch, raw, mv, v);
     return RT_EOK;
 }
 

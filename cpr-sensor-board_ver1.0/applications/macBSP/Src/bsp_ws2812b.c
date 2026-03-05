@@ -326,7 +326,6 @@ int cmd1(void)
     ws2812b_set_brightness(255);
     rt_thread_mdelay(1000);
     ws2812b_set_all(WS2812B_COLOR_ORANGE);
-//    ws2812b_set_color(7,WS2812B_COLOR_ORANGE);
     ws2812b_show();
 
     return RT_EOK;

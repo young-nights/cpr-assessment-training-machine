@@ -14,15 +14,15 @@
 #include "bsp_sys.h"
 
 
-#define USE_PWM_METHOD  1
-#define USE_SPI_METHOD  0
+#define USE_PWM_METHOD  0
+#define USE_SPI_METHOD  1
 
 
 #if USE_SPI_METHOD
 
 /* SPI引脚 -- NSS */
-#define     WS2812B_NSS_PORT     SPI1_NSS_GPIO_Port
-#define     WS2812B_NSS_PIN      SPI1_NSS_Pin
+#define     WS2812B_NSS_PORT     SPI2_NSS_GPIO_Port
+#define     WS2812B_NSS_PIN      SPI2_NSS_Pin
 
 
 #define     WS2812B_NSS_SET(bit) if(bit) \

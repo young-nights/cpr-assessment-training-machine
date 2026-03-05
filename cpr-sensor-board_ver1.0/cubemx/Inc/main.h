@@ -39,6 +39,7 @@ extern "C" {
 extern ADC_HandleTypeDef hadc1;
 
 extern SPI_HandleTypeDef hspi1;
+extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi3;
 
 extern TIM_HandleTypeDef htim1;
@@ -61,6 +62,7 @@ void MX_ADC1_Init(void);
 void MX_USART3_UART_Init(void);
 void MX_USART2_UART_Init(void);
 void MX_TIM1_Init(void);
+void MX_SPI2_Init(void);
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
@@ -91,6 +93,8 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 #define SPHYGMUS_CTRL1_GPIO_Port GPIOC
 #define SPI1_NSS_Pin GPIO_PIN_4
 #define SPI1_NSS_GPIO_Port GPIOA
+#define SPI2_NSS_Pin GPIO_PIN_14
+#define SPI2_NSS_GPIO_Port GPIOB
 #define DEBUG_LED_Pin GPIO_PIN_15
 #define DEBUG_LED_GPIO_Port GPIOA
 #define nRF24_IRQ_Pin GPIO_PIN_2

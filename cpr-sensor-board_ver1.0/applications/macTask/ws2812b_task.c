@@ -11,7 +11,7 @@
 #include "bsp_sys.h"
 
 
-
+#if USE_PWM_METHOD
 
 static void ws2812b_thread_entry(void *parameter) {
     ws2812b_init();
@@ -47,3 +47,4 @@ int WS2812b_Thread_Init(void)
 }
 INIT_APP_EXPORT(WS2812b_Thread_Init);
 
+#endif
