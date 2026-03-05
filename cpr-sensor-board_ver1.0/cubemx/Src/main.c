@@ -579,6 +579,7 @@ void MX_GPIO_Init(void)
 
 /* USER CODE END 4 */
 
+
 #ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number

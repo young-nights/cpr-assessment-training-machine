@@ -369,8 +369,6 @@ void ws2812b_update(void) {
         pwm_buffer[idx++] = PWM_RESET;
     }
 
-    // 停止当前 DMA，然后启动新传输
-    HAL_DMA_Abort(&hdma_tim1_ch1);
     HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t *)pwm_buffer, TOTAL_BITS);
 }
 

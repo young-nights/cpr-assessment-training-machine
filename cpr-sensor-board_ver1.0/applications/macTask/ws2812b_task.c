@@ -18,9 +18,8 @@ static void ws2812b_thread_entry(void *parameter) {
     while (1) {
         // 示例：设置第 0 个 LED 为红色，亮度 50%
         ws2812b_set_color(0, 255, 0, 0, 128);
-        // 设置其他 LED...
-        ws2812b_update();  // 更新 LED
-        rt_thread_mdelay(1000);  // 延时 1s
+        ws2812b_update();
+        rt_thread_mdelay(1000);
     }
 }
 
