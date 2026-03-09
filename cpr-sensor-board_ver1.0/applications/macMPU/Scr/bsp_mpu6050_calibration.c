@@ -23,6 +23,23 @@ typedef struct {
 mpu6xxx_calib_data mpu6050_cali;
 
 
+// 建议把这些极值和计数器做成 static 或全局
+static int16_t accel_cali_min[3] = {32767, 32767, 32767};
+static int16_t accel_cali_max[3] = {-32768, -32768, -32768};
+static uint8_t accel_cali_count = 0;
+
+
+// 可选：每次开始校准前重置（可以另外写一个开始校准的函数调用）
+void mpu6xxx_accel_cali_reset(void)
+{
+    for(int i = 0; i < 3; i++) {
+        accel_cali_min[i] = 32767;
+        accel_cali_max[i] = -32768;
+    }
+    accel_cali_count = 0;
+}
+
+
 /* 陀螺仪校准函数（需静止放置） */
 extern rt_err_t mpu6xxx_get_gyro_raw(struct mpu6xxx_device *dev, struct mpu6xxx_3axes *gyro);
 rt_err_t bsp_mpu6xxx_calibrate_gyro(struct mpu6xxx_device *dev, mpu6xxx_calib_data *calib)
@@ -60,77 +77,84 @@ rt_err_t bsp_mpu6xxx_calibrate_gyro(struct mpu6xxx_device *dev, mpu6xxx_calib_da
 
 
 
+
+
+
 /* 加速度计六面校准函数 */
 extern rt_err_t mpu6xxx_get_accel_raw(struct mpu6xxx_device *dev, struct mpu6xxx_3axes *accel);
 rt_err_t mpu6xxx_calibrate_accel_6side(struct mpu6xxx_device *dev, mpu6xxx_calib_data *calib, rt_uint8_t sideValue)
 {
     struct mpu6xxx_3axes accel;
-    int16_t min[3], max[3];
-    static uint8_t caliCnt = 0;
+    int16_t local_min[3] = {32767, 32767, 32767};
+    int16_t local_max[3] = {-32768, -32768, -32768};
 
-
-    // 初始化极值
-    for(int i=0; i<3; i++) {
-        min[i] = 32767;
-        max[i] = -32768;
-    }
-
-    // 提示用户旋转设备
-    rt_kprintf("开始六面校准，请依次将各面对准下方保持稳定...\n");
-
-    //--------------------------------------------------------------------------X轴正方向朝下
-    if(sideValue == MPU6xxx_Cali_Positive_X){   /*! 采集50组X轴方向朝下的三轴数据,然后更新当X轴正方向朝下时的极值数据 */
-        for(int i=0; i<50; i++){
-            mpu6xxx_get_accel_raw(dev, &accel);
-            for(int axis=0; axis<3; axis++) {   /*! 更新每个轴的极值数据 */
-                int16_t val = ((int16_t*)&accel)[axis];
-                if(val < min[axis]) min[axis] = val;
-                if(val > max[axis]) max[axis] = val;
-            }
-            rt_thread_mdelay(10);
-            if(i == 49 ){                       /*! 向APP发送X轴正方向数据采集完毕的信息 */
-                caliCnt++;
-            }
-        }
-    }
-    else if(sideValue == MPU6xxx_Cali_Negative_X){
-        for(int i = 0; i < 50; i++){
-            mpu6xxx_get_accel_raw(dev, &accel);
-            for(int axis = 0; axis < 3; axis++){
-                int16_t val = ((uint16_t*)&accel)[axis];
-                if(val < min[axis]) min[axis] = val;
-                if(val > max[axis]) max[axis] = val;
-            }
-            rt_thread_mdelay(10);
-            if(i == 49 ){                       /*! 向APP发送X轴负方向数据采集完毕的信息 */
-                caliCnt++;
-            }
-        }
+    // 打印当前面（提升用户体验）
+    const char *face_name[] = {"", " +X", " -X", " +Y", " -Y", " +Z", " -Z"};
+    if (sideValue >= 1 && sideValue <= 6) {
+        rt_kprintf("开始校准第 %d 面：%s 朝下/朝上，请保持稳定 5-10 秒...\n",accel_cali_count + 1, face_name[sideValue]);
+    } else {
+        rt_kprintf("错误：无效的面编号 %d\n", sideValue);
+        return RT_ERROR;
     }
 
 
-
-    if(caliCnt == 6){
-        // 保存极值
-        memcpy(calib->accel_min, min, sizeof(min));
-        memcpy(calib->accel_max, max, sizeof(max));
-
-        // 计算偏移和比例因子
-        int16_t offset[3] = { 0 };
-        for(int i=0; i<3; i++) {
-            // 理想情况下 (max + min)/2 = offset
-            offset[i] = (max[i] + min[i]) / 2;
+    // 采集 50 组数据，计算本面局部极值
+    for (int i = 0; i < 50; i++) {
+        if (mpu6xxx_get_accel_raw(dev, &accel) != RT_EOK) {
+            rt_kprintf("读取加速度失败！\n");
+            return RT_ERROR;
         }
 
-        // 应用校准参数
-        struct mpu6xxx_3axes accel_offset = {
-            offset[0],
-            offset[1],
-            offset[2]
-        };
-        return mpu6xxx_set_accel_offset(dev, &accel_offset);
+        // 统一用 int16_t 读取（最重要！）
+        int16_t *raw = (int16_t *)&accel;
+        for (int axis = 0; axis < 3; axis++) {
+            int16_t val = raw[axis];
+            if (val < local_min[axis]) local_min[axis] = val;
+            if (val > local_max[axis]) local_max[axis] = val;
+        }
+        rt_thread_mdelay(10);
     }
 
+    // 更新全局极值（跨所有面取最极端的）
+    for (int axis = 0; axis < 3; axis++) {
+        if (local_min[axis] < accel_cali_min[axis]) accel_cali_min[axis] = local_min[axis];
+        if (local_max[axis] > accel_cali_max[axis]) accel_cali_max[axis] = local_max[axis];
+    }
+
+    accel_cali_count++;
+    rt_kprintf("第 %d 面采集完成，总进度：%d/6\n", sideValue, accel_cali_count);
+
+    // 六面全部完成
+    if (accel_cali_count >= 6) {
+        int16_t offset[3];
+        for (int i = 0; i < 3; i++) {
+            offset[i] = (accel_cali_max[i] + accel_cali_min[i]) / 2;
+            // 可选：检查是否合理（max-min 应该接近 2g ≈ 32768）
+            int16_t range = accel_cali_max[i] - accel_cali_min[i];
+            if (range < 20000 || range > 40000) {
+                rt_kprintf("警告：轴 %d 范围异常 (%d ~ %d)\n", i, accel_cali_min[i], accel_cali_max[i]);
+            }
+        }
+
+        struct mpu6xxx_3axes accel_offset = { offset[0], offset[1], offset[2] };
+        rt_err_t ret = mpu6xxx_set_accel_offset(dev, &accel_offset);
+
+        if (ret == RT_EOK) {
+            // 保存到 calib 结构体（如果需要持久化）
+            memcpy(calib->accel_min, accel_cali_min, sizeof(accel_cali_min));
+            memcpy(calib->accel_max, accel_cali_max, sizeof(accel_cali_max));
+
+            rt_kprintf("六面校准完成！偏移值：X:%d, Y:%d, Z:%d\n",offset[0], offset[1], offset[2]);
+        } else {
+            rt_kprintf("写入加速度偏移失败！\n");
+        }
+
+        // 校准结束，重置计数器
+        accel_cali_count = 0;
+        return ret;
+    }
+
+    return RT_EOK;
 }
 
 

@@ -15,7 +15,7 @@
 
 
 int car_euler_angles_Thread_Init(void);
-
+int bsp_mpu6xxx_calibrate_Thread_Init(void);
 
 
 #endif /* APPLICATIONS_MACMPU_INC_BSP_MPU6050_EULER_ANGLES_H_ */

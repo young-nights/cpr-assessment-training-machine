@@ -54,6 +54,11 @@ int main(void)
   MX_USART2_UART_Init();
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
+
+  car_euler_angles_Thread_Init();
+  bsp_mpu6xxx_calibrate_Thread_Init();
+  mpu6xxxParameter.if_start_gyro_cali_process = 1;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */

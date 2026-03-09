@@ -48,17 +48,6 @@ char coreless_motolr_read_key2(void)
 
 
 
-void CC6201_Hall_Sensor_Ctrl(SWITCH_et sta)
-{
-    if(sta == ON){
-        HAL_GPIO_WritePin(MAGNETIC_CTRL_GPIO_Port, MAGNETIC_CTRL_Pin, GPIO_PIN_SET);
-    }
-    else if(sta == OFF){
-        HAL_GPIO_WritePin(MAGNETIC_CTRL_GPIO_Port, MAGNETIC_CTRL_Pin, GPIO_PIN_RESET);
-    }
-
-}
-
 
 char CC6201_Hall_Sensor_Dout(void)
 {

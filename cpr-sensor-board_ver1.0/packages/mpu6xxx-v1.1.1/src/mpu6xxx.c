@@ -309,7 +309,7 @@ static rt_err_t mpu6xxx_get_accel_raw(struct mpu6xxx_device *dev, struct mpu6xxx
  *
  * @return the reading status, RT_EOK reprensents  reading the data successfully.
  */
-static rt_err_t mpu6xxx_get_gyro_raw(struct mpu6xxx_device *dev, struct mpu6xxx_3axes *gyro)
+rt_err_t mpu6xxx_get_gyro_raw(struct mpu6xxx_device *dev, struct mpu6xxx_3axes *gyro)
 {
     rt_uint8_t buffer[6];
     rt_err_t res;

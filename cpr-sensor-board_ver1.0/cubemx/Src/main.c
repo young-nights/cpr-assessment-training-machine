@@ -544,7 +544,7 @@ void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, MAGNETIC_CTRL_Pin|SPHYGMUS_CTRL2_Pin|SPHYGMUS_CTRL1_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, SPHYGMUS_CTRL2_Pin|SPHYGMUS_CTRL1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, SPI1_NSS_Pin|DEBUG_LED_Pin, GPIO_PIN_RESET);
@@ -557,13 +557,6 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
   GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : MAGNETIC_CTRL_Pin */
-  GPIO_InitStruct.Pin = MAGNETIC_CTRL_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(MAGNETIC_CTRL_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : MAGNETIC_STAT_Pin */
   GPIO_InitStruct.Pin = MAGNETIC_STAT_Pin;

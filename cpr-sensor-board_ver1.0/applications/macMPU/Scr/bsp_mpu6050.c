@@ -60,7 +60,7 @@ struct mpu6xxx_device *mpu6050_dev;
 
 int BSP_MPU6050_Init(void)
 {
-    mpu6050_dev = mpu6xxx_init(MPU6XXX_DEVICE_NAME, RT_NULL);
+    mpu6050_dev = mpu6xxx_init(MPU6050_DEVICE_NAME, RT_NULL);
     if (mpu6050_dev == RT_NULL)
     {
         rt_kprintf("mpu6050_dev init failed\n");
@@ -71,6 +71,5 @@ int BSP_MPU6050_Init(void)
     }
     return RT_EOK;
 }
-
 
 

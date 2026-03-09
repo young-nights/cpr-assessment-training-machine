@@ -145,6 +145,9 @@ void calculate_euler_angles(struct mpu6xxx_device *dev, EulerAngles *angles)
 EulerAngles carEulerAngles;
 void car_euler_angles_thread_entry(void* parameter)
 {
+    // 初始化MPU6050
+    BSP_MPU6050_Init();
+
 #define USER_PRINTF_EULER_ANGELES 1
     while(1)
     {
