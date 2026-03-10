@@ -96,12 +96,13 @@ extern "C"
  *                 such as     #define BSP_I2C1_SCL_PIN    GET_PIN(port, pin)   ->   GET_PIN(C, 11)
  *                             #define BSP_I2C1_SDA_PIN    GET_PIN(port, pin)   ->   GET_PIN(C, 12)
  */
-
+// MPU6050
 #define BSP_USING_I2C1
 #ifdef BSP_USING_I2C1
 #define BSP_I2C1_SCL_PIN    GET_PIN(B, 0)
 #define BSP_I2C1_SDA_PIN    GET_PIN(C, 5)
 #endif
+
 
 /*-------------------------- I2C CONFIG END --------------------------*/
 
