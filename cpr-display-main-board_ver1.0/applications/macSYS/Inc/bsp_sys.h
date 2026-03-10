@@ -36,6 +36,7 @@
 #include "bsp_rs485_dev.h"
 #include "bsp_rs485_message.h"
 #include "bsp_wt588d.h"
+#include "bsp_hard.h"
 
 /* macNRF文件 */
 #include "bsp_nrf24l01_debug.h"

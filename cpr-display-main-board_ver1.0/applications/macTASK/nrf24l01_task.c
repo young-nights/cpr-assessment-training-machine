@@ -352,7 +352,8 @@ int nRF24L01_Thread_Init(void)
     if(nRF24L01_Task_Handle != RT_NULL)
     {
         LOG_I("nRF24L01_Thread_entry is Succeed!! \r\n");
-        rt_thread_startup(nRF24L01_Task_Handle);
+//        rt_thread_suspend(nRF24L01_Task_Handle);
+//        rt_thread_startup(nRF24L01_Task_Handle);
     }
     else {
         LOG_E("nRF24L01_Thread_entry is Failed \r\n");
@@ -363,7 +364,8 @@ int nRF24L01_Thread_Init(void)
     if(nRF24L01_Decode_Handle != RT_NULL)
     {
         LOG_I("nRF24L01_Decode_entry is Succeed!! \r\n");
-        rt_thread_startup(nRF24L01_Decode_Handle);
+//        rt_thread_suspend(nRF24L01_Decode_Handle);
+//        rt_thread_startup(nRF24L01_Decode_Handle);
     }
     else {
         LOG_E("nRF24L01_Decode_entry is Failed \r\n");
@@ -373,17 +375,16 @@ int nRF24L01_Thread_Init(void)
     if(nRF24L01_Data_Transmit_Task_Handle != RT_NULL)
     {
         LOG_I("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Succeed!! \r\n");
-        rt_thread_startup(nRF24L01_Data_Transmit_Task_Handle);
+//        rt_thread_suspend(nRF24L01_Task_Handle);
+//        rt_thread_startup(nRF24L01_Data_Transmit_Task_Handle);
     }
     else {
         LOG_E("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Failed \r\n");
     }
 
-
-
     return RT_EOK;
 }
-INIT_APP_EXPORT(nRF24L01_Thread_Init);
+//INIT_APP_EXPORT(nRF24L01_Thread_Init);
 
 
 

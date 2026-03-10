@@ -29,7 +29,7 @@ typedef struct {
     rt_uint8_t  nRF24_tx_pending;                // 接收到信号后，发送回调
     rt_uint8_t  mode_data_in;                    // 数据模式(0：未进行数据传输   1：考核模式   2：竞赛模式    3：训练模式)
     rt_uint8_t  touch_set_cnt;                   // 按下次数：设置按键
-
+    rt_uint8_t  wired_connect_flag;              // 有线连接（0：无线连接   1：有线连接）
 }RecordStruct;
 extern RecordStruct Record;
 
@@ -119,6 +119,7 @@ typedef struct {
 
     uint8_t  press_rate;        // 按压达标率 (%)     0~100
     uint8_t  tidal_rate;        // 潮气达标率 (%)     0~100
+
 } Mode_Params_t;
 
 
@@ -134,8 +135,26 @@ typedef struct {
 extern System_Config_t MySysCfg;
 
 
+
+typedef enum {
+    CONN_WIRED      = 0,   // 有线优先，nRF 应关闭/挂起
+    CONN_WIRELESS   = 1,   // 无线模式，nRF 应运行
+    CONN_UNKNOWN    = 2    // 初始/过渡状态
+} conn_state_t;
+
+
+// ---------------------------------------------------------------------------------------------------
+extern rt_thread_t nRF24L01_Task_Handle;
+extern rt_thread_t nRF24L01_Decode_Handle;
+extern rt_thread_t nRF24L01_Data_Transmit_Task_Handle;
+
+
+
+
+
 void system_params_init(void);
 void system_events_init(void);
+
 
 
 #endif /* APPLICATIONS_MACSYS_INC_BSP_TYPEDEF_H_ */
