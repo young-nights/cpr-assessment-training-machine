@@ -37,18 +37,24 @@
 #define WT588D_CMD_LOOP_PLAYBACK        0xF2
 #define WT588D_CMD_STOP_PLAYING         0xFE
 
-#define WT588D_ADDR_VOICE_0             0x00
-#define WT588D_ADDR_VOICE_1             0x01
-#define WT588D_ADDR_VOICE_2             0x02
-#define WT588D_ADDR_VOICE_3             0x03
-#define WT588D_ADDR_VOICE_4             0x04
-#define WT588D_ADDR_VOICE_5             0x05
-#define WT588D_ADDR_VOICE_6             0x06
-#define WT588D_ADDR_VOICE_7             0x07
-#define WT588D_ADDR_VOICE_8             0x08
-#define WT588D_ADDR_VOICE_9             0x09
-#define WT588D_ADDR_VOICE_10            0x0A
-#define WT588D_ADDR_VOICE_11            0x0B
+#define WT588D_ADDR_VOICE_0             0x00    // 欢迎使用心肺复苏训练系统
+#define WT588D_ADDR_VOICE_1             0x01    // 竞赛模式
+#define WT588D_ADDR_VOICE_2             0x02    // 开始工作
+#define WT588D_ADDR_VOICE_3             0x03    // 复位
+#define WT588D_ADDR_VOICE_4             0x04    // 考核模式
+#define WT588D_ADDR_VOICE_5             0x05    // 训练模式
+#define WT588D_ADDR_VOICE_6             0x06    // 进入设置模式，请设置工作时间，达标率等参数
+#define WT588D_ADDR_VOICE_7             0x07    // 退出设置模式
+#define WT588D_ADDR_VOICE_8             0x08    // 正在打印成绩单，请等候
+#define WT588D_ADDR_VOICE_9             0x09    // 打印完成
+#define WT588D_ADDR_VOICE_10            0x0A    // 按压不足
+#define WT588D_ADDR_VOICE_11            0x0B    // 按压过大
+#define WT588D_ADDR_VOICE_12            0x0C    // 位置错误
+#define WT588D_ADDR_VOICE_13            0x0D    // 吹气过大
+#define WT588D_ADDR_VOICE_14            0x0E    // 气体进胃
+#define WT588D_ADDR_VOICE_15            0x0F    // 吹气不足
+#define WT588D_ADDR_VOICE_16            0x10    // 时间到，操作结束
+
 
 //--------------------------------------------------------------------------------------------------------
 void WT588D_Delay_us(uint32_t us);

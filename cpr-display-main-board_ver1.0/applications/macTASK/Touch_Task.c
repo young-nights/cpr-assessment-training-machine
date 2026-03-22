@@ -159,6 +159,7 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
         MySysCfg.setting_mode = 0;
 
         // 语音播报：开始工作
+        WT588D_Set_Cmd(WT588D_ADDR_VOICE_2);
 
         // 开始状态下，除了开始LED，把其他灯都先熄灭
         LED_On(LED_Name_Start);
@@ -180,6 +181,7 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
         MySysCfg.start_press_cnt = 0;
         MySysCfg.reset_press_cnt = 1;
         // 语音播报：复位
+        WT588D_Set_Cmd(WT588D_ADDR_VOICE_3);
 
         // 复位状态下，除了复位LED，把其他灯都先熄灭
         LED_Off(LED_Name_Start);
@@ -196,6 +198,8 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
     {
         MySysCfg.current_mode = MODE_TRAIN;
         // 语音播报：训练模式
+        WT588D_Set_Cmd(WT588D_ADDR_VOICE_5);
+
         LED_On(LED_Name_Train);
         LED_Off(LED_Name_Assess);
         LED_Off(LED_Name_Competition);
@@ -205,6 +209,7 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
     {
         MySysCfg.current_mode = MODE_ASSESS;
         // 语音播报：考核模式
+        WT588D_Set_Cmd(WT588D_ADDR_VOICE_4);
         LED_Off(LED_Name_Train);
         LED_On(LED_Name_Assess);
         LED_Off(LED_Name_Competition);
@@ -214,6 +219,7 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
     {
         MySysCfg.current_mode = MODE_COMPETE;
         // 语音播报：竞赛模式
+        WT588D_Set_Cmd(WT588D_ADDR_VOICE_1);
         LED_Off(LED_Name_Train);
         LED_Off(LED_Name_Assess);
         LED_On(LED_Name_Competition);
@@ -225,12 +231,14 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
         if(Record.touch_set_cnt == 1){
             MySysCfg.setting_mode = 1;
             // 语音播报：进入设置模式，请设置工作时间、达标率等参数
+            WT588D_Set_Cmd(WT588D_ADDR_VOICE_6);
             LED_On(LED_Name_Setting);
         }
         else{
             Record.touch_set_cnt = 0;
             MySysCfg.setting_mode = 0;
             // 语音播报：退出设置模式
+            WT588D_Set_Cmd(WT588D_ADDR_VOICE_7);
             LED_Off(LED_Name_Setting);
         }
     }
@@ -240,12 +248,14 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
         if(Record.touch_set_cnt == 1){
             MySysCfg.setting_mode = 1;
             // 语音播报：进入设置模式，请设置工作时间、达标率等参数
+            WT588D_Set_Cmd(WT588D_ADDR_VOICE_6);
             LED_On(LED_Name_Setting);
         }
         else{
             Record.touch_set_cnt = 0;
             MySysCfg.setting_mode = 0;
             // 语音播报：退出设置模式
+            WT588D_Set_Cmd(WT588D_ADDR_VOICE_7);
             LED_Off(LED_Name_Setting);
         }
     }
@@ -255,12 +265,14 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
         if(Record.touch_set_cnt == 1){
             MySysCfg.setting_mode = 1;
             // 语音播报：进入设置模式，请设置工作时间、达标率等参数
+            WT588D_Set_Cmd(WT588D_ADDR_VOICE_6);
             LED_On(LED_Name_Setting);
         }
         else{
             Record.touch_set_cnt = 0;
             MySysCfg.setting_mode = 0;
             // 语音播报：退出设置模式
+            WT588D_Set_Cmd(WT588D_ADDR_VOICE_7);
             LED_Off(LED_Name_Setting);
         }
     }

@@ -20,16 +20,26 @@
 void WT588D_Thread_entry(void* parameter)
 {
 
+    static char wt_start = 0;
+
     WT588D_RST_L();
     rt_thread_mdelay(10);
     WT588D_RST_H();
     rt_thread_mdelay(30);
 
+
+
     for(;;)
     {
-        WT588D_Set_Cmd(WT588D_ADDR_VOICE_1);
-        rt_thread_mdelay(90);
-        WT588D_Set_Volume(WT588D_CMD_VOLUME_LEVEL7);
+
+        if(wt_start == 0)
+        {
+            wt_start = 1;
+            WT588D_Set_Cmd(WT588D_ADDR_VOICE_0);
+            rt_thread_mdelay(90);
+            WT588D_Set_Volume(WT588D_CMD_VOLUME_LEVEL7);
+        }
+
 #if 0
         if(WT588D_Busy_Check() == 1){
             rt_kprintf("PRINTF:%d. The voice is pausing now\r\n", Record.kprintf_cnt++);
@@ -66,7 +76,7 @@ int WT588D_Thread_Init(void)
 
     return RT_EOK;
 }
-//INIT_APP_EXPORT(WT588D_Thread_Init);
+INIT_APP_EXPORT(WT588D_Thread_Init);
 
 
 
