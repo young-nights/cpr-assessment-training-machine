@@ -32,7 +32,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* EN_AA */
     param->en_aa.p0 = 1;
-    param->en_aa.p1 = 1;
+    param->en_aa.p1 = 0;
     param->en_aa.p2 = 0;
     param->en_aa.p3 = 0;
     param->en_aa.p4 = 0;
@@ -65,7 +65,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* DYNPD */
     param->dynpd.p0 = 1;
-    param->dynpd.p1 = 1;
+    param->dynpd.p1 = 0;
     param->dynpd.p2 = 0;
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
@@ -78,16 +78,14 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
 
     rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x99 };
-    rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
+    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
     for(int16_t i = 0; i < 5; i++){
         param->txaddr[i] = tx_addr[i];
         param->rx_addr_p0[i] = rx_addr_pipe0[i];
-        param->rx_addr_p1[i] = rx_addr_pipe1[i];
     }
-    param->rx_addr_p2 = 2;
-    param->rx_addr_p3 = 3;
 
+    param->rx_addr_p2 = 9;
+    param->rx_addr_p3 = 9;
     param->rx_addr_p4 = 9;
     param->rx_addr_p5 = 9;
 

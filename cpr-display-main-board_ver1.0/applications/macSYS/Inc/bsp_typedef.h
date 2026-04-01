@@ -125,7 +125,7 @@ typedef struct {
 
 typedef struct {
     System_Mode_t current_mode;     // 当前模式（默认训练）
-    uint8_t       start_status;     // 开始状态(0：未开始       1：已开始 )
+    uint8_t       start_status;     // 开始状态(0：未开始       1：已开始    2：已结束 )
     uint8_t       start_press_cnt;  // 开始按键按下次数
     uint8_t       reset_press_cnt;  // 复位按键按下次数
     uint8_t       setting_mode;     // 设置状态(0：正常模式   1：设置模式 )
