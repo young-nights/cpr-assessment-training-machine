@@ -26,10 +26,18 @@ typedef struct {
     rt_uint16_t  kprintf_cnt;                    // 用于打印序列
     rt_uint16_t  ulog_cnt;                       // 用于日志序列
     //------------------------------------------------------------
-    rt_uint8_t  nRF24_tx_pending;                // 接收到信号后，发送回调
     rt_uint8_t  mode_data_in;                    // 数据模式(0：未进行数据传输   1：考核模式   2：竞赛模式    3：训练模式)
     rt_uint8_t  touch_set_cnt;                   // 按下次数：设置按键
     rt_uint8_t  wired_connect_flag;              // 有线连接（0：无线连接   1：有线连接）
+
+    uint8_t     sensor_connect_pending;          // Sensor 连接请求待处理
+    uint8_t     remote_connect_pending;          // Remote 连接请求待处理
+    uint8_t     sensor_connected;                // Sensor 是否已连接
+    uint8_t     remote_connected;                // Remote 是否已连接
+    uint32_t    last_sensor_heartbeat;           // Sensor 最后心跳时间戳
+    uint32_t    last_remote_heartbeat;           // Remote 最后心跳时间戳
+    uint8_t     last_connect_src;                // 最后一次收到连接请求的来源（0:none 1: sensor 2:remote 3:main）
+
 }RecordStruct;
 extern RecordStruct Record;
 

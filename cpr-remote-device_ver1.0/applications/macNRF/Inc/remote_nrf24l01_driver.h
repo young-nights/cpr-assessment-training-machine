@@ -8,10 +8,11 @@
  * 2025-09-03     18452       the first version
  */
 #ifndef APPLICATIONS_MACBSP_BSP_NRF24L01_DRIVER_H_
+
 #define APPLICATIONS_MACBSP_BSP_NRF24L01_DRIVER_H_
 
 #include "bsp_sys.h"
-#include "bsp_nrf24l01_spi.h"
+#include <remote_nrf24l01_spi.h>
 
 
 // 以下是一些模式的枚举 ---------------------------------------------------------------------------------------------

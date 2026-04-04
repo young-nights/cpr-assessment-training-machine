@@ -1,4 +1,6 @@
 /*
+#include <mainboard_nrf24l01_driver.h>
+#include <mianboard_nrf24l01_driver.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -7,11 +9,7 @@
  * Date           Author       Notes
  * 2025-09-12     18452       the first version
  */
-#include "bsp_nrf24l01_message.h"
-
-
-
-
+#include <mainboard_nrf24l01_message.h>
 
 uint16_t CrcCalc_Crc16Modbus(uint8_t *dat,uint8_t len)
 {
@@ -19,7 +17,7 @@ uint16_t CrcCalc_Crc16Modbus(uint8_t *dat,uint8_t len)
     uint16_t    buffer;
     volatile    uint8_t i = 0, j = 0;
     for(i = 0; i < len; i++){
-        buffer = dat[i];                            // 把数据取出来放在缓冲区
+        buffer = dat[i];
         CRC_index ^= buffer;
         for(j = 0; j < 8; j++){
             if(CRC_index & 0x0001){
@@ -37,15 +35,6 @@ uint16_t CrcCalc_Crc16Modbus(uint8_t *dat,uint8_t len)
 
 
 
-/****
- * @brief 构建nRF24L01的数据包
- * @param cmd_type  --> 帧类型
- *        cmd_status--> 帧状态
- *        *data     --> 数据指针
- *        data_len  --> 数据长度
- *        *out_frame--> 数据包缓冲数组指针
- * @return 总帧长
- */
 rt_uint8_t nrf24l01_build_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *data, uint8_t data_len,uint8_t *out_frame)
 {
     rt_uint8_t  index = 0;
@@ -72,24 +61,48 @@ rt_uint8_t nrf24l01_build_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *da
 
 
 
-/**
- * @brief 尝试获取一条指令
- * @param command 指令存放指针
- * @return 获取的指令长度
- * @retval 0 没有获取到指令
- */
+rt_uint8_t nrf24l01_build_sensor_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *data, uint8_t data_len,uint8_t *out_frame)
+{
+    rt_uint8_t  index = 0;
+    rt_uint16_t crc = 0;
+
+    out_frame[index++] = 0x55;
+    out_frame[index++] = 0xAA;
+    out_frame[index++] = 4 + data_len; // 长度 = ID(2) + cmd_type + cmd_status + data
+    out_frame[index++] = DEVICE_SENSOR_ID_H;
+    out_frame[index++] = DEVICE_SENSOR_ID_L;
+    out_frame[index++] = cmd_type;
+    out_frame[index++] = cmd_status;
+
+    for(uint8_t i = 0; i < data_len; i++){
+        out_frame[index++] = data[i];
+    }
+
+    crc = CrcCalc_Crc16Modbus(&out_frame[2], index - 2);
+    out_frame[index++] = (crc >> 8) & 0xFF;
+    out_frame[index++] = crc & 0xFF;
+
+    return index; // 返回总帧长
+}
+
+
+
+
+
 static uint8_t  Decode_Step = 0;
 static uint8_t  CMD_Length = 0;
 static uint8_t  CMD_buffer[30] = {0};
 static uint8_t  CMD_DataCnt = 0;
 static uint8_t  CRC16_H,CRC16_L = 0;
 static uint16_t CRC16_Value = 0;
-uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLength)
+uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLength, cpr_src_type_t *out_src)
 {
+
     uint8_t i = 0;
+    *out_src = SRC_UNKNOWN;
+
     /* 如果未处理的数据长度小于指令长度 则不可能有完整的指令 */
-    if(cmdLength < CMD_MINI_LENGTH)
-    {
+    if(cmdLength < CMD_MINI_LENGTH){
         return CMD_ERROR;
     }
 
@@ -98,37 +111,21 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLe
     /*****************                第一步数据解析               ****************************/
     if(Decode_Step == Decode_Step_0)
     {
-        if(*cmdBuf != 0x55)
-        {
-            /* 然后跳出此次for循环，直接进入下一次循环 */
-            return CMD_ERROR;
-        }
-        else
-        {
-            /* 正确的话数据解析第一步完成，进行变量赋值 */
-            Decode_Step = Decode_Step_1;
-        }
+        if(*cmdBuf != 0x55)return CMD_ERROR;
+        Decode_Step = Decode_Step_1;
     }
     /*****************                第二步数据解析               ****************************/
     if(Decode_Step == Decode_Step_1)
     {
-        if(*(cmdBuf + Decode_Step_1) != 0xAA)
-        {
-            /* 包头的第二个数据不是0xAA -- 给步骤变量赋0值，重新回到0x55判断 */
+        if(*(cmdBuf + Decode_Step_1) != 0xAA){
             Decode_Step = Decode_Step_0;
-            /* 然后直接跳出本次循环，重新进入 */
             return CMD_ERROR;
         }
-        else
-        {
-            /* 正确的话数据解析第二步完成，进行变量赋值 */
-            Decode_Step = Decode_Step_2;
-        }
+        Decode_Step = Decode_Step_2;
     }
     /*****************                第三步数据解析               ****************************/
     if(Decode_Step == Decode_Step_2)
     {
-        /* 获取指令长度数据（除指令包头的2个字节，长度1字节以及CRC校验的2字节以外的长度） */
         CMD_Length = *(cmdBuf + Decode_Step_2);
         CMD_DataCnt = 0;
         CMD_buffer[CMD_DataCnt] = CMD_Length;
@@ -138,36 +135,26 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLe
     /*****************                第四步数据解析               ****************************/
     if(Decode_Step == Decode_Step_3)
     {
-        /* 对比设备码ID高位进行判断 */
-        if(*(cmdBuf + Decode_Step_3) != DEVICE_ID_H)
-        {
-            Decode_Step = Decode_Step_0;
-            CMD_DataCnt = 0;
-            return CMD_ERROR;
-        }
-        else
-        {
-            CMD_buffer[CMD_DataCnt] = *(cmdBuf + Decode_Step_3);
-            CMD_DataCnt++;
+        if(*(cmdBuf + 3) == DEVICE_ID_H && *(cmdBuf + 4) == DEVICE_ID_L) {
+            *out_src = SRC_FROM_REMOTE;
+            CMD_buffer[CMD_DataCnt++] = *(cmdBuf + 3);
             Decode_Step = Decode_Step_4;
+        }
+        else if(*(cmdBuf + 3) == DEVICE_SENSOR_ID_H && *(cmdBuf + 4) == DEVICE_SENSOR_ID_L) {
+            *out_src = SRC_FROM_SENSOR;
+            CMD_buffer[CMD_DataCnt++] = *(cmdBuf + 3);
+            Decode_Step = Decode_Step_4;
+        }
+        else {
+            Decode_Step = Decode_Step_0;
+            return CMD_ERROR;
         }
     }
     /*****************                第五步数据解析               ****************************/
     if(Decode_Step == Decode_Step_4)
     {
-        /* 对比设备码ID低位进行判断 */
-        if(*(cmdBuf + Decode_Step_4) != DEVICE_ID_L)
-        {
-            Decode_Step = Decode_Step_0;
-            CMD_DataCnt = 0;
-            return CMD_ERROR;
-        }
-        else
-        {
-            CMD_buffer[CMD_DataCnt] = *(cmdBuf + Decode_Step_4);
-            CMD_DataCnt++;
-            Decode_Step = Decode_Step_5;
-        }
+        CMD_buffer[CMD_DataCnt++] = *(cmdBuf + 4);
+        Decode_Step = Decode_Step_5;
     }
     /*****************                第六步数据解析               ****************************/
     if(Decode_Step == Decode_Step_5)
@@ -190,7 +177,7 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLe
         CRC16_Value = CrcCalc_Crc16Modbus(CMD_buffer, CMD_Length + 1);
         if(((CRC16_H << 8) | CRC16_L) == CRC16_Value)
         {
-            nrf24l01_protocol_operation(CMD_buffer);
+            nrf24l01_protocol_operation(CMD_buffer, *out_src);   // 传入来源
             return CMD_TRUE;
         }
     }
@@ -199,53 +186,63 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLe
 
 
 
-/**
- * @brief   解析数据域指令，执行响应的函数
- * @param   CmdBuf  数据域存放的指针
- * @retval  void
- */
-void nrf24l01_protocol_operation(uint8_t* CmdBuf)
+
+void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
 {
+    uint8_t cmd_type = *(CmdBuf + 3);
+    uint8_t cmd      = *(CmdBuf + 5);
+
+    LOG_I   ("Receive from %s, cmd_type=0x%02X, cmd=0x%02X",
+            (src == SRC_FROM_SENSOR) ? "Sensor" :
+            (src == SRC_FROM_REMOTE) ? "Remote" : "Unknown",
+            cmd_type, cmd);
+
     /*以 06 00 61 31 02 01 01 数据域指令为例*/
     /*长度 + 设备ID_H + 设备ID_L + 指令类型 + 指令状态 + 实际指令宏 + 指令数据 */
-    switch(*(CmdBuf + 3))
+    switch(cmd_type)
     {
-
-        /*********************************************************************************/
-        /*    控制指令码 0x31  */
-        /*********************************************************************************/
         case FRAME_TYPE_ACT:
         {
-            switch(*(CmdBuf + 5))
+            switch(cmd)
             {
                 //----------------------------------------------------------------------------------------------------
                 case FRAME_NRF24_CONNECT_CTRL_PANEL_CMD:
                 {
-                    LOG_I("Receive: Connect succeed.");
-                    Record.nrf_if_connected = 1;
+                    LOG_I("Receive Connect request from %s",
+                          (src == SRC_FROM_SENSOR) ? "Sensor" : "Remote");
+
+
+                    if(src == SRC_FROM_SENSOR) {
+                        Record.sensor_connect_pending = 1;
+                        Record.sensor_connected = 1;
+                        Record.last_sensor_heartbeat = rt_tick_get();
+                    } else if(src == SRC_FROM_REMOTE) {
+                        Record.remote_connect_pending = 1;
+                        Record.remote_connected = 1;
+                        Record.last_remote_heartbeat = rt_tick_get();
+                    }
                 }break;
                 //----------------------------------------------------------------------------------------------------
-                case FRAME_NRF24_MODE_DATA_IN_CMD:
-                {
-                    LOG_I("Receive: FRAME_NRF24_MODE_DATA_IN_CMD.");
-                    Record.mode_data_in_set = 3; // 退出重发
-                }break;
-                //----------------------------------------------------------------------------------------------------
-                case FRAME_NRF24_MODE_DATA_OUT_CMD:
-                {
-                    LOG_I("Receive: FRAME_NRF24_MODE_DATA_OUT_CMD.");
-                    Record.mode_data_in_set = 3; // 退出重发
-                }break;
-                //----------------------------------------------------------------------------------------------------
-                case FRAME_NRF24_PRESS_LED_CTRL_CMD:
-                {
-                  LOG_I("Receive: FRAME_NRF24_PRESS_LED_CTRL_CMD.");
-                  Record.set_press_led = *(CmdBuf + 6);
-                  Record.set_press_led_color = *(CmdBuf + 7);
-                  if(nrf24l01_events != RT_NULL){
-                      rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_BODY_LED);
-                  }
-                }break;
+//                // 接收来自 remote 的 模式控制指令
+//                case FRAME_NRF24_MODE_DATA_IN_CMD:
+//                {
+//                    LOG_I("Receive: Mode Data In.");
+//                    Record.mode_data_in = *(CmdBuf + 6);
+//                    if(nrf24l01_events != RT_NULL){
+//                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_DATA_IN);
+//                    }
+//                }break;
+//                //----------------------------------------------------------------------------------------------------
+//                case FRAME_NRF24_MODE_DATA_OUT_CMD:
+//                {
+//                    LOG_I("Receive: Mode Data Out.");
+//                    Record.mode_data_in = 0;
+//                    if(nrf24l01_events != RT_NULL){
+//                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_DATA_OUT);
+//                    }
+//
+//                }break;
+
 
                 default:    break;
             }
@@ -267,40 +264,40 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf)
  * @param   order   指令码
  * @retval  None
  */
-void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num)
+void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
 {
     uint8_t emptyBuf[20] = {0};
     uint8_t frame_package[30] = { 0 };
     uint8_t package_len = 0;
     switch(order)
     {
-        // 0x31指令集-----------------------------------------------------------------------------------------------------------------
-
-        case Order_nRF24L01_ASK_Connect_Control_Panel:
+        //  回复请求连接指令： 55 AA 05 00 04 31 01 91 7D
+        case Order_nRF24L01_ACK_Connect_Control_Panel:
         {
             rt_memset(emptyBuf, 0, sizeof(emptyBuf));
             emptyBuf[0] = FRAME_NRF24_CONNECT_CTRL_PANEL_CMD;
-            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ASK,emptyBuf,1,frame_package);
-            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
-            Record.nrf_sending = 1;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
+            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
         }break;
 
 
-        case Order_nRF24L01_ASK_Data_Mode_In:
+        //  响应进入数据模式设置指令：55 AA 05 00 04 31 02 90 3D
+        case Order_nRF24L01_ACK_Mode_Data_In:
         {
             rt_memset(emptyBuf, 0, sizeof(emptyBuf));
             emptyBuf[0] = FRAME_NRF24_MODE_DATA_IN_CMD;
-            emptyBuf[1] = Record.mode_data_in;
-            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
-            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
+            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
         }break;
 
-        case Order_nRF24L01_ASK_Data_Mode_Out:
+
+        //  响应进入数据模式设置指令：55 AA 05 00 04 31 03 50 FC
+        case Order_nRF24L01_ACK_Mode_Data_Out:
         {
             rt_memset(emptyBuf, 0, sizeof(emptyBuf));
             emptyBuf[0] = FRAME_NRF24_MODE_DATA_OUT_CMD;
-            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 1, frame_package);
-            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
+            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
         }break;
 
 

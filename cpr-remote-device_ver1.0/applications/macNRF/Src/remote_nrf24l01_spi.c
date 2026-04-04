@@ -1,4 +1,5 @@
 /*
+#include <remote_nrf24l01_spi.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -7,7 +8,7 @@
  * Date           Author       Notes
  * 2025-07-29     Administrator       the first version
  */
-#include <bsp_nrf24l01_spi.h>
+#include "remote_nrf24l01_spi.h"
 #include <rtdbg.h>
 
 

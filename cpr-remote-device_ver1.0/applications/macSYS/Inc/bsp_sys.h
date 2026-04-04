@@ -36,10 +36,9 @@
 #include "st7789_driver.h"
 #include "st7789_spi.h"
 /* macNRF 头文件 */
-#include "bsp_nrf24l01_driver.h"
-#include "bsp_nrf24l01_spi.h"
-#include "bsp_nrf24l01_message.h"
-#include "bsp_nrf24l01_debug.h"
+#include <remote_nrf24l01_driver.h>
+#include <remote_nrf24l01_spi.h>
+#include <remote_nrf24l01_message.h>
 /* macSYS 头文件 */
 #include "bsp_typedef.h"
 
