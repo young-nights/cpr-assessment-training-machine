@@ -1,4 +1,5 @@
 /*
+#include <remote_nrf24l01_driver.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -8,7 +9,7 @@
  * 2025-11-02     Administrator       the first version
  */
 #include "bsp_sys.h"
-#include "bsp_nrf24l01_driver.h"
+#include "setup_scr_screen.h"
 
 #define DBG_TAG "nRF24"
 #define DBG_LVL DBG_LOG
@@ -24,6 +25,20 @@ rt_sem_t nrf24_send_sem = RT_NULL;
 rt_sem_t nrf24_irq_sem = RT_NULL;
 /* 定义为全局变量 */
 nrf24_t _nrf24 = NULL;
+
+
+/* Remote 内部状态机 */
+typedef enum {
+    REMOTE_NRF_DISCONNECTED = 0,
+    REMOTE_NRF_CONNECTING,
+    REMOTE_NRF_CONNECTED,
+} remote_nrf_state_t;
+
+
+static remote_nrf_state_t nrf_state = REMOTE_NRF_DISCONNECTED;
+static rt_tick_t last_heartbeat_tick = 0;
+static uint16_t heartbeat_seq = 0;
+
 /**
   * @brief  This thread entry is used for nRF24L01
   * @retval void
@@ -35,10 +50,9 @@ void nRF24L01_Thread_entry(void* parameter)
     _nrf24 = malloc(sizeof(nrf24_t));
     if (_nrf24 == NULL) {
         LOG_E("LOG:%d. nrf24 malloc error.",Record.ulog_cnt++);
+        return;
     }
-    else{
-        LOG_I("LOG:%d. nrf24 malloc successful.",Record.ulog_cnt++);
-    }
+    LOG_I("LOG:%d. nrf24 malloc successful.",Record.ulog_cnt++);
 
 
     /* 1. 创建二值信号量 */
@@ -61,7 +75,7 @@ void nRF24L01_Thread_entry(void* parameter)
 
 
     /* 2. 获取中断引脚编号 */
-    _nrf24->port_api.nRF24L01_IRQ_Pin_Num = GET_PIN(D, 2);
+    _nrf24->port_api.nRF24L01_IRQ_Pin_Num = GET_PIN(B, 10);
 
 
     /* 3. 初始化SPI */
@@ -96,7 +110,7 @@ void nRF24L01_Thread_entry(void* parameter)
         LOG_I("LOG:%d. nRF24L01 check spi hardware successful.",Record.ulog_cnt++);
     }
 
-
+    /* 8~15. 初始化流程（掉电 → 解锁 → 更新寄存器 → 清空 FIFO 等） */
     /* 8. 先进入掉电模式 */
     _nrf24->nrf24_ops.nrf24_reset_ce();
     nRF24L01_Enter_Power_Down_Mode(_nrf24);
@@ -131,23 +145,19 @@ void nRF24L01_Thread_entry(void* parameter)
     nRF24L01_Enter_Power_Up_Mode(_nrf24);
     _nrf24->nrf24_ops.nrf24_set_ce();
     LOG_I("LOG:%d. Successfully initialized",Record.ulog_cnt++);
-    rt_kprintf("running transmitter.\r\n");
 
-    rt_uint8_t lll = 0;
+    /* ====================== 主循环（状态机） ====================== */
     for(;;)
     {
         /* 尚未连接则持续广播 */
         if(Record.nrf_if_connected == 0){
             /* ----------  1. PTX 发送  ---------- */
-            if(lll == 0){
-                _nrf24->nrf24_ops.nrf24_reset_ce();
-                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-                nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel,NRF24_PIPE_2);
-                _nrf24->nrf24_ops.nrf24_set_ce();
-                rt_thread_mdelay(1);
-                _nrf24->nrf24_ops.nrf24_reset_ce();
-                lll = 1;
-            }
+            _nrf24->nrf24_ops.nrf24_reset_ce();
+            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+            nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel,NRF24_PIPE_2);
+            _nrf24->nrf24_ops.nrf24_set_ce();
+            rt_thread_mdelay(2);
+            _nrf24->nrf24_ops.nrf24_reset_ce();
 
             /* ----------  2. 立即进入 PRX 接收窗口  ---------- */
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);          /* 切 PRX */
@@ -169,13 +179,9 @@ void nRF24L01_Thread_entry(void* parameter)
                     len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
                     nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
 
-                    if(nrf24l01_portocol_get_command(rec_data, len) == CMD_TRUE)
-                    {
-                        LOG_I("Protocol parse succeed.");
-                    }
-                    else
-                    {
-                        LOG_W("Protocol parse failed.");
+                    cpr_src_type_t src = SRC_UNKNOWN;
+                    if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
+                        LOG_I("Remote received ACK from Main");
                     }
 
                     uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
@@ -183,40 +189,12 @@ void nRF24L01_Thread_entry(void* parameter)
                         _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
                     }
                 }
-
-                /* 4.2 发送成功 */
-                if(_nrf24->nrf24_flags.status & NRF24BITMASK_TX_DS)
-                {
-                    rt_thread_mdelay(100);
-                    LOG_I("TX done.");
-                }
-
-                /* 4.3 重发超限 */
-                 if(_nrf24->nrf24_flags.status & NRF24BITMASK_MAX_RT)
-                 {
-                     nRF24L01_Flush_TX_FIFO(_nrf24);
-                     LOG_W("TX timeout.");
-                 }
-            }
-            else
-            {
-                // 超时重新请求
-                LOG_W("RX window timeout.");
-                lll = 0;
-                if(lll == 0){
-                    _nrf24->nrf24_ops.nrf24_reset_ce();
-                    nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-                    nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel,NRF24_PIPE_2);
-                    _nrf24->nrf24_ops.nrf24_set_ce();
-                    rt_thread_mdelay(1);
-                    _nrf24->nrf24_ops.nrf24_reset_ce();
-                    lll = 1;
-                }
-
             }
             /* ----------  5. 窗口结束，切回 PTX  ---------- */
             _nrf24->nrf24_ops.nrf24_reset_ce();
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+
+            rt_thread_mdelay(150);
         }
         /* 已连接后的业务循环（示例：每 400 ms 心跳） */
         else
@@ -230,11 +208,65 @@ void nRF24L01_Thread_entry(void* parameter)
 
 
 
+
+
+void nRF24L01_Decode_Thread_entry(void* parameter)
+{
+
+    rt_uint32_t recved = 0;
+    rt_err_t nrf_event_result;
+
+    for(;;)
+    {
+        if(Record.mode_data_in_set == 1){
+            nrf24l01_order_to_pipe(_nrf24 ,Order_nRF24L01_ASK_Data_Mode_In, NRF24_PIPE_2);
+        }
+        else if(Record.mode_data_in_set == 0){
+            nrf24l01_order_to_pipe(_nrf24 ,Order_nRF24L01_ASK_Data_Mode_Out, NRF24_PIPE_2);
+        }
+
+        //---------------------------------------------------------------------------------------------------
+        /* 处理事件集：来自协议解析线程触发的各种命令事件 */
+        nrf_event_result = rt_event_recv(   nrf24l01_events,
+                                            EVENT_NRF24_ACK_BODY_LED,
+                                            RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR,
+                                            RT_WAITING_NO,
+                                            &recved);
+
+        if(nrf_event_result == RT_EOK)
+        {
+            if(recved & EVENT_NRF24_ACK_BODY_LED){
+                /* 处理圆圈LED颜色更新事件 */
+                if(Record.set_press_led == 0)
+                {
+                    /* 如果索引为0，表示不亮，跳过更新或设置为白色 */
+                    /* 这里可以选择跳过，或者将所有圆圈设置为白色 */
+                }
+                else if(Record.set_press_led >= 1 && Record.set_press_led <= 7)
+                {
+                    /* 使用接收到的索引和颜色更新对应的圆圈 */
+                    /* Record.set_press_led: 1-7 对应 Circle_Name_Body1 到 Circle_Name_Body7 */
+                    /* Record.set_press_led_color: 0-3 对应 CIRCLE_COLOR_WHITE/RED/YELLOW/GREEN */
+                    update_circle_by_index(&guider_lvgl, Record.set_press_led, Record.set_press_led_color);
+                }
+            }
+        }
+
+        rt_thread_mdelay(50);
+    }
+}
+
+
+
+
+
+
 /**
   * @brief  This is a Initialization for nRF24L01
   * @retval int
   */
 rt_thread_t nRF24L01_Task_Handle = RT_NULL;
+rt_thread_t nRF24L01_Decode_Task_Handle = RT_NULL;
 int nRF24L01_Thread_Init(void)
 {
     nRF24L01_Task_Handle = rt_thread_create("nRF24L01_Thread_entry", nRF24L01_Thread_entry, RT_NULL, 4096, 9, 100);
@@ -248,9 +280,21 @@ int nRF24L01_Thread_Init(void)
         LOG_E("LOG:%d. nRF24L01_Thread_entry is Failed",Record.ulog_cnt++);
     }
 
+
+    nRF24L01_Decode_Task_Handle = rt_thread_create("nRF24L01_Decode_Thread_entry", nRF24L01_Decode_Thread_entry, RT_NULL, 4096, 9, 50);
+    /* 检查是否创建成功,成功就启动线程 */
+    if(nRF24L01_Decode_Task_Handle != RT_NULL)
+    {
+        LOG_I("[nRF24L01]nRF24L01_Decode_Thread_entry is Succeed!! \r\n");
+        rt_thread_startup(nRF24L01_Decode_Task_Handle);
+    }
+    else {
+        LOG_E("[nRF24L01]nRF24L01_Decode_Thread_entry is Failed \r\n");
+    }
+
     return RT_EOK;
 }
-//INIT_APP_EXPORT(nRF24L01_Thread_Init);
+INIT_APP_EXPORT(nRF24L01_Thread_Init);
 
 
 

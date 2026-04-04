@@ -1,4 +1,5 @@
 /*
+#include <mainboard_nrf24l01_driver.h>
 #include <mianboard_nrf24l01_driver.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
@@ -9,7 +10,6 @@
  * 2025-09-02     Administrator       the first version
  */
 #include "bsp_sys.h"
-#include "bsp_nrf24l01_driver.h"
 
 /* 前向声明一下nrf24l01的事件回调句柄 */
 const static struct nrf24_callback g_cb;
@@ -173,20 +173,13 @@ void nRF24L01_Thread_entry(void* parameter)
                  uint8_t len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
                  LOG_I("ACK Receive length = %d. \n",len);
                  nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
-                 if(nrf24l01_portocol_get_command(rec_data,len) == CMD_TRUE){
-                     LOG_I("ACK Protocol parse succeed.\n");
-                 }
-                 else{
-                     LOG_W("ACK Protocol parse failed.\n");
-                 }
 
-                 if(nrf24l01_portocol_get_sensor_command(rec_data,len) == CMD_TRUE){
-                     LOG_I("ACK sensor protocol parse succeed.\n");
+                 cpr_src_type_t src = SRC_UNKNOWN;
+                 if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
+                     LOG_I("ACK Protocol parse succeed from %s",(src==SRC_FROM_SENSOR)?"Sensor":"Remote");
+                 } else {
+                     LOG_W("ACK Protocol parse failed");
                  }
-                 else{
-                     LOG_W("ACK sensor protocol parse failed.\n");
-                 }
-
 
                  if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
                      _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
@@ -205,40 +198,44 @@ void nRF24L01_Thread_entry(void* parameter)
          // 4. 角色 = 接收端（PRX）
          if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX)
          {
-             // 4.1 分析哪条信道接收的数据
+             // 分析哪条信道接收的数据 -----------------------------------------------------------------
              uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
-             if(pipe == 0x07){
-                 LOG_I("RX FIFO Empty.\n");
-             }
-             else if(pipe == 0x06){
-                 LOG_I("Not used.\n");
+             if(pipe == 0x07 || pipe == 0x06) {
+                 LOG_I("RX FIFO Empty or Not used.\n");
              }
              else{
                  LOG_I("Data pipe number(p%d).\n",pipe);
              }
 
-             // pipe0 接收到数据 是 sensor板发送过来的-----------------------------------------------------
-             if(pipe == 0){
+             // 根据 Pipe 自动识别来源（Pipe1 = Sensor）-----------------------------------------------------
+                 cpr_src_type_t src = SRC_UNKNOWN;
+                 if(pipe == 1) {
+                     src = SRC_FROM_SENSOR;
+                 } else if(pipe == 2) {
+                     src = SRC_FROM_REMOTE;
+                 }
+
+             // ------------------------------------------------------------------------------------
+             if(src != SRC_UNKNOWN) {
                  uint8_t data_buf[32];
                  uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-                 LOG_I("Receive length = %d. \n",length);
+                 LOG_I("Receive length = %d from %s (Pipe%d)", length,
+                       (src==SRC_FROM_SENSOR)?"Sensor":"Remote", pipe);
+
                  nRF24L01_Read_Rx_Payload(_nrf24, data_buf, length);
 
-                 if(nrf24l01_portocol_get_command(data_buf,length) == CMD_TRUE){
-                     LOG_I("Protocol parse succeed.\n");
-                 }
-                 else{
-                     LOG_W("Protocol parse failed.\n");
+                 // 使用我们修改后的统一解析函数
+                 if(nrf24l01_portocol_get_command(data_buf, length, &src) == CMD_TRUE) {
+                     LOG_I("Protocol parse succeed from %s",
+                           (src==SRC_FROM_SENSOR)?"Sensor":"Remote");
+                 } else {
+                     LOG_W("Protocol parse failed");
                  }
 
-                 if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
+                 if(_nrf24->nrf24_cb.nrf24l01_rx_ind) {
                      _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, data_buf, length, pipe);
                  }
              }
-
-             // ------------------------------------------------------------------------------------
-
-
          }
         rt_thread_mdelay(500);
     }
@@ -259,22 +256,50 @@ void nRF24L01_Decode_entry(void* parameter)
 
     for(;;)
     {
-        //---------------------------------------------------------------------------------------------------
-        /* 处理连接应答的 PTX 短暂切换（发送 ACK 连接帧） */
-        if (Record.nRF24_tx_pending) {
-            Record.nRF24_tx_pending = 0;              /* 先清标志，防止重入 */
+        //============================================================
+        // 1. 处理 Sensor 的连接请求 ACK
+        //============================================================
+        if (Record.sensor_connect_pending)
+        {
+            Record.sensor_connect_pending = 0;
 
             _nrf24->nrf24_ops.nrf24_reset_ce();
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
 
+            // 给 Sensor 发送 ACK → 使用 Pipe1
+            nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Connect_Control_Panel, NRF24_PIPE_1);
+
+            _nrf24->nrf24_ops.nrf24_set_ce();
+            rt_thread_mdelay(2);               // 确保发送完成
+            _nrf24->nrf24_ops.nrf24_reset_ce();
+
+            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+            _nrf24->nrf24_ops.nrf24_set_ce();
+
+            LOG_I("Sent ACK_Connect to Sensor via Pipe1");
+        }
+
+        //============================================================
+        // 2. 处理 Remote 的连接请求 ACK
+        //============================================================
+        if (Record.remote_connect_pending)
+        {
+            Record.remote_connect_pending = 0;
+
+            _nrf24->nrf24_ops.nrf24_reset_ce();
+            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+
+            // 给 Remote 发送 ACK → 使用 Pipe2
             nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Connect_Control_Panel, NRF24_PIPE_2);
 
             _nrf24->nrf24_ops.nrf24_set_ce();
-            rt_thread_mdelay(1);             /* 1 ms 足够发完 */
+            rt_thread_mdelay(2);
             _nrf24->nrf24_ops.nrf24_reset_ce();
+
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
             _nrf24->nrf24_ops.nrf24_set_ce();
-            /* 后面继续正常 PRX 窗口即可 */
+
+            LOG_I("Sent ACK_Connect to Remote via Pipe2");
         }
 
         //---------------------------------------------------------------------------------------------------

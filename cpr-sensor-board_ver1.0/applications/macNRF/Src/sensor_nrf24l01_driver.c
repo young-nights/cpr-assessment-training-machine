@@ -7,8 +7,8 @@
  * Date           Author       Notes
  * 2025-09-03     18452       the first version
  */
+#include <sensor_nrf24l01_driver.h>
 
-#include "bsp_nrf24l01_spi.h"
 
 
 
@@ -22,17 +22,18 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     rt_memset(param, 0, sizeof(struct nRF24L01_PARAMETER_STRUCT));
 
     /* CONFIG */
-    param->config.prim_rx       = ROLE_PRX;
+    param->config.prim_rx       = ROLE_PTX;
     param->config.pwr_up        = 1;
     param->config.crco          = CRC_2_BYTE;
     param->config.en_crc        = 1;
     param->config.mask_max_rt   = 0;
     param->config.mask_tx_ds    = 0;
     param->config.mask_rx_dr    = 0;
+
     /* EN_AA */
     param->en_aa.p0 = 1;
-    param->en_aa.p1 = 1;
-    param->en_aa.p2 = 1;
+    param->en_aa.p1 = 0;
+    param->en_aa.p2 = 0;
     param->en_aa.p3 = 0;
     param->en_aa.p4 = 0;
     param->en_aa.p5 = 0;
@@ -40,7 +41,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* EN_RXADDR */
     param->en_rxaddr.p0 = RT_TRUE;
     param->en_rxaddr.p1 = RT_TRUE;
-    param->en_rxaddr.p2 = RT_TRUE;
+    param->en_rxaddr.p2 = RT_FALSE;
     param->en_rxaddr.p3 = RT_FALSE;
     param->en_rxaddr.p4 = RT_FALSE;
     param->en_rxaddr.p5 = RT_FALSE;
@@ -64,8 +65,8 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* DYNPD */
     param->dynpd.p0 = 1;
-    param->dynpd.p1 = 1;
-    param->dynpd.p2 = 1;
+    param->dynpd.p1 = 0;
+    param->dynpd.p2 = 0;
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
     param->dynpd.p5 = 0;
@@ -76,18 +77,15 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->feature.en_dpl     = 1;
 
 
-    rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x99 };
-    rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
-
+    rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
+    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
     for(int16_t i = 0; i < 5; i++){
         param->txaddr[i] = tx_addr[i];
-        param->rx_addr_p0[i] = rx_addr_pipe0[i];
-        param->rx_addr_p1[i] = rx_addr_pipe1[i];
+        param->rx_addr_p1[i] = rx_addr_pipe0[i];
     }
-    param->rx_addr_p2 = 2;
-    param->rx_addr_p3 = 3;
 
+    param->rx_addr_p2 = 9;
+    param->rx_addr_p3 = 9;
     param->rx_addr_p4 = 9;
     param->rx_addr_p5 = 9;
 
@@ -432,6 +430,7 @@ void nRF24L01_Enter_Power_Up_Mode(nrf24_t nrf24)
 }
 
 
+
 /***
  * @brief 设置nRF24L01的待机模式
  * @note
@@ -574,12 +573,10 @@ int nRF24L01_Send_Packet(nrf24_t nrf24, uint8_t *data, uint8_t len, uint8_t pipe
     // 如果是接收端（PRX）
     else if(nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX && ack_mode == nRF24_RECE_IN_ACK){
         nRF24L01_Write_Tx_Payload_InAck(nrf24, pipe, data, len);
-        rt_sem_release(nrf24_send_sem);
     }
 
     return RT_EOK;
 }
-
 
 
 /**
@@ -635,9 +632,6 @@ void nRF24L01_Ensure_RWW_Features_Activated(nrf24_t nrf24)
         nrf24->nrf24_flags.activated_features = RT_TRUE;
     }
 }
-
-
-
 
 
 

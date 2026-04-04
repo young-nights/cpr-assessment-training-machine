@@ -7,8 +7,8 @@
  * Date           Author       Notes
  * 2025-07-29     Administrator       the first version
  */
-#include <bsp_nrf24l01_spi.h>
 #include <rtdbg.h>
+#include <sensor_nrf24l01_spi.h>
 
 
 #if USE_CUSTOMER_NRF24L01

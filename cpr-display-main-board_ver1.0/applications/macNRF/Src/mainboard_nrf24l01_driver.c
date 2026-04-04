@@ -7,92 +7,111 @@
  * Date           Author       Notes
  * 2025-09-03     18452       the first version
  */
-#include "bsp_nrf24l01_driver.h"
+
+#include <mainboard_nrf24l01_spi.h>
 
 
 
-
-/***
- * @brief 配置nRF24L01的参数值
- * @note  以下参数请所代表的值详见"nRF24L01P Datasheet.pdf"
+/**
+ * @brief   配置 nRF24L01 的参数值
+ * @param   param   指向 nRF24L01 参数结构体的指针
+ * @return  RT_EOK
+ * @note    以下参数的具体含义请参考《nRF24L01P Datasheet.pdf》
  */
 int nRF24L01_Param_Config(nrf24_param_t param)
 {
     RT_ASSERT(param != RT_NULL);
+
+    /* 清空参数结构体，确保所有字段初始为0 */
     rt_memset(param, 0, sizeof(struct nRF24L01_PARAMETER_STRUCT));
 
-    /* CONFIG */
-    param->config.prim_rx       = ROLE_PTX;
-    param->config.pwr_up        = 1;
-    param->config.crco          = CRC_2_BYTE;
-    param->config.en_crc        = 1;
-    param->config.mask_max_rt   = 0;
-    param->config.mask_tx_ds    = 0;
-    param->config.mask_rx_dr    = 0;
+    /* ====================== CONFIG 寄存器配置 ====================== */
+    param->config.prim_rx     = ROLE_PRX;      // PRX 模式（接收模式）
+    param->config.pwr_up      = 1;             // 上电模式
+    param->config.crco        = CRC_2_BYTE;    // CRC 长度：2 字节
+    param->config.en_crc      = 1;             // 使能 CRC 校验
+    param->config.mask_max_rt = 0;             // 不屏蔽 MAX_RT 中断
+    param->config.mask_tx_ds  = 0;             // 不屏蔽 TX_DS 中断
+    param->config.mask_rx_dr  = 0;             // 不屏蔽 RX_DR 中断
 
-    /* EN_AA */
-    param->en_aa.p0 = 1;
-    param->en_aa.p1 = 0;
-    param->en_aa.p2 = 0;
-    param->en_aa.p3 = 0;
-    param->en_aa.p4 = 0;
-    param->en_aa.p5 = 0;
+    /* ====================== EN_AA 寄存器配置 ====================== */
+    /* 使能自动应答（Auto Acknowledgment） */
+    param->en_aa.p0 = 1;   // 管道 0 使能自动应答
+    param->en_aa.p1 = 1;   // 管道 1 使能自动应答
+    param->en_aa.p2 = 1;   // 管道 2 使能自动应答
+    param->en_aa.p3 = 0;   // 管道 3 关闭自动应答
+    param->en_aa.p4 = 0;   // 管道 4 关闭自动应答
+    param->en_aa.p5 = 0;   // 管道 5 关闭自动应答
 
-    /* EN_RXADDR */
-    param->en_rxaddr.p0 = RT_TRUE;
-    param->en_rxaddr.p1 = RT_TRUE;
-    param->en_rxaddr.p2 = RT_FALSE;
-    param->en_rxaddr.p3 = RT_FALSE;
-    param->en_rxaddr.p4 = RT_FALSE;
-    param->en_rxaddr.p5 = RT_FALSE;
+    /* ====================== EN_RXADDR 寄存器配置 ====================== */
+    /* 使能接收管道 */
+    param->en_rxaddr.p0 = RT_TRUE;   // 使能接收管道 0
+    param->en_rxaddr.p1 = RT_TRUE;   // 使能接收管道 1
+    param->en_rxaddr.p2 = RT_TRUE;   // 使能接收管道 2
+    param->en_rxaddr.p3 = RT_FALSE;  // 关闭接收管道 3
+    param->en_rxaddr.p4 = RT_FALSE;  // 关闭接收管道 4
+    param->en_rxaddr.p5 = RT_FALSE;  // 关闭接收管道 5
 
-    /* SETUP_AW */
-    param->setup_aw.aw = 3;
+    /* ====================== SETUP_AW 寄存器配置 ====================== */
+    param->setup_aw.aw = 3;   // 地址宽度：5 字节（00=2字节, 01=3字节, 10=4字节, 11=5字节）
 
-    /* SET_RETR */
-    param->setup_retr.arc = 15;
-    param->setup_retr.ard = ADR_1Mbps;
+    /* ====================== SETUP_RETR 寄存器配置 ====================== */
+    param->setup_retr.arc = 15;           // 自动重发次数：最大 15 次
+    param->setup_retr.ard = ADR_1Mbps;    // 自动重发延时：1Mbps 模式下的推荐值
 
-    /* RF_CH */
-    param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
+    /* ====================== RF_CH 寄存器配置 ====================== */
+    param->rf_ch.rf_ch = 100;   // 无线频道 = 100，对应频率 2.500 GHz
 
-    /* RF_SETUP */
-    param->rf_setup.rf_pwr      = RF_POWER_0dBm;
-    param->rf_setup.rf_dr_high  = 0;
-    param->rf_setup.pll_lock    = 0;
-    param->rf_setup.rf_dr_low   = 0;
-    param->rf_setup.cont_wave   = 0;
+    /* ====================== RF_SETUP 寄存器配置 ====================== */
+    param->rf_setup.rf_pwr     = RF_POWER_0dBm;  // 输出功率：0 dBm
+    param->rf_setup.rf_dr_high = 0;              // 数据速率高位
+    param->rf_setup.rf_dr_low  = 0;              // 数据速率低位 → 当前为 1Mbps（00）
+    param->rf_setup.pll_lock   = 0;              // PLL 锁定关闭
+    param->rf_setup.cont_wave  = 0;              // 连续载波发射关闭
 
-    /* DYNPD */
-    param->dynpd.p0 = 1;
-    param->dynpd.p1 = 0;
-    param->dynpd.p2 = 0;
+    /* ====================== DYNPD 寄存器配置 ====================== */
+    /* 使能动态载荷长度（Dynamic Payload Length） */
+    param->dynpd.p0 = 1;   // 管道 0 使能动态载荷
+    param->dynpd.p1 = 1;   // 管道 1 使能动态载荷
+    param->dynpd.p2 = 1;   // 管道 2 使能动态载荷
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
     param->dynpd.p5 = 0;
 
-    /* FEATURE */
-    param->feature.en_dyn_ack = 1;
-    param->feature.en_ack_pay = 1;
-    param->feature.en_dpl     = 1;
+    /* ====================== FEATURE 寄存器配置 ====================== */
+    param->feature.en_dyn_ack = 1;   // 使能动态 ACK（无需应答的发送）
+    param->feature.en_ack_pay = 1;   // 使能 ACK 载荷（应答中携带数据）
+    param->feature.en_dpl     = 1;   // 使能动态载荷长度
 
+    /* ====================== 地址配置 ====================== */
+    /* 发送地址 (TX_ADDR) */
+    rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
 
-    rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
-    for(int16_t i = 0; i < 5; i++){
-        param->txaddr[i] = tx_addr[i];
-        param->rx_addr_p1[i] = rx_addr_pipe0[i];
+    /* 接收管道 0 地址 (RX_ADDR_P0) —— 用于接收 ACK 时必须与 TX_ADDR 相同 */
+    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
+
+    /* 接收管道 1 地址 (RX_ADDR_P1) */
+    rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
+
+    /* 接收管道 2 地址 (RX_ADDR_P2) */
+    rt_uint8_t rx_addr_pipe2[5] = { 0x55, 0x0A, 0x01, 0x89, 0x03 };
+
+    /* 填充地址 */
+    for (int16_t i = 0; i < 5; i++)
+    {
+        param->txaddr[i]     = tx_addr[i];
+        param->rx_addr_p0[i] = rx_addr_pipe0[i];
+        param->rx_addr_p1[i] = rx_addr_pipe1[i];
     }
 
-    param->rx_addr_p2 = 9;
-    param->rx_addr_p3 = 9;
-    param->rx_addr_p4 = 9;
-    param->rx_addr_p5 = 9;
+    /* 管道 2~5 地址仅使用最低字节（与 RX_ADDR_P1 高字节相同） */
+    param->rx_addr_p2 = 3;   // RX_ADDR_P3 = RX_ADDR_P1[4:1] + 0x03
+    param->rx_addr_p3 = 9;   // RX_ADDR_P3 = RX_ADDR_P1[4:1] + 0x09
+    param->rx_addr_p4 = 9;   // RX_ADDR_P4 = RX_ADDR_P1[4:1] + 0x09
+    param->rx_addr_p5 = 9;   // RX_ADDR_P5 = RX_ADDR_P1[4:1] + 0x09
 
     return RT_EOK;
-
 }
-
 
 
 
@@ -430,7 +449,6 @@ void nRF24L01_Enter_Power_Up_Mode(nrf24_t nrf24)
 }
 
 
-
 /***
  * @brief 设置nRF24L01的待机模式
  * @note
@@ -573,10 +591,12 @@ int nRF24L01_Send_Packet(nrf24_t nrf24, uint8_t *data, uint8_t len, uint8_t pipe
     // 如果是接收端（PRX）
     else if(nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX && ack_mode == nRF24_RECE_IN_ACK){
         nRF24L01_Write_Tx_Payload_InAck(nrf24, pipe, data, len);
+        rt_sem_release(nrf24_send_sem);
     }
 
     return RT_EOK;
 }
+
 
 
 /**
@@ -632,6 +652,9 @@ void nRF24L01_Ensure_RWW_Features_Activated(nrf24_t nrf24)
         nrf24->nrf24_flags.activated_features = RT_TRUE;
     }
 }
+
+
+
 
 
 

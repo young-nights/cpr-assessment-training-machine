@@ -7,7 +7,7 @@
  * Date           Author       Notes
  * 2025-09-03     18452       the first version
  */
-#include "bsp_nrf24l01_driver.h"
+#include <remote_nrf24l01_driver.h>
 
 
 
@@ -32,25 +32,25 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* EN_AA */
     param->en_aa.p0 = 1;
-    param->en_aa.p1 = 1;
+    param->en_aa.p1 = 0;
     param->en_aa.p2 = 1;
     param->en_aa.p3 = 0;
     param->en_aa.p4 = 0;
     param->en_aa.p5 = 0;
 
     /* EN_RXADDR */
-    param->en_rxaddr.p0 = RT_TRUE;
-    param->en_rxaddr.p1 = RT_TRUE;
-    param->en_rxaddr.p2 = RT_TRUE;
+    param->en_rxaddr.p0 = RT_TRUE;      // Pipe0：接收主板公共 ACK
+    param->en_rxaddr.p1 = RT_FALSE;     // 关闭 Pipe1（避免与 Sensor 冲突）
+    param->en_rxaddr.p2 = RT_TRUE;      // Pipe2：接收主板定向回复
     param->en_rxaddr.p3 = RT_FALSE;
     param->en_rxaddr.p4 = RT_FALSE;
     param->en_rxaddr.p5 = RT_FALSE;
 
     /* SETUP_AW */
-    param->setup_aw.aw = 3;
+    param->setup_aw.aw = 3;             // 5字节地址
 
     /* SET_RETR */
-    param->setup_retr.arc = 15;
+    param->setup_retr.arc = 15;         // 最大重发15次
     param->setup_retr.ard = ADR_1Mbps;
 
     /* RF_CH */
@@ -65,7 +65,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* DYNPD */
     param->dynpd.p0 = 1;
-    param->dynpd.p1 = 1;
+    param->dynpd.p1 = 0;
     param->dynpd.p2 = 1;
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
@@ -77,19 +77,29 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->feature.en_dpl     = 1;
 
 
-    rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x03 };
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x99 };
-    rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
-    for(int16_t i = 0; i < 5; i++){
-        param->txaddr[i] = tx_addr[i];
-        param->rx_addr_p0[i] = rx_addr_pipe0[i];
-        param->rx_addr_p1[i] = rx_addr_pipe1[i];
-    }
-    param->rx_addr_p2 = 2;
+    /* ==================== 地址配置（严格对齐主板） ==================== */
+    /* TX_ADDR：Remote 自己的发送地址（主板 Pipe2 对应的地址） */
+    rt_uint8_t tx_addr[5]      = { 0x55, 0x0A, 0x01, 0x89, 0x03 };
 
+    /* RX_ADDR_P0：必须与主板 TX_ADDR 一致，用于接收 ACK */
+    rt_uint8_t rx_addr_p0[5]   = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
+
+    rt_uint8_t rx_addr_p1[5]   = { 0x55, 0x0A, 0x01, 0x89, 0x09 };
+    for(int16_t i = 0; i < 5; i++) {
+        param->txaddr[i]       = tx_addr[i];
+        param->rx_addr_p0[i]   = rx_addr_p0[i];
+        param->rx_addr_p1[i]   = rx_addr_p1[i];
+    }
+
+    /* RX_ADDR_P2：接收主板定向回复（主板会用 Pipe2 发送给 Remote） */
+    param->rx_addr_p2 = 0x03;   // 与主板 RX_ADDR_P2 一致
+
+    /* 其余管道关闭或设为无效值 */
     param->rx_addr_p3 = 9;
     param->rx_addr_p4 = 9;
     param->rx_addr_p5 = 9;
+
+    LOG_I("Remote nRF24 Param Config: TX=0x03, RX_P0=0xAA, RX_P2=0x03");
 
     return RT_EOK;
 
