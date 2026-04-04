@@ -39,7 +39,6 @@
 #include "bsp_hard.h"
 
 /* macNRF文件 */
-#include "bsp_nrf24l01_debug.h"
 #include "bsp_nrf24l01_driver.h"
 #include "bsp_nrf24l01_message.h"
 #include "bsp_nrf24l01_spi.h"

@@ -81,7 +81,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
     for(int16_t i = 0; i < 5; i++){
         param->txaddr[i] = tx_addr[i];
-        param->rx_addr_p0[i] = rx_addr_pipe0[i];
+        param->rx_addr_p1[i] = rx_addr_pipe0[i];
     }
 
     param->rx_addr_p2 = 9;

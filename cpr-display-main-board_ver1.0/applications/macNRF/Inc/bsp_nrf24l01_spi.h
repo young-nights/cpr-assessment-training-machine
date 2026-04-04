@@ -8,6 +8,7 @@
  * 2025-07-29     Administrator       the first version
  */
 #ifndef APPLICATIONS_MACBSP_INC_BSP_LORA_SPI_H_
+
 #define APPLICATIONS_MACBSP_INC_BSP_LORA_SPI_H_
 #include "bsp_sys.h"
 #include "bsp_nrf24l01_driver.h"

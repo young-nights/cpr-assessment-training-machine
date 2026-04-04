@@ -1,4 +1,5 @@
 /*
+#include <mianboard_nrf24l01_driver.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -9,7 +10,6 @@
  */
 #include "bsp_sys.h"
 #include "bsp_nrf24l01_driver.h"
-
 
 /* 前向声明一下nrf24l01的事件回调句柄 */
 const static struct nrf24_callback g_cb;
@@ -217,7 +217,8 @@ void nRF24L01_Thread_entry(void* parameter)
                  LOG_I("Data pipe number(p%d).\n",pipe);
              }
 
-             if(pipe < 5){
+             // pipe0 接收到数据 是 sensor板发送过来的-----------------------------------------------------
+             if(pipe == 0){
                  uint8_t data_buf[32];
                  uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
                  LOG_I("Receive length = %d. \n",length);
@@ -234,6 +235,10 @@ void nRF24L01_Thread_entry(void* parameter)
                      _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, data_buf, length, pipe);
                  }
              }
+
+             // ------------------------------------------------------------------------------------
+
+
          }
         rt_thread_mdelay(500);
     }

@@ -7,8 +7,8 @@
  * Date           Author       Notes
  * 2025-09-03     18452       the first version
  */
-#include "bsp_nrf24l01_driver.h"
 
+#include "bsp_nrf24l01_spi.h"
 
 
 
