@@ -7,7 +7,7 @@
  * Date           Author       Notes
  * 2025-10-17     Administrator       the first version
  */
-#include "bsp_sys.h"
+#include <mainboard_sys.h>
 
 
 //---------------------------------------------------------------------------------------

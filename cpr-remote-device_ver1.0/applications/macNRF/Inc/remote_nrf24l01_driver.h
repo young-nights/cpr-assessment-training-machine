@@ -22,7 +22,7 @@
  * Pipe2 ~ Pipe5 : 1字节低位地址，高位公用 Pipe1 的前4字节
  * Pipe8         : 无管道
  */
-#define NRF24_DEFAULT_PIPE      NRF24_PIPE_0
+#define NRF24_DEFAULT_PIPE      NRF24_PIPE_2
 typedef enum
 {
     NRF24_PIPE_NONE = 8,

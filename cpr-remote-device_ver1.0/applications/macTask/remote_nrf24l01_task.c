@@ -37,7 +37,6 @@ typedef enum {
 
 static remote_nrf_state_t nrf_state = REMOTE_NRF_DISCONNECTED;
 static rt_tick_t last_heartbeat_tick = 0;
-static uint16_t heartbeat_seq = 0;
 
 /**
   * @brief  This thread entry is used for nRF24L01
@@ -149,60 +148,70 @@ void nRF24L01_Thread_entry(void* parameter)
     /* ====================== 主循环（状态机） ====================== */
     for(;;)
     {
-        /* 尚未连接则持续广播 */
-        if(Record.nrf_if_connected == 0){
-            /* ----------  1. PTX 发送  ---------- */
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-            nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel,NRF24_PIPE_2);
-            _nrf24->nrf24_ops.nrf24_set_ce();
-            rt_thread_mdelay(2);
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-
-            /* ----------  2. 立即进入 PRX 接收窗口  ---------- */
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);          /* 切 PRX */
-            _nrf24->nrf24_ops.nrf24_set_ce();                  /* 开始监听 */
-
-            /* ----------  3. 限时等待 IRQ（ACK 或独立回包）  ---------- */
-            rt_err_t  rx_ok = rt_sem_take(nrf24_irq_sem, 100);
-
-            /* ----------  4. 处理本次 IRQ  ---------- */
-            if(rx_ok == RT_EOK)
-            {
-                /* 读 STATUS 并清中断 */
-                _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
-                nRF24L01_Clear_IRQ_Flags(_nrf24);
-                /* 4.1 收到数据（ACK-Payload 或独立包） */
-                if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR)
-                {
-                    uint8_t len, rec_data[32];
-                    len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-                    nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
-
-                    cpr_src_type_t src = SRC_UNKNOWN;
-                    if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
-                        LOG_I("Remote received ACK from Main");
-                    }
-
-                    uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
-                    if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
-                        _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
-                    }
-                }
-            }
-            /* ----------  5. 窗口结束，切回 PTX  ---------- */
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-
-            rt_thread_mdelay(150);
-        }
-        /* 已连接后的业务循环（示例：每 400 ms 心跳） */
-        else
+        switch (nrf_state)
         {
-            /* 这里放正常双向通信代码 */
-            rt_thread_mdelay(400);
-        }
+            case REMOTE_NRF_DISCONNECTED:
+            {
+                /* 发送连接请求（必须用 Pipe2） */
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+                nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel, NRF24_PIPE_2);
+                _nrf24->nrf24_ops.nrf24_set_ce();      // 短脉冲发送
+                rt_thread_mdelay(2);
+                _nrf24->nrf24_ops.nrf24_reset_ce();
 
+                nrf_state = REMOTE_NRF_CONNECTING;
+                rt_thread_mdelay(300);                 // 避免过快重发
+            }break;
+
+            case REMOTE_NRF_CONNECTING:
+            case REMOTE_NRF_CONNECTED:
+            {
+                /* 定时心跳（800ms） */
+                if (rt_tick_get() - last_heartbeat_tick > 800) {
+                    // TODO: 后续替换为 cpr_build_packet + CMD_HEARTBEAT
+                    nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel, NRF24_PIPE_2);
+                    last_heartbeat_tick = rt_tick_get();
+                }
+
+                /* 偶尔打开短接收窗口，接收主板反馈（LED控制等） */
+                if (Record.nrf_if_connected == 1) {
+                    _nrf24->nrf24_ops.nrf24_reset_ce();
+                    nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+                    _nrf24->nrf24_ops.nrf24_set_ce();
+
+                    rt_err_t ret = rt_sem_take(nrf24_irq_sem, 80);   // 短窗口
+                    if (ret == RT_EOK) {
+                        _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
+                        nRF24L01_Clear_IRQ_Flags(_nrf24);
+
+                        if (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) {
+                            uint8_t len, rec_data[32];
+                            len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+                            nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
+
+                            cpr_src_type_t src = SRC_UNKNOWN;
+                            if (nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
+                                LOG_I("Remote received data from Main (Pipe2)");
+                            }
+
+                            uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
+                            if (_nrf24->nrf24_cb.nrf24l01_rx_ind) {
+                                _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
+                            }
+                        }
+                    }
+
+                    /* 接收窗口结束后切回 PTX */
+                    _nrf24->nrf24_ops.nrf24_reset_ce();
+                    nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+
+                }break;
+            }
+        }
+        /* 更新全局连接状态（供 LVGL 使用） */
+        Record.nrf_if_connected = (nrf_state == REMOTE_NRF_CONNECTED);
+        rt_thread_mdelay(50);   // 低占空比，节省功耗
     }
 }
 

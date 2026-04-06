@@ -7,10 +7,10 @@
  * Date           Author       Notes
  * 2025-10-16     Administrator       the first version
  */
-#ifndef APPLICATIONS_MACBSP_INC_BSP_WT588D_H_
-#define APPLICATIONS_MACBSP_INC_BSP_WT588D_H_
+#ifndef APPLICATIONS_MACBSP_INC_MAINBOARD_WT588D_H_
+#define APPLICATIONS_MACBSP_INC_MAINBOARD_WT588D_H_
 
-#include "bsp_sys.h"
+#include "mainboard_sys.h"
 
 
 //--------------------------------------------------------------------------------------------------------
@@ -69,4 +69,4 @@ void WT588D_Set_Volume(rt_uint8_t cmd);
 
 
 
-#endif /* APPLICATIONS_MACBSP_INC_BSP_WT588D_H_ */
+#endif /* APPLICATIONS_MACBSP_INC_MAINBOARD_WT588D_H_ */

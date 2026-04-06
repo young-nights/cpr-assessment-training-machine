@@ -8,7 +8,7 @@
 #ifndef MACBSP_INC_BSP_LED_H_
 
 #define MACBSP_INC_BSP_LED_H_
-#include "bsp_sys.h"
+#include "mainboard_sys.h"
 
 #define             LED_NUM             (30)
 /****************************** LED 函数宏定义***************************************/

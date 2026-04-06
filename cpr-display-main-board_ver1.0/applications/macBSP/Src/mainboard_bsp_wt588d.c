@@ -7,7 +7,7 @@
  * Date           Author       Notes
  * 2025-10-16     Administrator       the first version
  */
-#include "bsp_wt588d.h"
+#include <mainboard_wt588d.h>
 
 
 

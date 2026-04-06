@@ -7,7 +7,7 @@
  * Date           Author       Notes
  * 2025-07-17     18452       the first version
  */
-#include "bsp_sys.h"
+#include <mainboard_sys.h>
 
 #define NIXIETUBE_PRINTF_DEBUG  0
 //---------------------------------------------------------------------------------------

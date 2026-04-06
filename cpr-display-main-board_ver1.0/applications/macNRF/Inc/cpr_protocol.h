@@ -8,9 +8,10 @@
  * 2026-04-04     Administrator       the first version
  */
 #ifndef APPLICATIONS_MACNRF_INC_CPR_PROTOCOL_H_
+
 #define APPLICATIONS_MACNRF_INC_CPR_PROTOCOL_H_
 
-#include "bsp_sys.h"
+#include <macSYS/Inc/mainboard_sys.h>
 #include <rtthread.h>
 
 #define CPR_FRAME_HEAD1     0x55

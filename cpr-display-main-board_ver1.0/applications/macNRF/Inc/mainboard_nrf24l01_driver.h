@@ -11,7 +11,7 @@
 
 #define APPLICATIONS_MACBSP_BSP_NRF24L01_DRIVER_H_
 
-#include "bsp_sys.h"
+#include <macSYS/Inc/mainboard_sys.h>
 #include <macNRF/Inc/mainboard_nrf24l01_spi.h>
 
 // 以下是一些模式的枚举 ---------------------------------------------------------------------------------------------

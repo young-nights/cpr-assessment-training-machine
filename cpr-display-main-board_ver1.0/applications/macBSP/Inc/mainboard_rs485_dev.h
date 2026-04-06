@@ -5,44 +5,44 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2025-11-21     18452       the first version
+ * 2025-11-03     Administrator       the first version
  */
-#ifndef APPLICATIONS_MACBSP_INC_BSP_RS232_DEV_H_
-#define APPLICATIONS_MACBSP_INC_BSP_RS232_DEV_H_
+#ifndef APPLICATIONS_MACBSP_INC_MAINBOARD_RS485_DEV_H_
+#define APPLICATIONS_MACBSP_INC_MAINBOARD_RS485_DEV_H_
 
-#include "bsp_sys.h"
+#include "mainboard_sys.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
 
-//rs232-device-name, serial-device-name, baudrate, parity(0~2)
-#define RS232_DEV_CFG_TABLE {         \
-    {"rs232-printer", "uart4", 9600, 0 }, \
+//rs485-device-name, serial-device-name, baudrate, parity(0~2), control-pin, send-level(0~1)
+#define RS485_DEV_CFG_TABLE {                     \
+    {"rs485-1", "uart3",    115200, 0,  -1,  -1}, \
 }
 
-#define RS232_CTRL_CFG              0
-#define RS232_CTRL_SET_TMO          1
-#define RS232_CTRL_BREAK_RECV       2
-#define RS232_CTRL_SEND_THEN_RECV   3
+#define RS485_CTRL_CFG              0
+#define RS485_CTRL_SET_TMO          1
+#define RS485_CTRL_BREAK_RECV       2
+#define RS485_CTRL_SEND_THEN_RECV   3
 
 
 /**
- * @brief RS232 设备配置表项结构体
+ * @brief RS485 设备配置表项结构体
  *
- * 该结构体用于 **静态配置** 系统中所有的 RS232 设备实例。
+ * 该结构体用于 **静态配置** 系统中所有的 RS485 设备实例。
  * 通过宏 `RS485_DEV_CFG_TABLE` 展开为数组，驱动在初始化时遍历创建多个设备。
  *
  * @note 所有成员均为 **const**，存放在 Flash（.rodata）中，节省 RAM。
  */
 typedef struct {
     /**
-     * @brief RS232 设备在系统中的名字（注册到 /dev 下的设备名）
-     * @example "rs232_1", "rs232_2", "rs232_sensor"
+     * @brief RS485 设备在系统中的名字（注册到 /dev 下的设备名）
+     * @example "rs485_1", "rs485_modbus", "rs485_sensor"
      * @note 必须唯一，不能重复
      */
-    const char *rs232;
+    const char *rs485;
 
     /**
      * @brief 底层串口设备名（UART 设备）
@@ -67,7 +67,22 @@ typedef struct {
      */
     int parity;
 
-} rs232_dev_cfg_t;
+    /**
+     * @brief RS485 方向控制引脚（DE/RE 引脚）
+     * @example 45, 67, 128
+     * @note 对应 MCU 的 GPIO 引脚编号（BSP 层定义）
+     */
+    int pin;
+
+    /**
+     * @brief 发送方向控制电平
+     * @note
+     *       level = 1 : 高电平发送（DE = 1 → 发送）
+     *       level = 0 : 低电平发送（DE = 0 → 发送）
+     * @warning 必须与硬件电路匹配！
+     */
+    int level;
+} rs485_dev_cfg_t;
 
 
 /**
@@ -78,13 +93,13 @@ typedef struct {
     rt_uint8_t  databits;     // 数据位：5~8
     rt_uint8_t  parity;       // 校验：NONE, ODD, EVEN
     rt_uint8_t  stopbits;     // 停止位：1, 2
-} rs232_dev_cfg_param_t;
+} rs485_dev_cfg_param_t;
 
 
 
 
 /**
- * @brief RS232 接收超时控制参数
+ * @brief RS485 接收超时控制参数
  *
  * 用于通过 `rt_device_control(dev, RS485_CTRL_SET_TMO, &param)` 设置接收超时。
  * 适用于 Modbus、自定义协议等需要精确超时控制的场景。
@@ -118,16 +133,16 @@ typedef struct {
      * @default 10 ~ 50 ms（根据波特率调整）
      */
     int byte_tmo_ms;
-} rs232_dev_tmo_param_t;
+} rs485_dev_tmo_param_t;
 
 
 
 
 
 /**
- * @brief RS232 “发送后接收”操作参数结构体
+ * @brief RS485 “发送后接收”操作参数结构体
  *
- * 用于 `RS232_CTRL_SEND_THEN_RECV` 命令，实现：
+ * 用于 `RS485_CTRL_SEND_THEN_RECV` 命令，实现：
  *   1. 发送一帧数据
  *   2. 自动切换为接收模式
  *   3. 等待响应帧（带超时）
@@ -158,24 +173,24 @@ typedef struct {
      * @note 实际接收长度通常由底层返回（或通过 rbuf[0] 长度字段）
      */
     int rlen;
-} rs232_dev_send_then_recv_param_t;
+} rs485_dev_send_then_recv_param_t;
 
 
 
 
 
 /**
- * @brief RS232 设备私有数据结构
+ * @brief RS485 设备私有数据结构
  *
- * 继承 rt_device，扩展 RS232 专有字段。
- * 每个 RS232 设备实例对应一个该结构体。
+ * 继承 rt_device，扩展 RS485 专有字段。
+ * 每个 RS485 设备实例对应一个该结构体。
  */
 typedef struct {
     /**
      * @brief 继承 RT-Thread 通用设备结构体
      *
      * 必须是 **第一个成员**，支持类型强转：
-     *     rs232_dev_t *pdev = (rs232_dev_t *)dev;
+     *     rs485_dev_t *pdev = (rs485_dev_t *)dev;
      *
      * 包含：
      *   - type, flag, open_flag
@@ -185,32 +200,21 @@ typedef struct {
     struct rt_device parent;
 
     /**
-     * @brief 底层 RS232 实例句柄（HAL 层）
+     * @brief 底层 RS485 实例句柄（HAL 层）
      *
-     * 由 `rs232_create()` 返回，包含：
+     * 由 `rs485_create()` 返回，包含：
      *   - UART 句柄
+     *   - DE 引脚控制
      *   - DMA/中断配置
      *   - 接收缓冲环形队列
      *
      * @warning 不能直接访问，应通过 HAL 接口
      */
-    rs232_inst_t *hinst;
-} rs232_dev_t;
+    rs485_inst_t *hinst;
+} rs485_dev_t;
 
 #ifdef __cplusplus
 }
 #endif
 
-
-
-
-
-
-
-
-
-
-
-
-
-#endif /* APPLICATIONS_MACBSP_INC_BSP_RS232_DEV_H_ */
+#endif /* APPLICATIONS_MACBSP_INC_MAINBOARD_RS485_DEV_H_ */

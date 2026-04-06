@@ -7,10 +7,11 @@
  * Date           Author       Notes
  * 2025-05-15     teati       the first version
  */
-#ifndef APPLICATIONS_MACSYS_INC_BSP_TYPEDEF_H_
-#define APPLICATIONS_MACSYS_INC_BSP_TYPEDEF_H_
+#ifndef APPLICATIONS_MACSYS_INC_MAINBOARD_TYPEDEF_H_
 
-#include "bsp_sys.h"
+#define APPLICATIONS_MACSYS_INC_MAINBOARD_TYPEDEF_H_
+
+#include "mainboard_sys.h"
 
 
 /* nRF24L01 Event Group */
@@ -165,4 +166,4 @@ void system_events_init(void);
 
 
 
-#endif /* APPLICATIONS_MACSYS_INC_BSP_TYPEDEF_H_ */
+#endif /* APPLICATIONS_MACSYS_INC_MAINBOARD_TYPEDEF_H_ */

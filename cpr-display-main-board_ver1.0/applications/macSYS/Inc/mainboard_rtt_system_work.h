@@ -10,7 +10,7 @@
 #ifndef APPLICATIONS_MACAPP_INC_RTT_SYSTEM_WORK_H_
 
 #define APPLICATIONS_MACAPP_INC_RTT_SYSTEM_WORK_H_
-#include "bsp_sys.h"
+#include "mainboard_sys.h"
 
 
 
