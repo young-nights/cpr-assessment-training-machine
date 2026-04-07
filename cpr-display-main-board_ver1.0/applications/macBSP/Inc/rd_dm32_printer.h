@@ -7,10 +7,10 @@
  * Date           Author       Notes
  * 2025-11-07     18452       the first version
  */
-#ifndef APPLICATIONS_MACBSP_INC_MAINBOARD_RD_DM32_PRINTER_H_
-#define APPLICATIONS_MACBSP_INC_MAINBOARD_RD_DM32_PRINTER_H_
+#ifndef APPLICATIONS_MACBSP_INC_RD_DM32_PRINTER_H_
+#define APPLICATIONS_MACBSP_INC_RD_DM32_PRINTER_H_
 
-#include "mainboard_sys.h"
+#include "bsp_sys.h"
 
 
 /* 引脚 -- CTS */
@@ -328,4 +328,4 @@ void rd_printer_select_6X8_character_2(void);
 
 
 
-#endif /* APPLICATIONS_MACBSP_INC_MAINBOARD_RD_DM32_PRINTER_H_ */
+#endif /* APPLICATIONS_MACBSP_INC_RD_DM32_PRINTER_H_ */

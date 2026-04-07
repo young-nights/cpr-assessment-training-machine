@@ -7,7 +7,7 @@
  * Date           Author       Notes
  * 2025-11-07     18452       the first version
  */
-#include <mainboard_rd_dm32_printer.h>
+#include "rd_dm32_printer.h"
 
 
 

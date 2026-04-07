@@ -1,5 +1,4 @@
 /*
-#include <mainboard_rs485_drv.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -8,7 +7,8 @@
  * Date           Author       Notes
  * 2025-11-03     Administrator       the first version
  */
-#include "mainboard_sys.h"
+#include "bsp_sys.h"
+#include "bsp_rs485_drv.h"
 
 
 #define DBG_TAG "rs485"

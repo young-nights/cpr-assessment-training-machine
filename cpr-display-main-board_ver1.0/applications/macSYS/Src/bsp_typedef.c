@@ -8,7 +8,7 @@
  * 2025-05-15     teati       the first version
  */
 
-#include <mainboard_typedef.h>
+#include "bsp_typedef.h"
 
 
 // 与nRF24L01通讯相关的全局事件集

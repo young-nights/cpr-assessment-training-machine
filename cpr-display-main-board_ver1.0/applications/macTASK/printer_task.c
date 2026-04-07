@@ -7,7 +7,7 @@
  * Date           Author       Notes
  * 2025-11-07     18452       the first version
  */
-#include <mainboard_sys.h>
+#include "bsp_sys.h"
 
 rs232_inst_t *printer_hinst;
 

@@ -4,10 +4,9 @@
  */
 
 #ifndef APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
-
 #define APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
 
-#include <macSYS/Inc/mainboard_sys.h>
+#include "bsp_sys.h"
 
 /* ==================== 设备ID保持不变 ==================== */
 #define DEVICE_ID_H          0x00

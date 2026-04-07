@@ -7,7 +7,7 @@
  * Date           Author       Notes
  * 2025-11-11     18452       the first version
  */
-#include <mainboard_sys.h>
+#include "bsp_sys.h"
 
 
 #define TOUCH_KEY_TOTAL  14

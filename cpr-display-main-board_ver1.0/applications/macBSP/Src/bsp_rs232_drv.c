@@ -1,5 +1,4 @@
 /*
-#include <mainboard_rs232_drv.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -8,7 +7,8 @@
  * Date           Author       Notes
  * 2025-11-21     18452       the first version
  */
-#include "mainboard_sys.h"
+#include "bsp_sys.h"
+#include "bsp_rs232_drv.h"
 
 
 #define DBG_TAG "rs232"

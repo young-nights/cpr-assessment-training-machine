@@ -9,7 +9,7 @@
  * Date           Author       Notes
  * 2025-09-02     Administrator       the first version
  */
-#include <mainboard_sys.h>
+#include "bsp_sys.h"
 
 /* 前向声明一下nrf24l01的事件回调句柄 */
 const static struct nrf24_callback g_cb;

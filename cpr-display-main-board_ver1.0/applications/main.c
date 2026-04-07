@@ -1,5 +1,4 @@
 /*
-#include <mainboard__sys.h>
  * Copyright (c) 2006-2025, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -10,8 +9,7 @@
  */
 
 #include <rtthread.h>
-#include "mainboard_sys.h"
-
+#include "bsp_sys.h"
 
 #define DBG_TAG "main"
 #define DBG_LVL DBG_LOG

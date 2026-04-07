@@ -7,18 +7,25 @@
  * Date           Author       Notes
  * 2026-03-10     18452       the first version
  */
-#ifndef APPLICATIONS_MACBSP_INC_MAINBOARD_HARD_H_
-#define APPLICATIONS_MACBSP_INC_MAINBOARD_HARD_H_
-
-#include "mainboard_sys.h"
+#include "bsp_hard.h"
 
 
-
-
-
-rt_uint8_t Wired_Read_In(void);
+// 读取是否是有线输入
+rt_uint8_t Wired_Read_In(void)
+{
+    return HAL_GPIO_ReadPin(WIRED_CONNECT_CHECK_GPIO_Port, WIRED_CONNECT_CHECK_Pin);
+}
 
 
 
 
-#endif /* APPLICATIONS_MACBSP_INC_MAINBOARD_HARD_H_ */
+
+
+
+
+
+
+
+
+
+
