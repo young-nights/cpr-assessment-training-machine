@@ -28,8 +28,6 @@ mpu6xxxStruct mpu6xxxParameter;
 void system_param_init(void)
 {
     Record.nrf_if_connected = 0;
-
-    Record.menu_index = 0;
 }
 
 

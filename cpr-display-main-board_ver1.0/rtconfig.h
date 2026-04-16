@@ -67,7 +67,7 @@
 #define RT_USING_FINSH
 #define FINSH_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
-#define FINSH_THREAD_PRIORITY 20
+#define FINSH_THREAD_PRIORITY 30
 #define FINSH_THREAD_STACK_SIZE 4096
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 5
@@ -259,6 +259,10 @@
 /* HPMicro SDK */
 
 /* end of HPMicro SDK */
+
+/* FT32 HAL & SDK Drivers */
+
+/* end of FT32 HAL & SDK Drivers */
 /* end of HAL & SDK Drivers */
 
 /* sensors drivers */

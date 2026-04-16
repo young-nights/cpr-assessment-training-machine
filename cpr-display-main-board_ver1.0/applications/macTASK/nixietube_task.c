@@ -506,7 +506,7 @@ int NixieTube_Thread_Init(void)
 
     return RT_EOK;
 }
-INIT_APP_EXPORT(NixieTube_Thread_Init);
+//INIT_APP_EXPORT(NixieTube_Thread_Init);
 
 
 

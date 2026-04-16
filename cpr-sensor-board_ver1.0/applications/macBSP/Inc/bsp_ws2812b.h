@@ -12,10 +12,13 @@
 
 
 #include "bsp_sys.h"
+#include <rtthread.h>
+#include <rtdevice.h>
+#include <board.h>
+#include "stm32f1xx_hal.h"
 
-
-#define USE_PWM_METHOD  0
-#define USE_SPI_METHOD  1
+#define USE_PWM_METHOD  1
+#define USE_SPI_METHOD  0
 
 
 #if USE_SPI_METHOD
@@ -76,24 +79,29 @@ void ws2812b_breathing_light_test(void);
 
 #elif USE_PWM_METHOD
 
-#define LED_COUNT 10  // LED 数量
-#define BITS_PER_LED 24  // 每个 LED 24 比特 (GRB)
-#define RESET_BITS 50  // 复位脉冲 (至少 50μs, 对应 ~40 比特)
 
-#define PWM_HI 60  // '1' 比特占空比 (2/3 * 90)
-#define PWM_LO 30  // '0' 比特占空比 (1/3 * 90)
-#define PWM_RESET 0  // 复位低电平
 
-typedef struct {
-    uint8_t g;  // Green
-    uint8_t r;  // Red
-    uint8_t b;  // Blue
-} ws_rgb_t;
-extern ws_rgb_t leds[LED_COUNT];
+#define LED_COUNT       30          // LED数量，根据需要修改
+#define PWM_PERIOD      89          // TIM周期值 (ARR = 89, 72MHz / 90 ≈ 800kHz)
+#define PWM_HIGH_0      29          // [FIX2] '0'高电平ticks ≈0.403μs (29/90 * 1.25μs)
+#define PWM_HIGH_1      58          // [FIX2] '1'高电平ticks ≈0.806μs (58/90 * 1.25μs)
+#define RESET_PRE_MIN   50          // [FIX3] 复位前最小LED周期 (>50μs ≈50 cycles @1.25μs)
+#define RESET_POST_MIN  50          // [FIX3] 复位后最小LED周期
+#define LEDS_PER_DMA_IRQ 8          // [FIX4] 每个DMA中断处理的LED数 (中断频率减半)
 
+// 缓冲区：双缓冲 (HT/TC)，每个部分 LEDS_PER_DMA_IRQ * 24 个 uint16_t
+extern uint16_t ws2812_buffer[2 * LEDS_PER_DMA_IRQ * 24];
+
+// [FIX2] 全局信号量声明，供 ws2812b_demo_effects() 等待 DMA 完成
+extern rt_sem_t dma_complete_sem;
+
+// 函数声明
 void ws2812b_init(void);
-void ws2812b_update(void);
-void ws2812b_set_color(uint16_t index, uint8_t r, uint8_t g, uint8_t b, uint8_t brightness);
+void ws2812b_set_color(uint16_t index, uint8_t g, uint8_t r, uint8_t b);
+void ws2812b_set_all(uint8_t g, uint8_t r, uint8_t b);
+rt_err_t ws2812b_update(void);          // 非阻塞更新，返回 -RT_EBUSY 如果正在传输
+void update_sequence(uint8_t is_tc);    // HT/TC 更新逻辑
+void ws2812b_demo_effects(void);       // 演示效果函数
 
 
 #endif

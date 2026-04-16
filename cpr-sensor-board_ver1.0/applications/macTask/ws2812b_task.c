@@ -13,38 +13,42 @@
 
 #if USE_PWM_METHOD
 
-static void ws2812b_thread_entry(void *parameter) {
+void WS2812B_Thread_entry(void* parameter)
+{
+    LOG_I("WS2812B 任务线程启动");
+
     ws2812b_init();
-    while (1) {
-        // 示例：设置第 0 个 LED 为红色，亮度 50%
-        ws2812b_set_color(0, 255, 0, 0, 128);
+
+    while(1)
+    {
+        ws2812b_demo_effects();  // 运行演示效果
+        rt_thread_mdelay(500);    // 50ms循环一次
         ws2812b_update();
-        rt_thread_mdelay(1000);
     }
 }
 
-
-
 /**
-  * @brief  This is a Initialization for test func
-  * @retval int
-  */
-rt_thread_t WS2812b_Task_Handle = RT_NULL;
-int WS2812b_Thread_Init(void)
+ * @brief  WS2812B 任务线程初始化
+ * @retval int
+ */
+rt_thread_t WS2812B_Task_Handle = RT_NULL;
+int WS2812B_Thread_Init(void)
 {
-    WS2812b_Task_Handle = rt_thread_create("ws2812b_thread_entry", ws2812b_thread_entry, RT_NULL, 4096, 8, 100);
-    /* 检查是否创建成功,成功就启动线程 */
-    if(WS2812b_Task_Handle != RT_NULL)
+    // [FIX] 问题4: 线程栈从4096扩大到8192，防止DMA操作+效果函数溢出
+    WS2812B_Task_Handle = rt_thread_create("WS2812B_Thread", WS2812B_Thread_entry, RT_NULL, 8192, 9, 100);
+
+    if(WS2812B_Task_Handle != RT_NULL)
     {
-        LOG_I("LOG:%d. ws2812b_thread_entry is Succeed.",Record.ulog_cnt++);
-        rt_thread_startup(WS2812b_Task_Handle);
+        LOG_I("WS2812B 任务线程创建成功");
+        rt_thread_startup(WS2812B_Task_Handle);
     }
-    else {
-        LOG_E("LOG:%d. ws2812b_thread_entry is Failed",Record.ulog_cnt++);
+    else
+    {
+        LOG_E("WS2812B 任务线程创建失败");
     }
 
     return RT_EOK;
 }
-INIT_APP_EXPORT(WS2812b_Thread_Init);
+INIT_APP_EXPORT(WS2812B_Thread_Init);
 
 #endif

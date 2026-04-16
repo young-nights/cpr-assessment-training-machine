@@ -7,8 +7,8 @@
  * Date           Author       Notes
  * 2025-09-12     18452       the first version
  */
-#ifndef APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
-#define APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
+#ifndef APPLICATIONS_MACNRF_INC_REMOTE_NRF24L01_MESSAGE_H_
+#define APPLICATIONS_MACNRF_INC_REMOTE_NRF24L01_MESSAGE_H_
 
 #include "bsp_sys.h"
 
@@ -95,4 +95,4 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src);
 
 
 
-#endif /* APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_ */
+#endif /* APPLICATIONS_MACNRF_INC_REMOTE_NRF24L01_MESSAGE_H_ */

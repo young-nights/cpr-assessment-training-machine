@@ -1,6 +1,4 @@
 /*
-#include <mainboard_nrf24l01_driver.h>
-#include <mianboard_nrf24l01_driver.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -17,6 +15,8 @@ const static struct nrf24_callback g_cb;
 rt_sem_t nrf24_send_sem = RT_NULL;
 /* 创建nRF24L01进入中断的二值信号量 */
 rt_sem_t nrf24_irq_sem = RT_NULL;
+/* nRF24L01 操作互斥锁，防止 Thread_entry 和 Decode_entry 并发访问 */
+static rt_mutex_t nrf24_mutex = RT_NULL;
 /* 定义为全局变量 */
 nrf24_t _nrf24 = NULL;
 /**
@@ -27,13 +27,12 @@ void nRF24L01_Thread_entry(void* parameter)
 {
 
     /* 0. 给nrf24开创一个实际空间 */
-    _nrf24 = malloc(sizeof(nrf24_t));
+    _nrf24 = malloc(sizeof(struct nRF24L01_STRUCT));
     if (_nrf24 == NULL) {
         LOG_E("LOG:%d. nrf24 malloc error.",Record.ulog_cnt++);
+        return;
     }
-    else{
-        LOG_I("LOG:%d. nrf24 malloc successful.",Record.ulog_cnt++);
-    }
+    LOG_I("LOG:%d. nrf24 malloc successful.",Record.ulog_cnt++);
 
 
     /* 1. 创建二值信号量 */
@@ -52,6 +51,12 @@ void nRF24L01_Thread_entry(void* parameter)
     else{
         LOG_I("Succeed to create nrf24l01 irq semaphore.");
         _nrf24->nrf24_flags.using_irq = RT_TRUE;
+    }
+
+    /* 创建互斥锁保护 nRF24L01 硬件访问 */
+    nrf24_mutex = rt_mutex_create("nrf24_mux", RT_IPC_FLAG_PRIO);
+    if(nrf24_mutex == RT_NULL){
+        LOG_E("Failed to create nrf24 mutex.");
     }
 
 
@@ -137,6 +142,9 @@ void nRF24L01_Thread_entry(void* parameter)
             rt_sem_take(nrf24_irq_sem, RT_WAITING_FOREVER);
         }
 
+        /* 锁定互斥锁，防止 Decode_entry 同时操作 nRF24L01 */
+        if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+
         // 2. 读取status状态标志，并清除中断触发标志位
         _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
          nRF24L01_Clear_Status_Register(_nrf24, NRF24BITMASK_RX_DR | NRF24BITMASK_TX_DS | NRF24BITMASK_MAX_RT);
@@ -198,14 +206,9 @@ void nRF24L01_Thread_entry(void* parameter)
          // 4. 角色 = 接收端（PRX）
          if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX)
          {
+
              // 分析哪条信道接收的数据 -----------------------------------------------------------------
-             uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
-             if(pipe == 0x07 || pipe == 0x06) {
-                 LOG_I("RX FIFO Empty or Not used.\n");
-             }
-             else{
-                 LOG_I("Data pipe number(p%d).\n",pipe);
-             }
+             uint8_t pipe = ((_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1) ;
 
              // 根据 Pipe 自动识别来源（Pipe1 = Sensor）-----------------------------------------------------
                  cpr_src_type_t src = SRC_UNKNOWN;
@@ -219,6 +222,7 @@ void nRF24L01_Thread_entry(void* parameter)
              if(src != SRC_UNKNOWN) {
                  uint8_t data_buf[32];
                  uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+                 rt_kprintf("\n----------------------\n");
                  LOG_I("Receive length = %d from %s (Pipe%d)", length,
                        (src==SRC_FROM_SENSOR)?"Sensor":"Remote", pipe);
 
@@ -231,13 +235,13 @@ void nRF24L01_Thread_entry(void* parameter)
                  } else {
                      LOG_W("Protocol parse failed");
                  }
-
-                 if(_nrf24->nrf24_cb.nrf24l01_rx_ind) {
-                     _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, data_buf, length, pipe);
-                 }
              }
          }
-        rt_thread_mdelay(500);
+
+        /* 释放互斥锁 */
+        if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
+
+        rt_thread_mdelay(100);
     }
 }
 
@@ -257,53 +261,102 @@ void nRF24L01_Decode_entry(void* parameter)
     for(;;)
     {
         //============================================================
-        // 1. 处理 Sensor 的连接请求 ACK
+        // 1. 处理 Sensor 的连接请求 ACK（重试3次，覆盖Sensor接收窗口）
         //============================================================
         if (Record.sensor_connect_pending)
         {
             Record.sensor_connect_pending = 0;
 
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+            if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
 
-            // 给 Sensor 发送 ACK → 使用 Pipe1
-            nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Connect_Control_Panel, NRF24_PIPE_1);
+            for(int retry = 0; retry < 3; retry++)
+            {
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+                nRF24L01_Flush_TX_FIFO(_nrf24);
 
-            _nrf24->nrf24_ops.nrf24_set_ce();
-            rt_thread_mdelay(2);               // 确保发送完成
-            _nrf24->nrf24_ops.nrf24_reset_ce();
+                nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Connect_Control_Panel, NRF24_PIPE_1);
+
+                _nrf24->nrf24_ops.nrf24_set_ce();
+                rt_thread_mdelay(10);           // CE 稳定 10ms 确保发送完成
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+
+                /* ===== 每次重试后诊断 ===== */
+                uint8_t diag_status = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_STATUS);
+                uint8_t diag_observe = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_OBSERVE_TX);
+                uint8_t diag_plos = (diag_observe >> 4) & 0x0F;  // 丢包计数
+                uint8_t diag_arc  = diag_observe & 0x0F;          // 重发计数
+                uint8_t diag_fifo = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_FIFO_STATUS);
+                uint8_t diag_cfg  = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_CONFIG);
+
+                /* 读取芯片实际 TX_ADDR */
+                uint8_t diag_txaddr[5] = {0};
+                uint8_t diag_cmd = NRF24CMD_R_REG | NRF24REG_TX_ADDR;
+                _nrf24->nrf24_ops.nrf24_send_then_recv(&_nrf24->port_api, &diag_cmd, 1, diag_txaddr, 5);
+
+                /* 读取芯片实际 RX_ADDR_P1 (Sensor 地址) */
+                uint8_t diag_rxaddr_p1[5] = {0};
+                diag_cmd = NRF24CMD_R_REG | NRF24REG_RX_ADDR_P1;
+                _nrf24->nrf24_ops.nrf24_send_then_recv(&_nrf24->port_api, &diag_cmd, 1, diag_rxaddr_p1, 5);
+
+                LOG_I("DIAG retry %d: STATUS=0x%02X(MAX_RT=%d TX_DS=%d RX_DR=%d) OBSERVE=0x%02X(PLOS=%d ARC=%d) FIFO=0x%02X",
+                      retry, diag_status,
+                      (diag_status>>4)&1, (diag_status>>5)&1, (diag_status>>6)&1,
+                      diag_observe, diag_plos, diag_arc, diag_fifo);
+                LOG_I("DIAG retry %d: CONFIG=0x%02X PRIM_RX=%d TX_ADDR=%02X%02X%02X%02X%02X RX_P1=%02X%02X%02X%02X%02X",
+                      retry, diag_cfg, diag_cfg & 1,
+                      diag_txaddr[0], diag_txaddr[1], diag_txaddr[2], diag_txaddr[3], diag_txaddr[4],
+                      diag_rxaddr_p1[0], diag_rxaddr_p1[1], diag_rxaddr_p1[2], diag_rxaddr_p1[3], diag_rxaddr_p1[4]);
+                /* ===== 诊断结束 ===== */
+
+                rt_thread_mdelay(50);           // 重试间隔 50ms
+            }
 
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+            nRF24L01_Flush_RX_FIFO(_nrf24);
+            nRF24L01_Clear_IRQ_Flags(_nrf24);
             _nrf24->nrf24_ops.nrf24_set_ce();
 
-            LOG_I("Sent ACK_Connect to Sensor via Pipe1");
+            LOG_I("Sent ACK_Connect to Sensor via Pipe1 (3 retries)");
+            if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
         }
 
         //============================================================
-        // 2. 处理 Remote 的连接请求 ACK
+        // 2. 处理 Remote 的连接请求 ACK（重试3次）
         //============================================================
         if (Record.remote_connect_pending)
         {
             Record.remote_connect_pending = 0;
 
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+            if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
 
-            // 给 Remote 发送 ACK → 使用 Pipe2
-            nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Connect_Control_Panel, NRF24_PIPE_2);
+            for(int retry = 0; retry < 3; retry++)
+            {
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+                nRF24L01_Flush_TX_FIFO(_nrf24);
 
-            _nrf24->nrf24_ops.nrf24_set_ce();
-            rt_thread_mdelay(2);
-            _nrf24->nrf24_ops.nrf24_reset_ce();
+                nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Connect_Control_Panel, NRF24_PIPE_2);
+
+                _nrf24->nrf24_ops.nrf24_set_ce();
+                rt_thread_mdelay(10);
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+
+                rt_thread_mdelay(50);
+            }
 
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+            nRF24L01_Flush_RX_FIFO(_nrf24);
+            nRF24L01_Clear_IRQ_Flags(_nrf24);
             _nrf24->nrf24_ops.nrf24_set_ce();
 
-            LOG_I("Sent ACK_Connect to Remote via Pipe2");
+            LOG_I("Sent ACK_Connect to Remote via Pipe2 (3 retries)");
+            if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
         }
 
         //---------------------------------------------------------------------------------------------------
         /* 处理事件集：来自协议解析线程触发的各种命令事件 */
+        if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
         nrf_event_result = rt_event_recv( nrf24l01_events,
                                 EVENT_NRF24_ACK_MODE_DATA_IN | EVENT_NRF24_ACK_MODE_DATA_OUT,
                                 RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, // 只要有一个事件来到，就返回； 并且成功接收后，就自动清除标志
@@ -378,7 +431,7 @@ rt_thread_t nRF24L01_Decode_Handle = RT_NULL;
 rt_thread_t nRF24L01_Data_Transmit_Task_Handle = RT_NULL;
 int nRF24L01_Thread_Init(void)
 {
-    nRF24L01_Task_Handle = rt_thread_create("nRF24L01_Thread_entry", nRF24L01_Thread_entry, RT_NULL, 4096, 9, 50);
+    nRF24L01_Task_Handle = rt_thread_create("nRF24L01_Thread_entry", nRF24L01_Thread_entry, RT_NULL, 4096, 22, 50);
     if(nRF24L01_Task_Handle != RT_NULL)
     {
         LOG_I("nRF24L01_Thread_entry is Succeed!! \r\n");
@@ -388,7 +441,7 @@ int nRF24L01_Thread_Init(void)
     }
 
     //----------------------------------------------------------------------------------------------------------------
-    nRF24L01_Decode_Handle = rt_thread_create("nRF24L01_Decode_entry", nRF24L01_Decode_entry, RT_NULL, 1024, 8, 50);
+    nRF24L01_Decode_Handle = rt_thread_create("nRF24L01_Decode_entry", nRF24L01_Decode_entry, RT_NULL, 1024, 21, 50);
     if(nRF24L01_Decode_Handle != RT_NULL)
     {
         LOG_I("nRF24L01_Decode_entry is Succeed!! \r\n");
@@ -397,7 +450,7 @@ int nRF24L01_Thread_Init(void)
         LOG_E("nRF24L01_Decode_entry is Failed \r\n");
     }
     //---------------------------------------------------------------------------------------------------------------------------
-    nRF24L01_Data_Transmit_Task_Handle = rt_thread_create("nRF24L01_Data_Transmit_Thread_entry", nRF24L01_Data_Transmit_Thread_entry, RT_NULL, 2048, 10, 50);
+    nRF24L01_Data_Transmit_Task_Handle = rt_thread_create("nRF24L01_Data_Transmit_Thread_entry", nRF24L01_Data_Transmit_Thread_entry, RT_NULL, 2048, 23, 50);
     if(nRF24L01_Data_Transmit_Task_Handle != RT_NULL)
     {
         LOG_I("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Succeed!! \r\n");

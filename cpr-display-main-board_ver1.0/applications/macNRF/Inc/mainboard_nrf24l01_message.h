@@ -3,14 +3,15 @@
  * 已适配 Pipe 区分 + 来源识别
  */
 
-#ifndef APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
-#define APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
+#ifndef APPLICATIONS_MACNRF_INC_MAINBOARD_NRF24L01_MESSAGE_H_
+#define APPLICATIONS_MACNRF_INC_MAINBOARD_NRF24L01_MESSAGE_H_
 
 #include "bsp_sys.h"
 
 /* ==================== 设备ID保持不变 ==================== */
-#define DEVICE_ID_H          0x00
-#define DEVICE_ID_L          0x04
+#define DEVICE_REMOTE_ID_H   0x00
+#define DEVICE_REMOTE_ID_L   0x04
+
 #define DEVICE_SENSOR_ID_H   0x00
 #define DEVICE_SENSOR_ID_L   0x05
 
@@ -79,7 +80,7 @@ typedef enum
 
 uint16_t CrcCalc_Crc16Modbus(uint8_t *dat, uint8_t len);
 
-rt_uint8_t nrf24l01_build_frame(uint8_t cmd_type, uint8_t cmd_status,
+rt_uint8_t nrf24l01_build_remote_frame(uint8_t cmd_type, uint8_t cmd_status,
                                 uint8_t *data, uint8_t data_len, uint8_t *out_frame);
 
 rt_uint8_t nrf24l01_build_sensor_frame(uint8_t cmd_type, uint8_t cmd_status,
@@ -91,4 +92,4 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdL
 /* 协议处理函数（新增 src 参数） */
 void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src);
 
-#endif /* APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_ */
+#endif /* APPLICATIONS_MACNRF_INC_MAINBOARD_NRF24L01_MESSAGE_H_ */

@@ -7,13 +7,16 @@
  * Date           Author       Notes
  * 2025-09-12     18452       the first version
  */
-#ifndef APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
-#define APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
+#ifndef APPLICATIONS_MACNRF_INC_SENSOR_NRF24L01_MESSAGE_H_
+#define APPLICATIONS_MACNRF_INC_SENSOR_NRF24L01_MESSAGE_H_
 
 #include "bsp_sys.h"
 
-#define DEVICE_ID_H     0x00
-#define DEVICE_ID_L     0x04
+/* 前向声明，避免 circular include 导致 nrf24_t 未定义 */
+typedef struct nRF24L01_STRUCT *nrf24_t;
+
+#define DEVICE_SENSOR_ID_H     0x00
+#define DEVICE_SENSOR_ID_L     0x05
 
 /* 函数进行解析指令后的返回宏 */
 #define CMD_ERROR   0
@@ -74,11 +77,20 @@ typedef enum
 
 
 
+/* ==================== 数据来源区分（与主板统一） ==================== */
+typedef enum {
+    SRC_UNKNOWN = 0,
+    SRC_FROM_SENSOR,
+    SRC_FROM_REMOTE,
+    SRC_FROM_MAIN
+} cpr_src_type_t;
+
 uint16_t CrcCalc_Crc16Modbus(uint8_t *dat, uint8_t len);
 rt_uint8_t nrf24l01_build_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *data, uint8_t data_len,uint8_t *out_frame);
-void nrf24l01_protocol_operation(uint8_t* CmdBuf);
-uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLength);
+void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src);
+uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdLength, cpr_src_type_t *out_src);
+void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num);
 
 
 
-#endif /* APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_ */
+#endif /* APPLICATIONS_MACNRF_INC_SENSOR_NRF24L01_MESSAGE_H_ */

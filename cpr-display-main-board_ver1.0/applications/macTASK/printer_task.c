@@ -78,7 +78,7 @@ int Printer_Thread_Init(void)
 
     return RT_EOK;
 }
-INIT_APP_EXPORT(Printer_Thread_Init);
+//INIT_APP_EXPORT(Printer_Thread_Init);
 
 
 

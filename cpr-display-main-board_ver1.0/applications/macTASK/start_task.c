@@ -45,7 +45,7 @@ int start_thread_Init(void)
 
     return RT_EOK;
 }
-INIT_APP_EXPORT(start_thread_Init);
+//INIT_APP_EXPORT(start_thread_Init);
 
 
 

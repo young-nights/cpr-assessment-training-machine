@@ -57,7 +57,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* ====================== SETUP_RETR 寄存器配置 ====================== */
     param->setup_retr.arc = 15;           // 自动重发次数：最大 15 次
-    param->setup_retr.ard = ADR_1Mbps;    // 自动重发延时：1Mbps 模式下的推荐值
+    param->setup_retr.ard = ADR_2Mbps;    // 自动重发延时：1Mbps 模式下的推荐值
 
     /* ====================== RF_CH 寄存器配置 ====================== */
     param->rf_ch.rf_ch = 100;   // 无线频道 = 100，对应频率 2.500 GHz
@@ -93,9 +93,6 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* 接收管道 1 地址 (RX_ADDR_P1) */
     rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
 
-    /* 接收管道 2 地址 (RX_ADDR_P2) */
-    rt_uint8_t rx_addr_pipe2[5] = { 0x55, 0x0A, 0x01, 0x89, 0x03 };
-
     /* 填充地址 */
     for (int16_t i = 0; i < 5; i++)
     {
@@ -105,10 +102,11 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     }
 
     /* 管道 2~5 地址仅使用最低字节（与 RX_ADDR_P1 高字节相同） */
-    param->rx_addr_p2 = 3;   // RX_ADDR_P3 = RX_ADDR_P1[4:1] + 0x03
-    param->rx_addr_p3 = 9;   // RX_ADDR_P3 = RX_ADDR_P1[4:1] + 0x09
-    param->rx_addr_p4 = 9;   // RX_ADDR_P4 = RX_ADDR_P1[4:1] + 0x09
-    param->rx_addr_p5 = 9;   // RX_ADDR_P5 = RX_ADDR_P1[4:1] + 0x09
+    param->rx_addr_p2 = 0x03;   // RX_ADDR_P3 = RX_ADDR_P1[4:1] + 0x03
+
+    param->rx_addr_p3 = 0xF0;   // RX_ADDR_P3 = RX_ADDR_P1[4:1] + 0xf0
+    param->rx_addr_p4 = 0xF0;   // RX_ADDR_P4 = RX_ADDR_P1[4:1] + 0xf0
+    param->rx_addr_p5 = 0xF0;   // RX_ADDR_P5 = RX_ADDR_P1[4:1] + 0xf0
 
     return RT_EOK;
 }
@@ -231,19 +229,19 @@ int nRF24L01_Update_Parameter(nrf24_t nrf24)
 
 
     cmd = NRF24CMD_W_REG | NRF24REG_TX_ADDR;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.txaddr, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.txaddr, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P0;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p0, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p0, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P1;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p1, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p1, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P2;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p2, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p2, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P3;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p3, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p3, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P4;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p4, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p4, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P5;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p5, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p5, 1);
 
 
     return RT_EOK;

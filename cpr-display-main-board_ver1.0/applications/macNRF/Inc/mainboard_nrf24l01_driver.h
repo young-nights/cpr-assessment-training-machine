@@ -7,9 +7,9 @@
  * Date           Author       Notes
  * 2025-09-03     18452       the first version
  */
-#ifndef APPLICATIONS_MACBSP_BSP_NRF24L01_DRIVER_H_
+#ifndef APPLICATIONS_MACNRF_INC_MAINBOARD_NRF24L01_DRIVER_H_
 
-#define APPLICATIONS_MACBSP_BSP_NRF24L01_DRIVER_H_
+#define APPLICATIONS_MACNRF_INC_MAINBOARD_NRF24L01_DRIVER_H_
 
 #include "bsp_sys.h"
 #include <macNRF/Inc/mainboard_nrf24l01_spi.h>
@@ -445,4 +445,4 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num);
 
 
 
-#endif /* APPLICATIONS_MACBSP_BSP_NRF24L01_DRIVER_H_ */
+#endif /* APPLICATIONS_MACNRF_INC_MAINBOARD_NRF24L01_DRIVER_H_ */

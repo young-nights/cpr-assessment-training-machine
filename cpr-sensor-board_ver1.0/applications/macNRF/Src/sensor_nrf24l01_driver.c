@@ -31,17 +31,17 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->config.mask_rx_dr    = 0;
 
     /* EN_AA */
-    param->en_aa.p0 = 1;
-    param->en_aa.p1 = 0;
-    param->en_aa.p2 = 0;
+    param->en_aa.p0 = 1;    /* Pipe0: ACK 通道 */
+    param->en_aa.p1 = 1;    /* Pipe1: 主板定向回复 */
+    param->en_aa.p2 = 0;    /* Pipe2-5: 关闭 */
     param->en_aa.p3 = 0;
     param->en_aa.p4 = 0;
     param->en_aa.p5 = 0;
 
     /* EN_RXADDR */
-    param->en_rxaddr.p0 = RT_TRUE;
-    param->en_rxaddr.p1 = RT_TRUE;
-    param->en_rxaddr.p2 = RT_FALSE;
+    param->en_rxaddr.p0 = RT_TRUE;   /* Pipe0: ACK 接收 */
+    param->en_rxaddr.p1 = RT_TRUE;   /* Pipe1: 主板定向回复接收 */
+    param->en_rxaddr.p2 = RT_FALSE;  /* Pipe2-5: 关闭 */
     param->en_rxaddr.p3 = RT_FALSE;
     param->en_rxaddr.p4 = RT_FALSE;
     param->en_rxaddr.p5 = RT_FALSE;
@@ -51,7 +51,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* SET_RETR */
     param->setup_retr.arc = 15;
-    param->setup_retr.ard = ADR_1Mbps;
+    param->setup_retr.ard = ADR_2Mbps;
 
     /* RF_CH */
     param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
@@ -65,7 +65,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* DYNPD */
     param->dynpd.p0 = 1;
-    param->dynpd.p1 = 0;
+    param->dynpd.p1 = 1;
     param->dynpd.p2 = 0;
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
@@ -77,17 +77,29 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->feature.en_dpl     = 1;
 
 
+    /* ==================== 地址配置（严格对齐约束文件） ==================== */
+    /* TX_ADDR：Sensor 自己的发送地址 (0x01) */
     rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
+
+    /* RX_ADDR_P0：必须与主板 TX_ADDR 一致 (0xAA)，用于接收硬件 ACK */
+    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
+
+    /* RX_ADDR_P1：接收主板定向回复（主板用 Pipe1 发给 Sensor） */
+    rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
+
     for(int16_t i = 0; i < 5; i++){
         param->txaddr[i] = tx_addr[i];
-        param->rx_addr_p1[i] = rx_addr_pipe0[i];
+        param->rx_addr_p0[i] = rx_addr_pipe0[i];
+        param->rx_addr_p1[i] = rx_addr_pipe1[i];
     }
 
-    param->rx_addr_p2 = 9;
-    param->rx_addr_p3 = 9;
-    param->rx_addr_p4 = 9;
-    param->rx_addr_p5 = 9;
+    /* 管道2-5未使用 */
+    param->rx_addr_p2 = 0xF0;
+    param->rx_addr_p3 = 0xF0;
+    param->rx_addr_p4 = 0xF0;
+    param->rx_addr_p5 = 0xF0;
+
+    LOG_I("Sensor nRF24 Param Config: TX=0x01, RX_P0=0xAA, RX_P1=0x01");
 
     return RT_EOK;
 
@@ -212,19 +224,19 @@ int nRF24L01_Update_Parameter(nrf24_t nrf24)
 
 
     cmd = NRF24CMD_W_REG | NRF24REG_TX_ADDR;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.txaddr, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.txaddr, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P0;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p0, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p0, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P1;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p1, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p1, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P2;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p2, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p2, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P3;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p3, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p3, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P4;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p4, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p4, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P5;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p5, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p5, 1);
 
 
     return RT_EOK;
@@ -558,20 +570,34 @@ void NRF24L01_Set_TxAddr(nrf24_t nrf24, rt_uint8_t *addr_buf, rt_uint8_t length)
 int nRF24L01_Send_Packet(nrf24_t nrf24, uint8_t *data, uint8_t len, uint8_t pipe, ack_mode_et ack_mode)
 {
     if (len > 32){
-        LOG_E("[nRF24L01]Packet datas too large. \r\n");
+        LOG_E("[nRF24L01] Packet data too large.\r\n");
         return RT_ERROR;
     }
 
+    // ================== PTX 发送模式 ==================
+    if (nrf24->nrf24_cfg.config.prim_rx == ROLE_PTX)
+    {
+        // 如果需要指定 pipe（不同地址），先切换 TX_ADDR
+        // 注意：pipe 参数在这里实际代表“目标地址索引”，你需要提前准备好地址表
+        if (pipe != NRF24_PIPE_NONE && pipe <= 5)
+        {
+            // 示例：你需要有一个地址数组，或者根据 pipe 切换不同地址
+            // 这里假设你有一个全局或结构体里的目标地址表
+            // uint8_t target_addr[6][5] = { ... };
+            // NRF24L01_Set_TxAddr(nrf24, target_addr[pipe], 5);
+        }
 
-   // 如果是发送端（PTX）
-    if (nrf24->nrf24_cfg.config.prim_rx == ROLE_PTX && ack_mode == nRF24_SEND_NEED_ACK){
-        nRF24L01_Write_Tx_Payload_Ack(nrf24, data, len);
+        if (ack_mode == nRF24_SEND_NEED_ACK){
+            nRF24L01_Write_Tx_Payload_Ack(nrf24, data, len);
+        }
+        else if(ack_mode == nRF24_SEND_NO_ACK){
+            nRF24L01_Write_Tx_Payload_NoAck(nrf24, data, len);
+            LOG_I("Sent NO_ACK on pipe/address for target %d", pipe);
+        }
     }
-    else if(nrf24->nrf24_cfg.config.prim_rx == ROLE_PTX && ack_mode == nRF24_SEND_NO_ACK){
-        nRF24L01_Write_Tx_Payload_NoAck(nrf24, data, len);
-    }
-    // 如果是接收端（PRX）
-    else if(nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX && ack_mode == nRF24_RECE_IN_ACK){
+    // ================== PRX 写 ACK Payload ==================
+    else if(nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX && ack_mode == nRF24_RECE_IN_ACK)
+    {
         nRF24L01_Write_Tx_Payload_InAck(nrf24, pipe, data, len);
     }
 

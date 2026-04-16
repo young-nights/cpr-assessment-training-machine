@@ -24,7 +24,6 @@ typedef struct {
     rt_uint8_t  nrf_if_connected;                // 是否建立连接(0：未建立连接  1：已建立连接)
     rt_uint8_t  nrf_sending;                     // 正在发送标志(0：发送完    1：已发送)
     //------------------------------------------------------------
-    rt_uint8_t  menu_index;                      // 菜单页面索引(0：主页面  1：菜单页面  2：其他子页面)
     rt_uint16_t set_work_time;                   // 需要设置的工作时间(在设置页面设置)
     rt_uint16_t set_air_rate;                    // 需要设置的潮气达标率
     rt_uint16_t set_press_rate;                  // 需要设置的按压达标率
