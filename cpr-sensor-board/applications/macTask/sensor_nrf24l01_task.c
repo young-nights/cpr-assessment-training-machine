@@ -153,6 +153,7 @@ void nRF24L01_Thread_entry(void* parameter)
 
                 last_connect_send = rt_tick_get();
                 connect_retry_cnt++;
+                rt_kprintf("\n-------------------------------------------------------\n");
                 LOG_I("Sensor → Mainboard: Send connect request... (retry %d)", connect_retry_cnt);
 
                 /* 发送 3 次后自动进入连接状态（Mainboard 已收到即视为连接成功） */
