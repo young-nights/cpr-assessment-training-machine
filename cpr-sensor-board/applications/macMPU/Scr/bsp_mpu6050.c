@@ -63,11 +63,11 @@ int BSP_MPU6050_Init(void)
     mpu6050_dev = mpu6xxx_init(MPU6050_DEVICE_NAME, RT_NULL);
     if (mpu6050_dev == RT_NULL)
     {
-        rt_kprintf("mpu6050_dev init failed\n");
+        rt_kprintf("PRINTF:%d. mpu6050_dev init failed\n",Record.kprintf_cnt++);
         return -1;
     }
     else{
-        rt_kprintf("mpu6050_dev init succeed\n");
+        rt_kprintf("PRINTF:%d. mpu6050_dev init succeed\n",Record.kprintf_cnt++);
     }
     return RT_EOK;
 }

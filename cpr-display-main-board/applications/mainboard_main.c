@@ -29,7 +29,7 @@ extern int start_thread_Init(void);
 static conn_state_t prev_conn_state = CONN_UNKNOWN;
 // 标记是否已第一次 startup
 static rt_bool_t nrf_threads_started = RT_FALSE;
-
+static rt_bool_t nrf_threads_suspended = RT_FALSE;
 
 /**
   * @brief  The application entry point.
@@ -87,7 +87,7 @@ int main(void)
   {
     /* USER CODE END WHILE */
 
-      rt_bool_t is_wired = (Wired_Read_In() == 1);
+      rt_bool_t is_wired = Wired_Read_In();
 
       conn_state_t curr_state = is_wired ? CONN_WIRED : CONN_WIRELESS;
 
@@ -95,26 +95,15 @@ int main(void)
       {
           if(curr_state == CONN_WIRED)
           {
-              rt_kprintf("→ 有线连接，挂起 nRF 线程\n");
-              // 按优先级从高到低挂起（建议顺序：发送 → 主 → 解码）
-              if (nRF24L01_Data_Transmit_Task_Handle)
+              if (nrf_threads_started && !nrf_threads_suspended)   // 只有已经启动且没挂起时才挂起
               {
-                  rt_err_t ret = rt_thread_suspend(nRF24L01_Data_Transmit_Task_Handle);
-                  if (ret != RT_EOK) rt_kprintf("suspend transmit failed: %d\n", ret);
-              }
+                  rt_thread_suspend(nRF24L01_Data_Transmit_Task_Handle);
+                  rt_thread_suspend(nRF24L01_Decode_Handle);
+                  rt_thread_suspend(nRF24L01_Task_Handle);
 
-              if (nRF24L01_Task_Handle)
-              {
-                  rt_err_t ret = rt_thread_suspend(nRF24L01_Task_Handle);
-                  if (ret != RT_EOK) rt_kprintf("suspend main nRF failed: %d\n", ret);
+                  nrf_threads_suspended = RT_TRUE;
+                  LOG_I("nRF24L01 threads suspended.\n");
               }
-
-              if (nRF24L01_Decode_Handle)
-              {
-                  rt_err_t ret = rt_thread_suspend(nRF24L01_Decode_Handle);
-                  if (ret != RT_EOK) rt_kprintf("suspend decode failed: %d\n", ret);
-              }
-
               Record.wired_connect_flag = 1;
           }
           // CONN_WIRELESS
@@ -130,29 +119,17 @@ int main(void)
                   if (nRF24L01_Data_Transmit_Task_Handle) rt_thread_startup(nRF24L01_Data_Transmit_Task_Handle);
 
                   nrf_threads_started = RT_TRUE;
+                  nrf_threads_suspended = RT_FALSE;
                   rt_kprintf("nRF threads first startup!\n");
               }
 
-
-              // 恢复顺序建议相反：主 → 解码 → 发送（让主线程先跑起来初始化/收包）
-              if (nRF24L01_Task_Handle)
-              {
-                  rt_err_t ret = rt_thread_resume(nRF24L01_Task_Handle);
-                  if (ret != RT_EOK) rt_kprintf("resume main nRF failed: %d\n", ret);
+              if(nrf_threads_suspended == RT_TRUE){
+                  rt_thread_resume(nRF24L01_Task_Handle);
+                  rt_thread_resume(nRF24L01_Decode_Handle);
+                  rt_thread_resume(nRF24L01_Data_Transmit_Task_Handle);
+                  nrf_threads_suspended = RT_FALSE;
+                  rt_kprintf("nRF24L01 threads resumed from suspend.\n");
               }
-
-              if (nRF24L01_Decode_Handle)
-              {
-                  rt_err_t ret = rt_thread_resume(nRF24L01_Decode_Handle);
-                  if (ret != RT_EOK) rt_kprintf("resume decode failed: %d\n", ret);
-              }
-
-              if (nRF24L01_Data_Transmit_Task_Handle)
-              {
-                  rt_err_t ret = rt_thread_resume(nRF24L01_Data_Transmit_Task_Handle);
-                  if (ret != RT_EOK) rt_kprintf("resume transmit failed: %d\n", ret);
-              }
-
               Record.wired_connect_flag = 0;
           }
           prev_conn_state = curr_state;

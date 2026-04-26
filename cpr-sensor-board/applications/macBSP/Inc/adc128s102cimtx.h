@@ -25,20 +25,20 @@
 
 typedef enum
 {
-    ADC128S_Channel_1 = 0,
+    ADC128S_Channel_0 = 0,
+    ADC128S_Channel_1,
     ADC128S_Channel_2,
     ADC128S_Channel_3,
     ADC128S_Channel_4,
     ADC128S_Channel_5,
     ADC128S_Channel_6,
-    ADC128S_Channel_7,
-    ADC128S_Channel_8
+    ADC128S_Channel_7
 }adc128s_channel_et;
 
 
 
-
-
+int adc128s102_spi_init(void);
+int adc128s102_thread_init(void);
 
 
 

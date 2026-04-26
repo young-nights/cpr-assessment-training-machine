@@ -10,14 +10,22 @@
 #include "adc128s102cimtx.h"
 #include <drv_spi.h>
 
+#define DBG_TAG "[adc128s102]"
+#define DBG_LVL DBG_INFO
+#include <rtdbg.h>
 
+
+// 这个传感器用于接压力传感器
 #define ADC128S102_SPI_NAME     "adc128s_spi1"
 #define ADC128S102_SPI_BUS      "spi1"
 
 struct rt_spi_device *adc128s_spi_dev;
 static struct rt_mutex  adc128s_spi_lock;
 
-static int adc128s102_spi_init(void)
+static body_led_type_et prev_led_type = BODY_LED_OFF;
+#define PRESS_THRESHOLD     3500
+
+int adc128s102_spi_init(void)
 {
 
     rt_hw_spi_device_attach(ADC128S102_SPI_BUS, ADC128S102_SPI_NAME, ADC128S_CS_PORT, ADC128S_CS_PIN);
@@ -26,7 +34,7 @@ static int adc128s102_spi_init(void)
         LOG_E("LOG:%d. adc128s102 spi device is not found!",Record.ulog_cnt++);
     }
     else{
-        LOG_I("LOG:%d. adc128s102 spi device is successfully!",Record.ulog_cnt++);
+        rt_kprintf("PRINTF:%d. adc128s102 spi device is successfully!\n",Record.kprintf_cnt++);
     }
 
     struct rt_spi_configuration adc128s_spi_cfg;
@@ -39,7 +47,7 @@ static int adc128s102_spi_init(void)
     rt_mutex_init(&adc128s_spi_lock, "adc128s_mutex", RT_IPC_FLAG_PRIO);
     return RT_EOK;
 }
-INIT_DEVICE_EXPORT(adc128s102_spi_init);
+//INIT_DEVICE_EXPORT(adc128s102_spi_init);
 
 
 
@@ -53,7 +61,7 @@ rt_err_t adc128s102_read_raw(adc128s_channel_et ch, rt_uint16_t *value)
 {
     RT_ASSERT(ch < ADC128S102_MAX_CH);
 
-    rt_uint16_t tx = (ch & 0x07) << 11;   /* 命令帧 0x0800..0xE800 */
+    rt_uint16_t tx = (ch & 0x07) << 12;   /* 命令帧 0x0800..0xE800 */
     rt_uint16_t rx = 0;
 
     struct rt_spi_message msg = {
@@ -104,7 +112,7 @@ rt_err_t adc128s102_read_and_print(adc128s_channel_et ch)
     rt_uint16_t mv = adc128s102_raw_to_mv(raw);
     float       v  = adc128s102_raw_to_volt(raw);
 
-//    rt_kprintf("CH%u raw = %u  ->  %u mV  (%.3f V)\n", ch, raw, mv, v);
+    rt_kprintf("CH%u raw = %u  ->  %u mV  (%.3f V)\n", ch, raw, mv, v);
     return RT_EOK;
 }
 
@@ -112,14 +120,56 @@ rt_err_t adc128s102_read_and_print(adc128s_channel_et ch)
 
 void adc128s102_thread_entry(void *parameter)
 {
+    rt_uint16_t raw[5] = {0};
+    body_led_type_et current_led = BODY_LED_OFF;
 
-    for(;;)
+    while (1)
     {
-        adc128s102_read_and_print(ADC128S_Channel_5);
-        rt_thread_mdelay(500);
+        /* 读取 5 个通道 */
+        for (int ch = 0; ch < 5; ch++) {
+            adc128s102_read_raw(ch, &raw[ch]);
+        }
+
+        /* ==================== 位置判断逻辑 ==================== */
+        uint8_t up    = (raw[0] >= PRESS_THRESHOLD) ? 1 : 0;
+        uint8_t left  = (raw[1] >= PRESS_THRESHOLD) ? 1 : 0;
+        uint8_t mid   = (raw[2] >= PRESS_THRESHOLD) ? 1 : 0;
+        uint8_t right = (raw[3] >= PRESS_THRESHOLD) ? 1 : 0;
+        uint8_t down  = (raw[4] >= PRESS_THRESHOLD) ? 1 : 0;
+
+        if (up + left + mid + right + down == 0) {
+            current_led = BODY_LED_OFF;
+        }
+        else if (up && mid) {
+            current_led = BODY_LED_MID_UP;      // 上中中间
+        }
+        else if (mid && down) {
+            current_led = BODY_LED_MID_DOWN;    // 下中中间
+        }
+        else if (up)    current_led = BODY_LED_UP;
+        else if (down)  current_led = BODY_LED_DOWN;
+        else if (left)  current_led = BODY_LED_LEFT;
+        else if (right) current_led = BODY_LED_RIGHT;
+        else if (mid)   current_led = BODY_LED_MID;
+
+        /* ==================== 状态变化才发送 ==================== */
+        if (current_led != prev_led_type)
+        {
+            Record.body_led_type = (rt_uint8_t)current_led;
+
+//            nrf24l01_send_with_retry(_nrf24,
+//                                    Order_nRF24L01_ASK_Body_Led_Cmd,
+//                                    NRF24_PIPE_1, 3);
+
+            rt_kprintf("【按压位置】%d -> 发送 body_led_type = %d\n",
+                       prev_led_type, current_led);
+
+            prev_led_type = current_led;
+        }
+
+        rt_thread_mdelay(30);   // 约33Hz采样
     }
 }
-
 
 
 static rt_thread_t adc128s_Task_Handle = RT_NULL;
@@ -127,7 +177,7 @@ int adc128s102_thread_init(void)
 {
     adc128s_Task_Handle = rt_thread_create("adc128s102_thread_entry",adc128s102_thread_entry, RT_NULL,1024,9, 100);
     if(adc128s_Task_Handle != RT_NULL){
-        LOG_I("LOG:%d. adc128s102_thread_entry is succeed!",Record.ulog_cnt++);
+        rt_kprintf("PRINTF:%d. adc128s102_thread_entry is succeed!\n",Record.kprintf_cnt++);
         rt_thread_startup(adc128s_Task_Handle);
     }
     else{
@@ -136,24 +186,3 @@ int adc128s102_thread_init(void)
 
     return RT_EOK;
 }
-INIT_ENV_EXPORT(adc128s102_thread_init);
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

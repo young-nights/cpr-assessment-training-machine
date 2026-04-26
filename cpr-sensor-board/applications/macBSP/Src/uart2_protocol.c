@@ -6,14 +6,17 @@
  * Change Logs:
  * Date           Author       Notes
  * 2025-12-05     18452       the first version
+ * 2026-04-25     coder       完善光栅板通信协议解析与指令发送
+ * 2026-04-27     coder       适配光栅板纯采集架构：接收脉冲增量帧，删除成绩帧处理
  */
 
 #include "uart2_protocol.h"
+#include "string.h"
+
+/* 串口2连接光栅板，用于接收按压/吹气脉冲增量数据 */
 
 
-
-
-
+/* ====== UART2 配置 ====== */
 #define RT_SERIAL_CONFIG_USART2            \
 {                                          \
     BAUD_RATE_115200, /* 115200 bits/s */  \
@@ -34,8 +37,36 @@ rt_sem_t usart2_rec_sem = RT_NULL;
 xUsart_Structure Uart2Buf;
 
 
+/* ====== 光栅板原始数据 ====== */
+volatile int32_t  g_raster_press_cumulative = 0;   /* 按压脉冲累计值 */
+volatile int32_t  g_raster_blow_cumulative = 0;    /* 吹气脉冲累计值 */
+volatile int8_t   g_raster_press_dir = 0;          /* 按压方向: -1=回弹, 0=静止, 1=下压 */
+volatile int8_t   g_raster_blow_dir = 0;           /* 吹气方向: -1=泄气, 0=静止, 1=充气 */
+volatile uint16_t g_raster_press_depth_01mm = 0;   /* 计算后的按压深度 (0.1mm) */
+volatile uint16_t g_raster_blow_depth_01mm = 0;    /* 计算后的吹气深度 (0.1mm) */
 
 
+/* ====== 帧解析状态机 ====== */
+#define FRAME_HEAD      0xAA
+#define FRAME_TAIL      0x55
+#define CMD_REALTIME    0x04   /* 实时帧的LEN值（脉冲增量帧） */
+
+typedef enum {
+    PARSE_WAIT_HEAD = 0,   /* 等待帧头 0xAA */
+    PARSE_WAIT_LEN,        /* 等待LEN字节 */
+    PARSE_RECV_DATA,       /* 接收数据 */
+    PARSE_WAIT_TAIL        /* 等待帧尾 0x55 */
+} parse_state_t;
+
+static parse_state_t parse_state = PARSE_WAIT_HEAD;
+static uint8_t  parse_buf[10];     /* 帧缓冲 (最大10字节) */
+static uint8_t  parse_idx = 0;    /* 当前接收索引 */
+static uint8_t  parse_len = 0;    /* LEN字段值 */
+
+
+/**
+  * @brief  UART2接收中断回调
+  */
 rt_err_t Usart2_RX_Callback(rt_device_t dev, rt_size_t size)
 {
     rt_sem_release(usart2_rec_sem);
@@ -43,12 +74,14 @@ rt_err_t Usart2_RX_Callback(rt_device_t dev, rt_size_t size)
 }
 
 
-
+/**
+  * @brief  UART2初始化
+  */
 int USART2_Init(void)
 {
     static rt_size_t sendNum = 0;
 
-    // 创建动态信号量
+    /* 创建动态信号量 */
     usart2_rec_sem = rt_sem_create("dynamic_sem2", 0, RT_IPC_FLAG_FIFO);
     if (usart2_rec_sem == RT_NULL){
         rt_kprintf("PRINTF:%d. create dynamic semaphore failed.\n",Record.kprintf_cnt++);
@@ -58,12 +91,11 @@ int USART2_Init(void)
         rt_kprintf("PRINTF:%d. create done. dynamic semaphore value = 0.\n",Record.kprintf_cnt++);
     }
 
-
     serial2 = rt_device_find(USART2_NAME);
     if(serial2 != RT_NULL){
         rt_kprintf("PRINTF:%d. Usart2 Device node created succeed! \r\n",Record.kprintf_cnt++);
         usart2Config.baud_rate = BAUD_RATE_115200;
-        usart2Config.bufsz = 1024;
+        usart2Config.bufsz = 2048;
     }
     else {
         rt_kprintf("PRINTF:%d. Usart2 Device node created Failed! \r\n",Record.kprintf_cnt++);
@@ -79,7 +111,6 @@ int USART2_Init(void)
     Uart2Buf.tail = 0;
     Uart2Buf.lock = rt_mutex_create("uart2_buf_lock", RT_IPC_FLAG_FIFO);
 
-
     sendNum = rt_device_write(serial2, RT_NULL, "usart2 is opened!\r\n", 19);
     rt_kprintf("PRINTF:%d. The usart2 test send size : %d\r\n",Record.kprintf_cnt++,sendNum);
 
@@ -87,18 +118,69 @@ int USART2_Init(void)
 }
 
 
+/**
+  * @brief  处理解析完成的实时数据帧
+  *         新帧格式: 0xAA + 0x04 + TYPE + CNT_H + CNT_L + DIR + CHK + 0x55 (8字节)
+  * @param  buf: 从LEN开始的数据指针
+  */
+static void process_realtime_frame(uint8_t *buf)
+{
+    uint8_t calc_chk;
+    uint8_t type;
+    int16_t pulse_count;
+    int8_t  dir;
+
+    /* buf[0]=LEN(0x04), buf[1]=TYPE, buf[2]=CNT_H, buf[3]=CNT_L, buf[4]=DIR, buf[5]=CHK */
+
+    /* 校验: 0xAA + LEN + TYPE + CNT_H + CNT_L + DIR */
+    calc_chk = FRAME_HEAD + buf[0] + buf[1] + buf[2] + buf[3] + buf[4];
+    if (calc_chk != buf[5])
+    {
+        rt_kprintf("UART2 Realtime Frame CHK error: calc=0x%02X recv=0x%02X\n",
+                   calc_chk, buf[5]);
+        return;
+    }
+
+    type = buf[1];
+    pulse_count = (int16_t)(((uint16_t)buf[2] << 8) | buf[3]);
+    dir = (int8_t)buf[4];
+
+    if (type == 0x01)
+    {
+        /* 按压数据 */
+        g_raster_press_cumulative += pulse_count;
+        g_raster_press_dir = dir;
+        /* 计算深度: 每脉冲 0.5mm = 5 (0.1mm单位) */
+        g_raster_press_depth_01mm = (uint16_t)(g_raster_press_cumulative * 5);
+    }
+    else if (type == 0x02)
+    {
+        /* 吹气数据 */
+        g_raster_blow_cumulative += pulse_count;
+        g_raster_blow_dir = dir;
+        g_raster_blow_depth_01mm = (uint16_t)(g_raster_blow_cumulative * 5);
+    }
+}
 
 
+/**
+  * @brief  UART2解码线程入口
+  *         使用状态机解析来自光栅板的数据帧
+  *
+  *         实时帧: 0xAA + 0x04 + TYPE + CNT_H + CNT_L + DIR + CHK + 0x55 (8字节)
+  */
 void uart2_thread_entry(void* parameter)
 {
-    char recDat = 0;
-    rt_size_t sizeValue = 0;
-    uint8_t decodeStatus = 0;
+    uint8_t recDat;
+    rt_size_t sizeValue;
+
     while(1)
     {
         sizeValue = rt_device_read(serial2, RT_NULL, &recDat, 1);
-        if(sizeValue == 1){
+        if(sizeValue == 1)
+        {
             rt_sem_take(usart2_rec_sem, RT_WAITING_FOREVER);
+
             /* 加锁保护队列操作 */
             rt_mutex_take(Uart2Buf.lock, RT_WAITING_FOREVER);
             /* 计算下一个尾指针位置 */
@@ -114,21 +196,139 @@ void uart2_thread_entry(void* parameter)
             /* 释放互斥锁 */
             rt_mutex_release(Uart2Buf.lock);
 
-            //----------------------------------------------------------------
-            /* 触发协议解析 */
+            /* ====== 帧解析状态机 ====== */
+            switch (parse_state)
+            {
+                case PARSE_WAIT_HEAD:
+                    /* 等待帧头 0xAA */
+                    if (recDat == FRAME_HEAD)
+                    {
+                        parse_state = PARSE_WAIT_LEN;
+                        parse_idx = 0;
+                    }
+                    break;
 
-            if(decodeStatus == CMD_TRUE) {
+                case PARSE_WAIT_LEN:
+                    if (recDat == FRAME_HEAD) {
+                        /* 收到新的帧头，重新同步 */
+                        parse_idx = 0;
+                        /* parse_state 保持 PARSE_WAIT_LEN */
+                    } else if (recDat == CMD_REALTIME) {
+                        parse_len = recDat;
+                        parse_buf[parse_idx++] = recDat;
+                        parse_state = PARSE_RECV_DATA;
+                    } else {
+                        /* 未知LEN，回到等待帧头 */
+                        parse_state = PARSE_WAIT_HEAD;
+                        parse_idx = 0;
+                    }
+                    break;
 
+                case PARSE_RECV_DATA:
+                    if (recDat == FRAME_HEAD) {
+                        /* 数据域中出现帧头，说明前面是残帧，重新同步 */
+                        parse_state = PARSE_WAIT_LEN;
+                        parse_idx = 0;
+                    } else {
+                        parse_buf[parse_idx++] = recDat;
+                        if (parse_idx >= (parse_len + 1)) {
+                            parse_state = PARSE_WAIT_TAIL;
+                        }
+                        if (parse_idx >= sizeof(parse_buf)) {
+                            parse_state = PARSE_WAIT_HEAD;
+                            parse_idx = 0;
+                        }
+                    }
+                    break;
+
+                case PARSE_WAIT_TAIL:
+                    /* 检查帧尾 0x55 */
+                    if (recDat == FRAME_TAIL)
+                    {
+                        process_realtime_frame(parse_buf);
+                    }
+                    /* 无论帧尾是否正确，都回到等待帧头 */
+                    parse_state = PARSE_WAIT_HEAD;
+                    parse_idx = 0;
+                    break;
+
+                default:
+                    parse_state = PARSE_WAIT_HEAD;
+                    parse_idx = 0;
+                    break;
             }
         }
+
         rt_thread_mdelay(10);
     }
 }
 
 
+/**
+  * @brief  发送开始指令到光栅板
+  *         帧格式: 0xAA + 0x02 + 0x01 + 0xFF + CHK + 0x55 (6字节)
+  * @param  None
+  * @retval None
+  */
+void USART2_Send_Start_To_Raster(void)
+{
+    uint8_t buf[6];
+    uint8_t chk;
 
+    buf[0] = 0xAA;  /* 帧头 */
+    buf[1] = 0x02;  /* LEN: CMD(1)+DATA(1) = 2 */
+    buf[2] = 0x01;  /* CMD: 开始采集 */
+    buf[3] = 0xFF;  /* DATA: 固定值 */
+
+    /* 校验和: Byte[0]+Byte[1]+Byte[2]+Byte[3] */
+    chk = buf[0] + buf[1] + buf[2] + buf[3];
+    buf[4] = chk;
+    buf[5] = 0x55;  /* 帧尾 */
+
+    rt_device_write(serial2, 0, buf, 6);
+
+    /* 清零 Sensor 端累计值（与 Raster 端同步） */
+    g_raster_press_cumulative = 0;
+    g_raster_blow_cumulative = 0;
+    g_raster_press_dir = 0;
+    g_raster_blow_dir = 0;
+    g_raster_press_depth_01mm = 0;
+    g_raster_blow_depth_01mm = 0;
+
+    rt_kprintf("UART2 Send START to Raster (cumulative cleared)\n");
+}
+
+
+/**
+  * @brief  发送停止指令到光栅板
+  *         帧格式: 0xAA + 0x02 + 0x03 + 0xFF + CHK + 0x55 (6字节)
+  * @param  None
+  * @retval None
+  */
+void USART2_Send_Stop_To_Raster(void)
+{
+    uint8_t buf[6];
+    uint8_t chk;
+
+    buf[0] = 0xAA;  /* 帧头 */
+    buf[1] = 0x02;  /* LEN: CMD(1)+DATA(1) = 2 */
+    buf[2] = 0x03;  /* CMD: 停止采集 */
+    buf[3] = 0xFF;  /* DATA: 固定值 */
+
+    /* 校验和: Byte[0]+Byte[1]+Byte[2]+Byte[3] */
+    chk = buf[0] + buf[1] + buf[2] + buf[3];
+    buf[4] = chk;
+    buf[5] = 0x55;  /* 帧尾 */
+
+    rt_device_write(serial2, 0, buf, 6);
+    rt_kprintf("UART2 Send STOP to Raster\n");
+}
+
+
+/* ====== 以下为原有接口，保持兼容 ====== */
 
 rt_thread_t uart2_decodeThread_Handle;
+
 int uart2_decodeThread_Init(void)
 {
     uart2_decodeThread_Handle = rt_thread_create("uart2_thread_entry", uart2_thread_entry, RT_NULL, 1024, 10, 200);
@@ -142,21 +342,3 @@ int uart2_decodeThread_Init(void)
     }
     return RT_EOK;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

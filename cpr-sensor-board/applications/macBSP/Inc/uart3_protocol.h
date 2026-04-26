@@ -13,7 +13,7 @@
 #include "bsp_sys.h"
 
 
-#if 0
+#if 1
 
 #ifdef BSP_USING_UART3
 #define USART3_SEND_CMD_INFO_PRINTF     1       // 串口1发送指令信息打印

@@ -8,13 +8,13 @@
 
 typedef struct
 {
-    u8 Receive_Buffer[UART_DATALENGTH];//Êı¾İ»º³åÇø
-    u8 *receive_last;//½ÓÊÕÄ©Î²
-    u8 *get_last;//»ñÈ¡Ä©Î²
-    u8 receive_signal_flag;//ÓĞÊÕµ½Êı¾İ±êÖ¾Î»
-    u8 receive_full_flag;//½ÓÊÕÂú±êÖ¾Î»
-    u8 receive_length;//½ÓÊÕ³¤¶È
-} USART_ReceiveDataTypedef; //¶¨Òå¶ÓÁĞÊı¾İÀàĞÍ
+    u8 Receive_Buffer[UART_DATALENGTH];//æ•°æ®ç¼“å†²åŒº
+    u8 *receive_last;//æ¥æ”¶æœ«å°¾
+    u8 *get_last;//è·å–æœ«å°¾
+    u8 receive_signal_flag;//æœ‰æ”¶åˆ°æ•°æ®æ ‡å¿—ä½
+    u8 receive_full_flag;//æ¥æ”¶æ»¡æ ‡å¿—ä½
+    u8 receive_length;//æ¥æ”¶é•¿åº¦
+} USART_ReceiveDataTypedef; //å®šä¹‰é˜Ÿåˆ—æ•°æ®ç±»å‹
 extern USART_ReceiveDataTypedef    USART1_QueueBuf;
 
 

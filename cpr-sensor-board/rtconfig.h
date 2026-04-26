@@ -82,7 +82,7 @@
 #define RT_USING_DEVICE_IPC
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
-#define RT_SERIAL_RB_BUFSZ 512
+#define RT_SERIAL_RB_BUFSZ 2048
 #define RT_USING_I2C
 #define RT_USING_I2C_BITOPS
 #define RT_USING_PIN
@@ -118,8 +118,8 @@
 /* Utilities */
 
 #define RT_USING_ULOG
-#define ULOG_OUTPUT_LVL_D
-#define ULOG_OUTPUT_LVL 7
+#define ULOG_OUTPUT_LVL_I
+#define ULOG_OUTPUT_LVL 6
 #define ULOG_ASSERT_ENABLE
 #define ULOG_LINE_BUF_SIZE 128
 

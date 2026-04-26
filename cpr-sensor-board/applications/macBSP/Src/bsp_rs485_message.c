@@ -213,7 +213,6 @@ int rs485_decode_thread_init(void)
 
     return RT_EOK;
 }
-INIT_APP_EXPORT(rs485_decode_thread_init);
 
 
 

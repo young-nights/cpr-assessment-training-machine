@@ -1,26 +1,26 @@
-"I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_FWlib\src\stm8s_flash.c"
+"I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_FWlib\src\stm8s_flash.c"
 -std=c99
 -ferror-limit=0
 -I
-I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_Project\..\MDK_FWlib\inc
+I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_Project\..\MDK_FWlib\inc
 -I
-I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_Project\..\MDK_System\Inc
+I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_Project\..\MDK_System\Inc
 -I
-I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_Project\..\MDK_User
+I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_Project\..\MDK_User
 -I
-I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_Project\..\MDK_APP
+I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_Project\..\MDK_APP
 -I
 D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\stm8\inc
 -I
 D:\Program Files (x86)\IAR Systems\Embedded Workbench 8.0\stm8\inc\c
 -I
-I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_FWlib\inc
+I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_FWlib\inc
 -I
-I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_System\Inc
+I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_System\Inc
 -I
-I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_User
+I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_User
 -I
-I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board_ver1.0\MDK_APP
+I:\GitHub-young-nights\cpr-assessment-training-machine\cpr-raster-board\MDK_APP
 -D__CHAR_BITS__=8
 -D__CHAR_MAX__=0xff
 -D__CHAR_MIN__=0

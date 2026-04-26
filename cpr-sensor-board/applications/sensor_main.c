@@ -12,9 +12,11 @@
 #include "bsp_sys.h"
 
 
-#define DBG_TAG "main"
-#define DBG_LVL DBG_LOG
-#include <rtdbg.h>
+
+
+extern int WS2812B_Thread_Init(void);
+extern int nRF24L01_Thread_Init(void);
+extern int Hard_Thread_Init(void);
 
 /**
   * @brief  The application entry point.
@@ -55,9 +57,25 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
-  car_euler_angles_Thread_Init();
+
+  uart3_decodeThread_Init();
+  uart2_decodeThread_Init();
+
+  adc128s102_spi_init();
+  adc128s102_thread_init();
+
+  BSP_MPU6050_Init();
+  rt_thread_mdelay(20);
+  euler_angles_Thread_Init();
   bsp_mpu6xxx_calibrate_Thread_Init();
   mpu6xxxParameter.if_start_gyro_cali_process = 1;
+
+  ws2812b_init();
+  Hard_Thread_Init();
+
+  nRF24L01_Thread_Init();
+
+  rt_kprintf("PRINTF:%d. All peripherals/threads initialized OK\n",Record.kprintf_cnt++);
 
   /* USER CODE END 2 */
 

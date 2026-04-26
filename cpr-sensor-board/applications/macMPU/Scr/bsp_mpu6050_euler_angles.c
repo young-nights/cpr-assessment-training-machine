@@ -143,10 +143,8 @@ void calculate_euler_angles(struct mpu6xxx_device *dev, EulerAngles *angles)
   * @retval void
   */
 EulerAngles carEulerAngles;
-void car_euler_angles_thread_entry(void* parameter)
+void euler_angles_thread_entry(void* parameter)
 {
-    // 初始化MPU6050
-    BSP_MPU6050_Init();
 
 #define USER_PRINTF_EULER_ANGELES 0
     while(1)
@@ -164,16 +162,16 @@ void car_euler_angles_thread_entry(void* parameter)
   * @brief  初始化数据解码函数
   * @retval int
   */
-rt_thread_t car_euler_angles_Thread_Handle;
-int car_euler_angles_Thread_Init(void)
+rt_thread_t euler_angles_Thread_Handle;
+int euler_angles_Thread_Init(void)
 {
-    car_euler_angles_Thread_Handle = rt_thread_create("car_euler_angles_thread_entry", car_euler_angles_thread_entry, RT_NULL, 2048, 5, 20);
-    if(car_euler_angles_Thread_Handle != RT_NULL){
-        rt_kprintf("PRINTF:%d. car_euler_angles_Thread_Handle is created!!\r\n",Record.kprintf_cnt++);
-        rt_thread_startup(car_euler_angles_Thread_Handle);
+    euler_angles_Thread_Handle = rt_thread_create("euler_angles_thread_entry", euler_angles_thread_entry, RT_NULL, 2048, 5, 20);
+    if(euler_angles_Thread_Handle != RT_NULL){
+        rt_kprintf("PRINTF:%d. euler_angles_Thread_Handle is created!!\r\n",Record.kprintf_cnt++);
+        rt_thread_startup(euler_angles_Thread_Handle);
     }
     else {
-        rt_kprintf("PRINTF:%d. car_euler_angles_Thread_Handle is not created!!\r\n",Record.kprintf_cnt++);
+        rt_kprintf("PRINTF:%d. euler_angles_Thread_Handle is not created!!\r\n",Record.kprintf_cnt++);
     }
     return RT_EOK;
 }

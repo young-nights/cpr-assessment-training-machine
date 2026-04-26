@@ -40,8 +40,12 @@ typedef struct nRF24L01_STRUCT *nrf24_t;
 
 
 // 指令宏------------------------------------------------------------
-#define      FRAME_NRF24_CONNECT_CTRL_PANEL_CMD                  (0x01)      // 设置：连接控制面板指令
-
+#define      FRAME_NRF24_ASK_CONNECT_PANEL_CMD                   (0x01)      // 设置：连接控制面板指令
+#define      FRAME_NRF24_ACK_START_CMD                           (0x02)      // 回应：主板发送的开始指令
+#define      FRAME_NRF24_ASK_SHOKE_SENSOR_CMD                    (0x03)      // 设置：压电陶瓷片
+#define      FRAME_NRF24_ACK_WS2812B_LEVEL_CMD                   (0x04)      // 回应：眼灯挡位
+#define      FRAME_NRF24_ACK_MOTOR_STATUS_CMD                    (0x05)      // 回应：空心杯电机工作模式（脉搏检测）
+#define      FRAME_NRF24_ASK_CC6201_CMD                          (0x06)      // 设置：磁传感器工作状态（异物检测）
 
 
 
@@ -71,7 +75,11 @@ typedef enum
 typedef enum
 {
     Order_nRF24L01_ASK_Connect_Control_Panel = 0,
-
+    Order_nRF24L01_ACK_Start_Cmd,
+    Order_nRF24L01_ASK_Shoke_Sensor_Cmd,
+    Order_nRF24L01_ACK_WS2812_Level_Cmd,
+    Order_nRF24L01_ACK_Motor_Status_Cmd,
+    Order_nRF24L01_ASK_CC6201_Cmd,
 
 }nRF24L01_Order_StructType;
 
@@ -89,7 +97,6 @@ uint16_t CrcCalc_Crc16Modbus(uint8_t *dat, uint8_t len);
 rt_uint8_t nrf24l01_build_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *data, uint8_t data_len,uint8_t *out_frame);
 void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src);
 uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdLength, cpr_src_type_t *out_src);
-void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num);
 
 
 

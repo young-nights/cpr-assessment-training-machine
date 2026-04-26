@@ -313,7 +313,7 @@ typedef enum
 extern rt_sem_t nrf24_send_sem;
 extern rt_sem_t nrf24_irq_sem;
 extern nrf24_t _nrf24;
-
+extern rt_mutex_t nrf24_mutex;
 
 // 函数声明 -------------------------------------------------------------------
 int nRF24L01_Param_Config(nrf24_param_t param);
@@ -348,6 +348,7 @@ int nRF24L01_IQR_GPIO_Config(nrf24_port_api_t port_api);
 
 // bsp_nrf24l01_message 文件中函数声明 -------------------------------------------------------------------
 void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num);
+rt_err_t nrf24l01_send_with_retry(nrf24_t nrf24, uint8_t order, nrf24_pipe_et pipe, uint8_t max_retry);
 
 // 以下是寄存器列表 ---------------------------------------------------------------------------------------------
 

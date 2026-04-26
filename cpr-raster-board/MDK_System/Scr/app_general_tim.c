@@ -9,19 +9,19 @@ __IO uint32_t TimingDelay = 0;
 
 void TIM1_Config(void)
 {
-    /* TIM1 �Ĵ�����ʼ��Ĭ��ֵ */
+    /* TIM1 寄存器初始化默认值 */
     TIM1_DeInit();
 
-    /* ����ʱ�ӷ�Ƶϵ��Ϊ100������Ϊ���ϼ���ģʽ��������װ��ֵΪ160���ظ�����0�� */
+    /* 配置时钟分频系数为100，设置为向上计数模式，计数重装载值为160，重复计数0次 */
     TIM1_TimeBaseInit(100, TIM1_COUNTERMODE_UP, 160, 0);
 
-    /* ʹ���Զ���װ�� */
+    /* 使能自动重装载 */
     TIM1_ARRPreloadConfig(ENABLE);
 
-    /* ʹ�� TIM1 �ж� */
+    /* 使能 TIM1 中断 */
     TIM1_ITConfig(TIM1_IT_UPDATE, ENABLE);
 
-    /* ʹ��TIM1ʱ�� */
+    /* 使能TIM1时钟 */
     TIM1_Cmd(ENABLE);
 }
 
@@ -56,33 +56,6 @@ void TimingDelay_Decrement(void)
         TimingDelay--;
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

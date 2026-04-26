@@ -18,8 +18,6 @@
 #include <rtdevice.h>
 #include <rthw.h>
 #include <drv_spi.h>
-#include <rtdbg.h>
-#include <ulog.h>
 
 /* 标准库头文件 */
 #include "string.h"
@@ -50,6 +48,7 @@
 /* macSYS 头文件 */
 #include "bsp_typedef.h"
 #include "uart3_protocol.h"
+#include "bsp_adc.h"
 
 /* macMPU中的头文件 */
 #include "bsp_mpu6050_euler_angles.h"

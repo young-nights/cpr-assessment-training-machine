@@ -38,11 +38,60 @@ typedef struct {
     uint32_t    last_remote_heartbeat;           // Remote 最后心跳时间戳
     uint8_t     last_connect_src;                // 最后一次收到连接请求的来源（0:none 1: sensor 2:remote 3:main）
 
+    uint8_t     shoke_cmd_ack;                   // 接收到压电陶瓷片的指令（0：无需回应   1：需要回应）
+    uint8_t     cc6201_cmd_ack;                  // 接收到cc6201的指令
+    uint8_t     sensor_start_cmd_ack;            // sensor 板接收到开始指令的响应
+    uint8_t     sensor_wsrgb_cmd_ack;            // sensor 板接收到控制rgb灯亮度的响应
+    uint8_t     sensor_motor_cmd_ack;            // sensor 板接收到电机控制模式的响应
+
 }RecordStruct;
 extern RecordStruct Record;
 
 
+typedef struct {
+    rt_int16_t  Number_CountDown;                // 倒计时
+    rt_uint16_t Number_Press_Frequency;          // 按压-频率
+    rt_uint16_t Number_Press_Correct;            // 按压-正确计数
+    rt_uint16_t Number_Press_Error;              // 按压-错误计数
 
+    rt_uint16_t Number_Cycle;                    // 循环数
+    rt_uint16_t Number_Blow_Time;                // 潮气-时间
+    rt_uint16_t Number_Blow_Correct;             // 潮气-正确计数
+    rt_uint16_t Number_Blow_Error;               // 潮气-错误计数
+
+    rt_uint8_t  press_rate;                      // 按压达标率 (%)     0~100
+    rt_uint8_t  tidal_rate;                      // 潮气达标率 (%)     0~100
+} Mode_Params_t;
+
+
+typedef enum {
+    MODE_TRAIN = 0,     // 训练模式
+    MODE_ASSESS,        // 考核模式
+    MODE_COMPETE,       // 竞赛模式
+    MODE_MAX            // 用来循环的边界，永远放最后
+} System_Mode_t;
+
+typedef struct {
+    System_Mode_t current_mode;     // 当前模式（默认训练）
+    uint8_t       start_status;     // 开始状态(0：未开始       1：已开始    2：已结束 )
+    uint8_t       cc6201_state;     // 异物检测的状态（0：有异物   1：无异物）
+    uint8_t       start_press_cnt;  // 开始按键按下次数
+    uint8_t       reset_press_cnt;  // 复位按键按下次数
+    uint8_t       setting_mode;     // 设置状态(0：正常模式   1：设置模式 )
+    uint8_t       edit_index;       // 当前正在编辑哪个参数（0=倒计时，1=按压率，2=潮气率）
+    uint8_t       eyes_rgb_level;   // 眼部RGB灯的挡位(0：关闭  1：弱光[意识涣散]   2：强光[意识清醒])
+    uint8_t       motor_work_sta;   // 空心杯电机工作模式（0：关闭  1：随按压频率震动   2：正常自主震动）
+    Mode_Params_t params[MODE_MAX];
+} System_Config_t;
+extern System_Config_t MySysCfg;
+
+
+
+typedef enum
+{
+  OFF = 0u,
+  ON
+} FUNCTION_SWITCH;
 
 
 typedef enum
@@ -65,6 +114,11 @@ typedef enum
     TM1629A_SEG_16,
 } TM1629x_SEG_SELECT;
 
+typedef enum
+{
+    TM1629A_A = 0,
+    TM1629A_B,
+} TM16xxSelect;
 
 
 typedef enum
@@ -84,63 +138,6 @@ typedef enum
     TOUCH_SPHYMOSCOPY,
     TOUCH_CONSCIOUS_JUDGMENT,
 } Touch_Type_et;
-
-
-
-typedef enum
-{
-    TM1629A_A = 0,
-    TM1629A_B,
-} TM16xxSelect;
-
-
-
-/**
-  * @brief  Function ON and OFF enumeration
-  */
-typedef enum
-{
-  OFF = 0u,
-  ON
-} FUNCTION_SWITCH;
-
-
-
-typedef enum {
-    MODE_TRAIN = 0,     // 训练模式
-    MODE_ASSESS,        // 考核模式
-    MODE_COMPETE,       // 竞赛模式
-    MODE_MAX            // 用来循环的边界，永远放最后
-} System_Mode_t;
-
-
-typedef struct {
-    rt_int16_t Number_CountDown;                // 倒计时
-    rt_uint16_t Number_Press_Frequency;          // 按压-频率
-    rt_uint16_t Number_Press_Correct;            // 按压-正确计数
-    rt_uint16_t Number_Press_Error;              // 按压-错误计数
-
-    rt_uint16_t Number_Cycle;                    // 循环数
-    rt_uint16_t Number_Blow_Time;                // 潮气-时间
-    rt_uint16_t Number_Blow_Correct;             // 潮气-正确计数
-    rt_uint16_t Number_Blow_Error;               // 潮气-错误计数
-
-    uint8_t  press_rate;        // 按压达标率 (%)     0~100
-    uint8_t  tidal_rate;        // 潮气达标率 (%)     0~100
-
-} Mode_Params_t;
-
-
-typedef struct {
-    System_Mode_t current_mode;     // 当前模式（默认训练）
-    uint8_t       start_status;     // 开始状态(0：未开始       1：已开始    2：已结束 )
-    uint8_t       start_press_cnt;  // 开始按键按下次数
-    uint8_t       reset_press_cnt;  // 复位按键按下次数
-    uint8_t       setting_mode;     // 设置状态(0：正常模式   1：设置模式 )
-    uint8_t       edit_index;       // 当前正在编辑哪个参数（0=倒计时，1=按压率，2=潮气率）
-    Mode_Params_t params[MODE_MAX];
-} System_Config_t;
-extern System_Config_t MySysCfg;
 
 
 

@@ -1,4 +1,5 @@
 /*
+#include <remote_nrf24l01_driver.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -16,9 +17,13 @@
 
 
 
+/* 前向声明一下nrf24l01的事件回调句柄 */
 const static struct nrf24_callback g_cb;
+/* 创建nRF24L01发送数据的二值信号量 */
 rt_sem_t nrf24_send_sem = RT_NULL;
+/* 创建nRF24L01进入中断的二值信号量 */
 rt_sem_t nrf24_irq_sem = RT_NULL;
+/* 定义为全局变量 */
 nrf24_t _nrf24 = NULL;
 
 
@@ -42,7 +47,7 @@ void nRF24L01_Thread_entry(void* parameter)
 {
 
     /* 0. 给nrf24开创一个实际空间 */
-    _nrf24 = malloc(sizeof(struct nRF24L01_STRUCT));
+    _nrf24 = malloc(sizeof(nrf24_t));
     if (_nrf24 == NULL) {
         LOG_E("LOG:%d. nrf24 malloc error.",Record.ulog_cnt++);
         return;

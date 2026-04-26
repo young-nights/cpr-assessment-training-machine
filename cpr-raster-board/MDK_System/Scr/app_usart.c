@@ -7,39 +7,39 @@ USART_ReceiveDataTypedef    USART1_QueueBuf;
 
 
 /**
-  * @brief  UART1 ´®¿ÚÅäÖÃº¯Êý
+  * @brief  UART1 ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ãºï¿½ï¿½ï¿½
   * @param  None
   * @retval UART1-RX   -->  PA4
   *         UART1-TX   -->  PA5
   */
 void UART1_Config(void)
 {
-    /* ¸´Î»ËùÓÐµÄ UART1 Ïà¹ØµÄ´®¿Ú¼Ä´æÆ÷ */
+    /* ï¿½ï¿½Î»ï¿½ï¿½ï¿½Ðµï¿½ UART1 ï¿½ï¿½ØµÄ´ï¿½ï¿½Ú¼Ä´ï¿½ï¿½ï¿½ */
     UART1_DeInit();
 
-    /* ¿ªÆô UART1 µÄÊ±ÖÓ */
+    /* ï¿½ï¿½ï¿½ï¿½ UART1 ï¿½ï¿½Ê±ï¿½ï¿½ */
     CLK_PeripheralClockConfig(CLK_PERIPHERAL_UART1, ENABLE);
 
   /* UART1 configured as follow:
           - Word Length = 8 Bits
           - One Stop Bit
           - No parity
-          - BaudRate = 9600 baud
+          - BaudRate = 115200 baud
           - Tx and Rx enabled
           - UART1 Clock disabled
   */
-    UART1_Init(9600, UART1_WORDLENGTH_8D, UART1_STOPBITS_1, UART1_PARITY_NO, UART1_SYNCMODE_CLOCK_DISABLE, UART1_MODE_TXRX_ENABLE); 
+    UART1_Init(115200, UART1_WORDLENGTH_8D, UART1_STOPBITS_1, UART1_PARITY_NO, UART1_SYNCMODE_CLOCK_DISABLE, UART1_MODE_TXRX_ENABLE); 
 
-    /* Ê¹ÄÜUART1½ÓÊÕÖÐ¶Ï£¬ÖÐ¶ÏÏòÁ¿ºÅÎª18 */
+    /* Ê¹ï¿½ï¿½UART1ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶Ï£ï¿½ï¿½Ð¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Îª18 */
     UART1_ITConfig(UART1_IT_RXNE_OR, ENABLE);
 
-    /* Ê¹ÄÜ UART1 */
+    /* Ê¹ï¿½ï¿½ UART1 */
     UART1_Cmd(ENABLE);
     
 
-    /* ³õÊ¼»¯£¬´øÉÏÀ­ÊäÈë£¬²»´øÖÐ¶Ï */
+    /* ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ë£¬ï¿½ï¿½ï¿½ï¿½ï¿½Ð¶ï¿½ */
     GPIO_Init(GPIOD, GPIO_PIN_6, GPIO_MODE_IN_PU_NO_IT);
-    /* ³õÊ¼»¯£¬ÍÆÍìÊä³ö£¬¿ìËÙ */
+    /* ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
     GPIO_Init(GPIOD, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST);
 
 }
@@ -50,9 +50,9 @@ void UART1_Config(void)
 
 
 /**
-  * @brief  UART1 ´®¿Ú·¢ËÍÊý¾Ý
-  * @param  *buffer   Òª·¢ËÍµÄÊý¾Ý
-  *         size      Òª·¢ËÍµÄÊý×éµÄ´óÐ¡
+  * @brief  UART1 ï¿½ï¿½ï¿½Ú·ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+  * @param  *buffer   Òªï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½
+  *         size      Òªï¿½ï¿½ï¿½Íµï¿½ï¿½ï¿½ï¿½ï¿½Ä´ï¿½Ð¡
   * @retval None
   */
 void USART1_SendData(u8 * buffer , u16 size )
@@ -77,9 +77,9 @@ void USART1_SendData(u8 * buffer , u16 size )
 
 
 /**
-  * @brief  UART1 ´®¿Ú»·ÐÎ¶ÓÁÐÔªËØÊý¾Ý³õÊ¼»¯
-  * @param  *Uart_Device_Rx   ½ÓÊÜÊý¾Ý½á¹¹ÌåÀàÐÍ
-  *         Length            Êý¾Ý³¤¶È
+  * @brief  UART1 ï¿½ï¿½ï¿½Ú»ï¿½ï¿½Î¶ï¿½ï¿½ï¿½Ôªï¿½ï¿½ï¿½ï¿½ï¿½Ý³ï¿½Ê¼ï¿½ï¿½
+  * @param  *Uart_Device_Rx   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý½á¹¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+  *         Length            ï¿½ï¿½ï¿½Ý³ï¿½ï¿½ï¿½
   * @retval None
   */
 void    UART1_ReceiveValueInit(USART_ReceiveDataTypedef* Uart_Device_Rx, uint16_t Length)
@@ -96,9 +96,9 @@ void    UART1_ReceiveValueInit(USART_ReceiveDataTypedef* Uart_Device_Rx, uint16_
 
 
 /**
-  * @brief  UART1 ´®¿Ú½ÓÊÕº¯Êý
-  * @param  *Uart_Device_Rx   ½ÓÊÜÊý¾Ý½á¹¹ÌåÀàÐÍ
-  *         Data              Êý¾ÝÄÚÈÝ
+  * @brief  UART1 ï¿½ï¿½ï¿½Ú½ï¿½ï¿½Õºï¿½ï¿½ï¿½
+  * @param  *Uart_Device_Rx   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý½á¹¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
+  *         Data              ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   * @retval None
   */
 void UART1_Receive(USART_ReceiveDataTypedef* Uart_Device_Rx, uint8_t Data)
@@ -124,8 +124,8 @@ void UART1_Receive(USART_ReceiveDataTypedef* Uart_Device_Rx, uint8_t Data)
 
 
 /**
-  * @brief  UART1 ´®¿Ú»ñÈ¡Ò»¸ö×Ö½ÚÊý¾Ýº¯Êý
-  * @param  *Uart_Device_Rx   ½ÓÊÜÊý¾Ý½á¹¹ÌåÀàÐÍ
+  * @brief  UART1 ï¿½ï¿½ï¿½Ú»ï¿½È¡Ò»ï¿½ï¿½ï¿½Ö½ï¿½ï¿½ï¿½ï¿½Ýºï¿½ï¿½ï¿½
+  * @param  *Uart_Device_Rx   ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ý½á¹¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
   * @retval None
   */
 uint8_t UART1_GetByte(USART_ReceiveDataTypedef* Uart_Device_Rx)

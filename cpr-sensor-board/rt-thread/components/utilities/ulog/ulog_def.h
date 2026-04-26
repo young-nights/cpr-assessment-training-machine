@@ -17,6 +17,7 @@
 extern "C" {
 #endif
 
+
 /* logger level, the number is compatible for syslog */
 #define LOG_LVL_ASSERT                 0
 #define LOG_LVL_ERROR                  3

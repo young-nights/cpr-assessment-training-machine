@@ -34,11 +34,13 @@
 #define FRAME_STATE_ERR      (0x00)
 
 /* 指令宏（保持你原有定义） */
-#define FRAME_NRF24_CONNECT_CTRL_PANEL_CMD   (0x01)
-#define FRAME_NRF24_MODE_DATA_IN_CMD         (0x02)
-#define FRAME_NRF24_MODE_DATA_OUT_CMD        (0x03)
-#define FRAME_NRF24_SEND_PRESS_DATA_CMD      (0x04)
-#define FRAME_NRF24_SEND_TIDAL_DATA_CMD      (0x05)
+#define FRAME_NRF24_CONNECT_CTRL_PANEL_CMD      (0x01)
+#define FRAME_NRF24_SEND_TO_SENSOR_START_CMD    (0x02)
+#define FRAME_NRF24_ACK_SHOKE_SENSOR_CMD        (0x03)  // 回应：压电陶瓷片
+#define FRAME_NRF24_ASK_WS2812B_LEVEL_CMD       (0x04)  // 设置：眼灯挡位
+#define FRAME_NRF24_ASK_MOTOR_STATUS_CMD        (0x05)  // 设置：空心杯电机工作模式
+#define FRAME_NRF24_ACK_CC6201_CMD              (0x06)  // 回应：磁传感器工作状态（异物检测）
+
 
 /* ==================== 数据来源区分 ==================== */
 typedef enum {
@@ -51,11 +53,14 @@ typedef enum {
 /* 指令码枚举 */
 typedef enum {
     Order_nRF24L01_ACK_Connect_Control_Panel = 0,
-    Order_nRF24L01_ACK_Mode_Data_In,
-    Order_nRF24L01_ACK_Mode_Data_Out,
+    Order_nRF24L01_ACK_Shoke_Sensor_Cmd,
+    Order_nRF24L01_ACK_CC6201_State_Cmd,
 
-    Order_nRF24L01_SEND_Press_Data = 50,
-    Order_nRF24L01_SEND_Tidal_Data,
+    Order_nRF24L01_SEND_To_Sensor_Start = 50,
+    Order_nRF24L01_SEND_To_Sensor_WS2812_Level,
+    Order_nRF24L01_SEND_To_Sensor_Motor_Status,
+
+
 } nRF24L01_Order_StructType;
 
 
@@ -91,5 +96,7 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdL
 
 /* 协议处理函数（新增 src 参数） */
 void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src);
+
+rt_err_t nrf24l01_send_with_retry(nrf24_t nrf24, uint8_t order, nrf24_pipe_et pipe, uint8_t max_retry);
 
 #endif /* APPLICATIONS_MACNRF_INC_MAINBOARD_NRF24L01_MESSAGE_H_ */

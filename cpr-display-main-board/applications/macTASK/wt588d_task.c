@@ -76,7 +76,6 @@ int WT588D_Thread_Init(void)
 
     return RT_EOK;
 }
-//INIT_APP_EXPORT(WT588D_Thread_Init);
 
 
 

@@ -12,14 +12,18 @@
 
 
 
-
-
-
 void start_thread_entry(void* parameter)
 {
 
     for(;;)
     {
+        // 默认的情况下是有异物的
+        if(MySysCfg.cc6201_state == 0){
+
+        }
+        else{ // 无异物
+
+        }
 
         rt_thread_mdelay(20);
     }
@@ -45,7 +49,6 @@ int start_thread_Init(void)
 
     return RT_EOK;
 }
-//INIT_APP_EXPORT(start_thread_Init);
 
 
 

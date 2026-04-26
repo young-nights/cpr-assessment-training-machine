@@ -53,7 +53,6 @@ DMA_HandleTypeDef hdma_uart4_tx;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
-
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -315,8 +314,8 @@ void MX_DMA_Init(void)
 void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOE_CLK_ENABLE();
@@ -449,11 +448,11 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : WIRED_CONNECT_CHECK_Pin PRINTER_CTS_Pin */
-  GPIO_InitStruct.Pin = WIRED_CONNECT_CHECK_Pin|PRINTER_CTS_Pin;
+  /*Configure GPIO pin : WIRED_CONNECT_CHECK_Pin */
+  GPIO_InitStruct.Pin = WIRED_CONNECT_CHECK_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+  HAL_GPIO_Init(WIRED_CONNECT_CHECK_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : WT588D_DATA_Pin */
   GPIO_InitStruct.Pin = WT588D_DATA_Pin;
@@ -462,8 +461,14 @@ void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(WT588D_DATA_GPIO_Port, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /*Configure GPIO pin : PRINTER_CTS_Pin */
+  GPIO_InitStruct.Pin = PRINTER_CTS_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(PRINTER_CTS_GPIO_Port, &GPIO_InitStruct);
+
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -471,8 +476,7 @@ void MX_GPIO_Init(void)
 /* USER CODE END 4 */
 
 
-
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
   * @brief  Reports the name of the source file and the source line number
   *         where the assert_param error has occurred.

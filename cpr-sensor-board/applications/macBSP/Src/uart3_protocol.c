@@ -9,8 +9,9 @@
  */
 #include "uart3_protocol.h"
 
+// 串口3是用于有线接入模式
 
-#if 0
+#if 1
 
 
 

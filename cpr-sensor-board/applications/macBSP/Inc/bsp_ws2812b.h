@@ -82,12 +82,13 @@ void ws2812b_breathing_light_test(void);
 
 
 #define LED_COUNT       30          // LED数量，根据需要修改
-#define PWM_PERIOD      89          // TIM周期值 (ARR = 89, 72MHz / 90 ≈ 800kHz)
-#define PWM_HIGH_0      29          // [FIX2] '0'高电平ticks ≈0.403μs (29/90 * 1.25μs)
-#define PWM_HIGH_1      58          // [FIX2] '1'高电平ticks ≈0.806μs (58/90 * 1.25μs)
-#define RESET_PRE_MIN   50          // [FIX3] 复位前最小LED周期 (>50μs ≈50 cycles @1.25μs)
-#define RESET_POST_MIN  50          // [FIX3] 复位后最小LED周期
+#define RESET_PRE_MIN   60          // [FIX3] 复位前最小LED周期 (>50μs ≈50 cycles @1.25μs)
+#define RESET_POST_MIN  60          // [FIX3] 复位后最小LED周期
 #define LEDS_PER_DMA_IRQ 8          // [FIX4] 每个DMA中断处理的LED数 (中断频率减半)
+
+#define PWM_PERIOD      89          // ARR=89，周期90 ticks
+#define PWM_HIGH_0      28          // 逻辑0 ≈ 389ns
+#define PWM_HIGH_1      56          // 逻辑1 ≈ 778ns
 
 // 缓冲区：双缓冲 (HT/TC)，每个部分 LEDS_PER_DMA_IRQ * 24 个 uint16_t
 extern uint16_t ws2812_buffer[2 * LEDS_PER_DMA_IRQ * 24];
@@ -102,7 +103,7 @@ void ws2812b_set_all(uint8_t g, uint8_t r, uint8_t b);
 rt_err_t ws2812b_update(void);          // 非阻塞更新，返回 -RT_EBUSY 如果正在传输
 void update_sequence(uint8_t is_tc);    // HT/TC 更新逻辑
 void ws2812b_demo_effects(void);       // 演示效果函数
-
+void ws2812b_set_white(uint8_t level);
 
 #endif
 

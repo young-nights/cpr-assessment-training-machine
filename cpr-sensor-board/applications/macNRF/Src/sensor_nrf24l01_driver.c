@@ -9,6 +9,9 @@
  */
 #include <sensor_nrf24l01_driver.h>
 
+#define DBG_TAG "[nRF24L01]"
+#define DBG_LVL DBG_INFO
+#include <rtdbg.h>
 
 
 
@@ -82,10 +85,10 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
 
     /* RX_ADDR_P0：必须与主板 TX_ADDR 一致 (0xAA)，用于接收硬件 ACK */
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
+    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
 
     /* RX_ADDR_P1：接收主板定向回复（主板用 Pipe1 发给 Sensor） */
-    rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
+    rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
 
     for(int16_t i = 0; i < 5; i++){
         param->txaddr[i] = tx_addr[i];
@@ -99,7 +102,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->rx_addr_p4 = 0xF0;
     param->rx_addr_p5 = 0xF0;
 
-    LOG_I("Sensor nRF24 Param Config: TX=0x01, RX_P0=0xAA, RX_P1=0x01");
+//    LOG_I("Sensor nRF24 Param Config: TX=0x01, RX_P0=0x01, RX_P1=0xAA");
 
     return RT_EOK;
 

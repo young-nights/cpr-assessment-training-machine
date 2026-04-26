@@ -382,7 +382,3 @@ int Touch_Thread_Init(void)
 
     return RT_EOK;
 }
-//INIT_APP_EXPORT(Touch_Thread_Init);
-
-
-

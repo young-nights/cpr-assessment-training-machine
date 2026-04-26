@@ -9,17 +9,18 @@
  */
 #include "bsp_sys.h"
 
-#define DBG_TAG "nRF24"
-#define DBG_LVL DBG_LOG
-#include <rtdbg.h>
+extern void coreless_motor_ctrl(MOTOR_NAME_et name, SWITCH_et status);
 
+#define DBG_TAG "[nRF24L01]"
+#define DBG_LVL DBG_INFO
+#include <rtdbg.h>
 
 
 const static struct nrf24_callback g_cb;
 rt_sem_t nrf24_send_sem = RT_NULL;
 rt_sem_t nrf24_irq_sem = RT_NULL;
 nrf24_t _nrf24 = NULL;
-
+rt_mutex_t nrf24_mutex = RT_NULL;
 
 
 /**
@@ -64,7 +65,6 @@ void nRF24L01_Thread_entry(void* parameter)
 
     /* 3. 初始化SPI */
     nRF24L01_SPI_Init(&_nrf24->port_api);
-
 
     /* 4. 把spi底层函数整体拷贝到ops结构体中 */
     _nrf24->nrf24_ops = g_nrf24_func_ops;
@@ -153,14 +153,8 @@ void nRF24L01_Thread_entry(void* parameter)
 
                 last_connect_send = rt_tick_get();
                 connect_retry_cnt++;
-                rt_kprintf("\n-------------------------------------------------------\n");
                 LOG_I("Sensor → Mainboard: Send connect request... (retry %d)", connect_retry_cnt);
 
-                /* 发送 3 次后自动进入连接状态（Mainboard 已收到即视为连接成功） */
-                if(connect_retry_cnt >= 3) {
-                    Record.nrf_if_connected = 1;
-                    LOG_I("Sensor: Auto-connected after %d retries.", connect_retry_cnt);
-                }
             }
 
             // 打开短接收窗口，等待主板 ACK
@@ -169,7 +163,7 @@ void nRF24L01_Thread_entry(void* parameter)
             nRF24L01_Clear_IRQ_Flags(_nrf24);            // 清除旧中断标志
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
             _nrf24->nrf24_ops.nrf24_set_ce();
-
+#if 0
             /* 验证 PRX 模式是否生效 */
             {
                 uint8_t cfg_val = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_CONFIG);
@@ -178,7 +172,7 @@ void nRF24L01_Thread_entry(void* parameter)
                 LOG_I("PRX check: CONFIG=0x%02X PRIM_RX=%d STATUS=0x%02X FIFO=0x%02X",
                       cfg_val, cfg_val & 0x01, status_val, fifo_status);
             }
-
+#endif
             // 先检查 FIFO 是否已有数据（IRQ 可能在切换前已触发）
             uint8_t precheck_status = nRF24L01_Read_Status_Register(_nrf24);
             if (precheck_status & NRF24BITMASK_RX_DR)
@@ -193,7 +187,8 @@ void nRF24L01_Thread_entry(void* parameter)
                     cpr_src_type_t src = SRC_UNKNOWN;
                     if (nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE)
                     {
-                        LOG_I("Sensor received response from Mainboard (precheck, src=%d)", src);
+                        LOG_I("PRX rec_data → `nrf24l01_portocol_get_command()` == ASK_Connect_ACK → connected + LOG (precheck, src=%d)", src);
+                        connect_retry_cnt = 0;
                     }
                 }
             }
@@ -214,7 +209,8 @@ void nRF24L01_Thread_entry(void* parameter)
                         cpr_src_type_t src = SRC_UNKNOWN;
                         if (nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE)
                         {
-                            LOG_I("Sensor received response from Mainboard (src=%d)", src);
+                            LOG_I("PRX rec_data → `nrf24l01_portocol_get_command()` == ASK_Connect_ACK → connected + LOG (irq, src=%d)", src);
+                            connect_retry_cnt = 0;
                         }
                     }
                 }
@@ -224,21 +220,52 @@ void nRF24L01_Thread_entry(void* parameter)
         }
 
 
-        /* ====================== 已连接：正常数据上报 + 偶尔接收指令 ====================== */
+        /* ====================== 已连接：正常数据上报 + 偶尔指令处理 ====================== */
         else
         {
 
-            // 定时上报传感器数据（推荐 50~100ms，根据实际需求调整）
+            //----------------------------------------------------------------------------------------
+            //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+            //                           TODO: 上报数据和上报指令
+            //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+            //----------------------------------------------------------------------------------------
             if (rt_tick_get() - last_report_tick >= 60)
             {
-                // TODO: 这里后面换成真实传感器数据帧
-                // 目前先用连接命令占位，后续改成 FRAME_NRF24_SEND_PRESS_DATA_CMD 等
-                // nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_SEND_Press_Data, NRF24_PIPE_1);
+
+                // ----------------------------------------------------------------------------------
+                if(Record.nrf_rec_start_cmd == 1){  // 主动发送接收到start信号的 ack
+                    nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_ACK_Start_Cmd, NRF24_PIPE_1, 5);
+                    Record.nrf_rec_start_cmd = 0;
+                }
+                // ----------------------------------------------------------------------------------
+                if(Flag.shoke_ack == 1 && Flag.start == 1){
+                    nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_ASK_Shoke_Sensor_Cmd, NRF24_PIPE_1, 1);
+                }
+                // ----------------------------------------------------------------------------------
+                if(Flag.ws2812b_ack == 1 && Flag.start == 1){ // 接收到mainboard主动发送来的指令，就需要循环多发
+                    nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_ACK_WS2812_Level_Cmd, NRF24_PIPE_1, 5);
+                    Flag.ws2812b_ack = 0;
+                }
+                // ----------------------------------------------------------------------------------
+                if(Flag.motor_ack == 1 && Flag.start == 1){
+                    nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_ACK_Motor_Status_Cmd, NRF24_PIPE_1, 5);
+                    Flag.motor_ack = 0;
+                }
+                // ----------------------------------------------------------------------------------
+                if(Flag.cc6201_ack == 1 && Flag.start == 1){
+                    nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_ASK_CC6201_Cmd, NRF24_PIPE_1, 1);
+                }
+                // ----------------------------------------------------------------------------------
+
 
                 last_report_tick = rt_tick_get();
             }
 
-            // 已连接后，周期性打开短接收窗口接收主板指令（不需要太频繁）
+            //----------------------------------------------------------------------------------------
+            //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+            //             已连接后，周期性打开短接收窗口接收主板指令（不需要太频繁）
+            //||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
+            //----------------------------------------------------------------------------------------
             if (rt_tick_get() % 8 == 0)   // 大约每 160ms（8*20ms）听一次
             {
                 _nrf24->nrf24_ops.nrf24_reset_ce();
@@ -259,10 +286,7 @@ void nRF24L01_Thread_entry(void* parameter)
                             nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
 
                             cpr_src_type_t src = SRC_UNKNOWN;
-                            if (nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE)
-                            {
-                                LOG_I("Sensor received command from Mainboard (src=%d)", src);
-                            }
+                            if (nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE){}
                         }
                     }
                 }
@@ -274,6 +298,10 @@ void nRF24L01_Thread_entry(void* parameter)
     }
 
 }
+
+
+
+
 
 
 
@@ -297,8 +325,6 @@ int nRF24L01_Thread_Init(void)
 
     return RT_EOK;
 }
-INIT_APP_EXPORT(nRF24L01_Thread_Init);
-
 
 
 
@@ -318,8 +344,6 @@ static void nrf24l01_tx_done(nrf24_t nrf24, rt_uint8_t pipe)
     }
 
 }
-
-
 
 
 static void nrf24l01_rx_ind(nrf24_t nrf24, uint8_t *data, uint8_t len, int pipe)

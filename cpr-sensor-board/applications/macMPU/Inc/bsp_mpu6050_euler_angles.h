@@ -14,7 +14,7 @@
 
 
 
-int car_euler_angles_Thread_Init(void);
+int euler_angles_Thread_Init(void);
 int bsp_mpu6xxx_calibrate_Thread_Init(void);
 
 

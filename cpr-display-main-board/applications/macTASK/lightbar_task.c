@@ -331,14 +331,5 @@ int LightBar_Thread_Init(void)
 
     return RT_EOK;
 }
-//INIT_APP_EXPORT(LightBar_Thread_Init);
-
-
-
-
-
-
-
-
 
 

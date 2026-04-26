@@ -28,6 +28,11 @@ mpu6xxxStruct mpu6xxxParameter;
 void system_param_init(void)
 {
     Record.nrf_if_connected = 0;
+    Flag.start = 0;
+    Flag.shoke_ack = 0;
+    Flag.ws2812b_ack = 0;
+    Flag.cc6201_ack = 0;
+    Flag.last_cc6201_state = 0xFF;
 }
 
 

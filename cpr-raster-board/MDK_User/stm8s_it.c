@@ -3,52 +3,89 @@
 
 
 
-volatile int32_t depth_count = 0;     // Âö³å¼ÆÊı£¨4¡Á£©
-float depth_mm = 0.0f;                // µ±Ç°Éî¶È£¨mm£©
-int8_t direction = 0;                 // ·½Ïò£º1=ÏòÏÂ£¬-1=ÏòÉÏ£¬0=¾²Ö¹
+volatile int32_t depth_count_press = 0;  /* æŒ‰å‹è„‰å†²è®¡æ•°ï¼ˆæ­£=ä¸‹å‹ï¼Œè´Ÿ=å›å¼¹ï¼‰ */
+volatile int32_t depth_count_blow = 0;   /* å¹æ°”è„‰å†²è®¡æ•°ï¼ˆæ­£=å……æ°”ï¼Œè´Ÿ=æ³„æ°”ï¼‰ */
+volatile int8_t direction_press = 0;     /* æŒ‰å‹æ–¹å‘: -1=å›å¼¹, 0=é™æ­¢, 1=ä¸‹å‹ */
+volatile int8_t direction_blow = 0;      /* å¹æ°”æ–¹å‘: -1=æ³„æ°”, 0=é™æ­¢, 1=å……æ°” */
+
+volatile uint32_t g_system_tick_ms = 0;  /* å…¨å±€ç³»ç»Ÿæ»´ç­”(ms) */
 
 
 
 
 /**
-  * @brief  UART1 TX Interrupt routine
-  * @param None
-  * @retval
-  * None
+  * @brief  GPIOC ä¸­æ–­å¤„ç†ï¼ˆå¹æ°”å…‰æ …ç¼–ç å™¨: Pin6=Aç›¸, Pin7=Bç›¸ï¼‰
+  *         ä½¿ç”¨4å€é¢‘æ­£äº¤è§£ç ï¼Œé€šè¿‡æŸ¥è¡¨æ³•åˆ¤æ–­æ–¹å‘
+  *         direction_blow: -1=æ³„æ°”, 0=é™æ­¢, 1=å……æ°”
+  */
+INTERRUPT_HANDLER(EXTI_PORTC_IRQHandler, 5)
+{
+    static uint8_t last_state_c = 0;
+    static const int8_t quad_table[16] = {
+         0,  +1,  -1,  0,
+        -1,   0,   0, +1,
+        +1,   0,   0, -1,
+         0,  -1,  +1,  0
+    };
+    uint8_t curr_A, curr_B, curr_state, trans;
+    int8_t delta;
+
+    curr_A = GPIO_ReadInputPin(GPIOC, GPIO_PIN_6);
+    curr_B = GPIO_ReadInputPin(GPIOC, GPIO_PIN_7);
+    curr_state = (curr_A << 1) | curr_B;
+    trans = (last_state_c << 2) | curr_state;
+    delta = quad_table[trans];
+
+    /* æ›´æ–°å¹æ°”æ–¹å‘: -1=æ³„æ°”, 0=é™æ­¢, 1=å……æ°” */
+    if (delta > 0) {
+        direction_blow = 1;    /* å……æ°” */
+    } else if (delta < 0) {
+        direction_blow = -1;   /* æ³„æ°” */
+    } else {
+        direction_blow = 0;
+    }
+
+    depth_count_blow += delta;
+
+    last_state_c = curr_state;
+}
+
+
+/**
+  * @brief  GPIOD ä¸­æ–­å¤„ç†ï¼ˆæŒ‰å‹å…‰æ …ç¼–ç å™¨: Pin3=Aç›¸, Pin4=Bç›¸ï¼‰
+  *         ä½¿ç”¨4å€é¢‘æ­£äº¤è§£ç ï¼Œé€šè¿‡æŸ¥è¡¨æ³•åˆ¤æ–­æ–¹å‘
+  *         direction_press: -1=å›å¼¹, 0=é™æ­¢, 1=ä¸‹å‹
   */
 INTERRUPT_HANDLER(EXTI_PORTD_IRQHandler, 6)
 {
-    static uint8_t last_state = 0;
-    uint8_t curr_A = GPIO_ReadInputPin(GPIOD, GPIO_PIN_3);
-    uint8_t curr_B = GPIO_ReadInputPin(GPIOD, GPIO_PIN_4);
-    uint8_t curr_state = (curr_A << 1) | curr_B;  // 00,01,10,11
-
-    /* ¸ñÀ×Âë 4¡Á ±¶Æµ×´Ì¬±í */
-static const int8_t quad_table[16] = {
-         0,  +1,  -1,  0,   // 00 ¡ú 00,01,10,11
-        -1,   0,   0, +1,   // 01 ¡ú ...
-        +1,   0,   0, -1,   // 10 ¡ú ...
-         0,  -1,  +1,  0    // 11 ¡ú ...
+    static uint8_t last_state_d = 0;
+    static const int8_t quad_table[16] = {
+         0,  +1,  -1,  0,
+        -1,   0,   0, +1,
+        +1,   0,   0, -1,
+         0,  -1,  +1,  0
     };
+    uint8_t curr_A, curr_B, curr_state, trans;
+    int8_t delta;
 
-    uint8_t trans = (last_state << 2) | curr_state;
-    int8_t delta = quad_table[trans];  // ±¾´Î±ä»¯Á¿
+    curr_A = GPIO_ReadInputPin(GPIOD, GPIO_PIN_3);
+    curr_B = GPIO_ReadInputPin(GPIOD, GPIO_PIN_4);
+    curr_state = (curr_A << 1) | curr_B;
+    trans = (last_state_d << 2) | curr_state;
+    delta = quad_table[trans];
 
-    // ÅĞ¶Ï·½Ïò
+    /* æ›´æ–°æŒ‰å‹æ–¹å‘: -1=å›å¼¹, 0=é™æ­¢, 1=ä¸‹å‹ */
     if (delta > 0) {
-        direction = 1;   // ÏòÏÂÑ¹
+        direction_press = 1;   /* ä¸‹å‹ */
     } else if (delta < 0) {
-        direction = -1;  // ÏòÉÏµ¯
+        direction_press = -1;  /* å›å¼¹ */
     } else {
-        direction = 0;   // ·Ç·¨»ò¾²Ö¹
+        direction_press = 0;
     }
 
-    depth_count += delta;
-    last_state = curr_state;
+    depth_count_press += delta;
 
-    /* ÕıÈ·Çå³ı PORTD ÖĞ¶Ï±êÖ¾ */
-    EXTI->CR1 |= 0xC0;  // Ğ´1µ½ bit7 ºÍ bit6
-
+    last_state_d = curr_state;
 }
 
 
@@ -56,24 +93,23 @@ static const int8_t quad_table[16] = {
 
 extern void TimingDelay_Decrement(void);
 #pragma vector = 0x0D
-/* Ã¿1ms ½øÈëÒ»´ÎÖĞ¶Ï */
+/* TIM1ä¸­æ–­ï¼Œæ¯1msè§¦å‘ä¸€æ¬¡ï¼Œç”¨äºç³»ç»Ÿæ»´ç­”è®¡æ—¶ */
 __interrupt void TIM1_IRQHandler(void)
 {
     static uint32_t msCnt = 0;
-    msCnt++;
-    /*¼ÆÊıÓÃÓÚÈ¡ÓàÔËËãÀ´ÅĞ¶ÏÊ±¼äÊÂ¼ş*/
+
+    g_system_tick_ms++;
+
     if (++msCnt >= 60000)
     {
         msCnt = 0;
     }
 
-    /*1sÉ¨ÃëÊ±¼ä£¬È¡ÓàÎªÕûÊıËµÃ÷Ê±¼äµ½½øÈëÖ´ĞĞº¯Êı*/
+    /* æ¯1ç§’æ‰§è¡Œå®šæ—¶ä»»åŠ¡ */
     if ((msCnt % 1000) == 0)	Timing_1s();
 
-
-
     TimingDelay_Decrement();
-    /* Cleat Interrupt Pending bit */
+    /* æ¸…é™¤TIM1æ›´æ–°ä¸­æ–­æ ‡å¿— */
     TIM1_ClearITPendingBit(TIM1_IT_UPDATE);
 }
 
@@ -87,10 +123,7 @@ __interrupt void TIM1_IRQHandler(void)
 #if defined(STM8S208) || defined(STM8S207) || defined(STM8S007) || defined(STM8S103) || \
     defined(STM8S003) || defined(STM8S001) || defined(STM8AF62Ax) || defined(STM8AF52Ax) || defined(STM8S903)
 /**
-  * @brief  UART1 TX Interrupt routine
-  * @param None
-  * @retval
-  * None
+  * @brief  UART1 TX ä¸­æ–­å¤„ç†ï¼ˆæœªä½¿ç”¨ï¼‰
   */
 INTERRUPT_HANDLER(UART1_TX_IRQHandler, 17)
 {
@@ -98,13 +131,9 @@ INTERRUPT_HANDLER(UART1_TX_IRQHandler, 17)
 }
 
 /**
-  * @brief  UART1 RX Interrupt routine
-  * @param None
-  * @retval
-  * None
+  * @brief  UART1 RX ä¸­æ–­å¤„ç†
+  *         æ¥æ”¶1å­—èŠ‚æ•°æ®å¹¶å­˜å…¥ç¯å½¢é˜Ÿåˆ—
   */
-
-
 INTERRUPT_HANDLER(UART1_RX_IRQHandler, 18)
 {
     uint8_t dat = 0;

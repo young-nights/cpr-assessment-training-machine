@@ -24,6 +24,7 @@ RecordStruct Record;
 
 System_Config_t MySysCfg = {
     .current_mode = MODE_TRAIN,
+    .start_status = 0,
     .edit_index   = 0,
     .setting_mode = 0,
     .params = {
@@ -73,9 +74,13 @@ System_Config_t MySysCfg = {
 void system_params_init(void)
 {
     Record.touch_set_cnt = 0;
+    Record.sensor_start_cmd_ack = 0;
+    Record.cc6201_cmd_ack = 0;
+
     MySysCfg.start_status = 0;
     MySysCfg.start_press_cnt = 0;
     MySysCfg.reset_press_cnt = 1;
+
 
     // 训练模式数据初始化
     MySysCfg.params[MODE_TRAIN].Number_CountDown = 300;
@@ -103,6 +108,9 @@ void system_params_init(void)
     MySysCfg.params[MODE_COMPETE].Number_Blow_Time = 0;
     MySysCfg.params[MODE_COMPETE].Number_Blow_Correct = 0;
     MySysCfg.params[MODE_COMPETE].Number_Blow_Error = 0;
+
+
+    Record.shoke_cmd_ack = 0;
 }
 
 

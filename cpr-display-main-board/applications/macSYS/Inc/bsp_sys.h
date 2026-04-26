@@ -48,5 +48,10 @@
 #include "rtt_system_work.h"
 #include "rd_dm32_printer.h"
 
+/* fal falsh 文件 */
+#include "macFlash.h"
+#include "fal_config.h"
+#include "fal_def.h"
+#include "fal.h"
 
 #endif /* __BSP_SYS_H */

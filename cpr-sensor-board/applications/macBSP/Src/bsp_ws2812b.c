@@ -139,7 +139,7 @@ void ws2812b_set_brightness(uint8_t brightness)
  *        color --> 要设置的颜色
  */
 void ws2812b_set_color(uint16_t index, uint32_t color)
-{
+{  rt_mutex_take(&ws2812_mutex, 10);
     if (index >= WS2812B_LED_NUMS)
     {
         LOG_E("LED index %d out of range.", index);
@@ -176,7 +176,7 @@ void ws2812b_clear(void)
     memset(ws2812b_buffer, WS2812B_CODE_0, sizeof(ws2812b_buffer));
     memset(ws2812b_colors, 0, sizeof(ws2812b_colors));
     ws2812b_show();
-}
+  rt_mutex_release(&ws2812_mutex); }
 
 
 /***
@@ -336,7 +336,12 @@ MSH_CMD_EXPORT(cmd1, WS2812B_demo);
 
 #elif USE_PWM_METHOD
 
-// 外部句柄（从CubeMX生成）
+
+#define DBG_TAG "[WS2812B]"
+#define DBG_LVL DBG_INFO
+#include <rtdbg.h>
+
+// 外部句柄（CubeMX 生成）
 extern TIM_HandleTypeDef htim1;
 extern DMA_HandleTypeDef hdma_tim1_ch1;
 
@@ -368,9 +373,7 @@ static void fill_led_pwm_data(uint16_t ledx, uint16_t *ptr);
 // 初始化
 void ws2812b_init(void)
 {
-    LOG_I("WS2812B 初始化开始");
-
-    // [FIX] 问题3: 显式使能TIM1和DMA1时钟
+    // [FIX] 问题3: 显式使能TIM3和DMA1时钟
     __HAL_RCC_TIM1_CLK_ENABLE();
     __HAL_RCC_DMA1_CLK_ENABLE();
 
@@ -381,17 +384,54 @@ void ws2812b_init(void)
     // NVIC中断启用
     HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
-
-    LOG_I("WS2812B 初始化完成");
 }
+
+
+
+// ====================== 全局亮度控制 ======================
+static uint8_t global_brightness = 100;   // 默认100%亮度（范围 0~100）
+
+/**
+ * @brief 设置 WS2812B 整体亮度（百分比）
+ * @param brightness_percent 亮度百分比，范围 0~100
+ */
+void ws2812b_set_brightness(uint8_t brightness_percent)
+{
+    if (brightness_percent > 100)
+        brightness_percent = 100;
+
+    global_brightness = brightness_percent;
+
+    rt_kprintf("WS2812B 亮度已设置为 %d%%", global_brightness);
+}
+
+/**
+ * @brief 内部函数：对颜色应用亮度缩放（Gamma校正可选）
+ * @note  在 set_color 时自动调用
+ */
+static void apply_brightness(uint8_t *g, uint8_t *r, uint8_t *b)
+{
+    if (global_brightness == 100)
+        return;                     // 100% 不做处理，性能最好
+
+    uint16_t scale = global_brightness;   // 0~100
+
+    *g = ((*g * scale) / 100);
+    *r = ((*r * scale) / 100);
+    *b = ((*b * scale) / 100);
+}
+
 
 // 设置单个LED颜色 (GRB顺序)
 void ws2812b_set_color(uint16_t index, uint8_t g, uint8_t r, uint8_t b)
 {
     if (index >= LED_COUNT) {
-        LOG_W("LED索引超出范围: %d (最大: %d)", index, LED_COUNT - 1);
+        rt_kprintf("LED索引超出范围: %d (最大: %d)\n", index, LED_COUNT - 1);
         return;
     }
+
+    // 应用全局亮度
+    apply_brightness(&g, &r, &b);
 
     leds_color_data[index * BYTES_PER_LED + 0] = g;
     leds_color_data[index * BYTES_PER_LED + 1] = r;
@@ -411,7 +451,7 @@ void ws2812b_set_all(uint8_t g, uint8_t r, uint8_t b)
 rt_err_t ws2812b_update(void)
 {
     if (is_updating) {
-        LOG_W("WS2812B 正在更新中，跳过本次");
+        rt_kprintf("WS2812B 正在更新中，跳过本次\n");
         return -RT_EBUSY;
     }
 
@@ -424,12 +464,12 @@ rt_err_t ws2812b_update(void)
 
     if (HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t *)ws2812_buffer, DMA_BUFF_LEN) != HAL_OK)
     {
-        LOG_E("DMA启动失败");
+        rt_kprintf("DMA启动失败\n");
         is_updating = 0;
         return -RT_ERROR;
     }
 
-    LOG_D("WS2812B 更新启动成功");
+    rt_kprintf("WS2812B 更新启动成功\n");
     return RT_EOK;
 }
 
@@ -465,13 +505,13 @@ void update_sequence(uint8_t is_tc)
     // 全部发送完成 + 足够复位后停止
     if (led_index >= RESET_PRE_MIN + LED_COUNT + RESET_POST_MIN + 20)  // 多加20个周期确保复位
     {
-        HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_3);
+        HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_1);
         // HAL_TIM_Base_Stop(&htim3);   // 可选
 
         is_updating = 0;
         led_index = 0;
         rt_sem_release(dma_complete_sem);
-        LOG_D("WS2812B 更新完成");
+        rt_kprintf("WS2812B 更新完成\n");
     }
 }
 
@@ -516,7 +556,7 @@ void ws2812b_demo_effects(void)
     uint32_t current_time = rt_tick_get();
 
     // 每500ms切换一次效果
-    if (current_time - last_time >= 500)
+    if (current_time - last_time >= 1000)
     {
         last_time = current_time;
 
@@ -525,33 +565,33 @@ void ws2812b_demo_effects(void)
             case 0: // 红色全亮
                 ws2812b_set_all(255, 0, 0);
                 ws2812b_update();
-                if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) LOG_W("WS2812B DMA 超时，跳过本次更新"); // [FIX3-5] 超时保护
+                if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) rt_kprintf("WS2812B DMA 超时，跳过本次更新\n"); // [FIX3-5] 超时保护
                 break;
             case 1: // 绿色全亮
                 ws2812b_set_all(0, 255, 0);
                 ws2812b_update();
-                if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) LOG_W("WS2812B DMA 超时，跳过本次更新"); // [FIX3-5] 超时保护
+                if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) rt_kprintf("WS2812B DMA 超时，跳过本次更新\n"); // [FIX3-5] 超时保护
                 break;
             case 2: // 蓝色全亮
                 ws2812b_set_all(0, 0, 255);
                 ws2812b_update();
-                if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) LOG_W("WS2812B DMA 超时，跳过本次更新"); // [FIX3-5] 超时保护
+                if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) rt_kprintf("WS2812B DMA 超时，跳过本次更新\n"); // [FIX3-5] 超时保护
                 break;
             case 3: // 白色全亮
                 ws2812b_set_all(255, 255, 255);
                 ws2812b_update();
-                if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) LOG_W("WS2812B DMA 超时，跳过本次更新"); // [FIX3-5] 超时保护
+                if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) rt_kprintf("WS2812B DMA 超时，跳过本次更新\n"); // [FIX3-5] 超时保护
                 break;
             case 4: // 流水灯效果
                 for (int i = 0; i < LED_COUNT; i++)
                 {
                     ws2812b_set_color(i, 255, 255, 0);  // 黄色
                     ws2812b_update();
-                    if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) LOG_W("WS2812B DMA 超时，跳过本次更新"); // [FIX3-5] 超时保护
+                    if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) rt_kprintf("WS2812B DMA 超时，跳过本次更新\n"); // [FIX3-5] 超时保护
                     rt_thread_mdelay(50);
                     ws2812b_set_color(i, 0, 0, 0);      // 关闭
                     ws2812b_update();
-                    if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) LOG_W("WS2812B DMA 超时，跳过本次更新"); // [FIX3-5] 超时保护
+                    if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) rt_kprintf("WS2812B DMA 超时，跳过本次更新\n"); // [FIX3-5] 超时保护
                 }
                 break;
             case 5: // 呼吸灯效果
@@ -559,14 +599,14 @@ void ws2812b_demo_effects(void)
                 {
                     ws2812b_set_all(brightness, brightness, brightness);
                     ws2812b_update();
-                    if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) LOG_W("WS2812B DMA 超时，跳过本次更新"); // [FIX3-5] 超时保护
+                    if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) rt_kprintf("WS2812B DMA 超时，跳过本次更新\n"); // [FIX3-5] 超时保护
                     rt_thread_mdelay(20);
                 }
                 for (int brightness = 255; brightness > 0; brightness -= 5)
                 {
                     ws2812b_set_all(brightness, brightness, brightness);
                     ws2812b_update();
-                    if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) LOG_W("WS2812B DMA 超时，跳过本次更新"); // [FIX3-5] 超时保护
+                    if (rt_sem_take(dma_complete_sem, 100) != RT_EOK) rt_kprintf("WS2812B DMA 超时，跳过本次更新\n"); // [FIX3-5] 超时保护
                     rt_thread_mdelay(20);
                 }
                 break;
@@ -580,6 +620,51 @@ void ws2812b_demo_effects(void)
 }
 
 
+/**
+ * @brief 设置全白色灯，三档亮度控制
+ * @param level 亮度档位： 0=关闭， 1=40%， 2=80%
+ */
+void ws2812b_set_white(uint8_t level)
+{
+    uint8_t brightness = 0;
+
+    switch (level)
+    {
+        case 0:     // 关闭
+            brightness = 0;
+            LOG_I("WS2812B 全白灯已关闭");
+            break;
+
+        case 1:     // 中亮 5%
+            brightness = 5;
+            LOG_I("WS2812B 全白灯设置为 中亮 (5%%)");
+            break;
+
+        case 2:     // 高亮 80%
+            brightness = 80;
+            LOG_I("WS2812B 全白灯设置为 高亮 (80%%)");
+            break;
+
+        default:    // 非法参数默认关闭
+            brightness = 0;
+            LOG_W("WS2812B set_white 参数错误，已关闭");
+            break;
+    }
+
+    // 调用已有的亮度设置函数（会自动应用到所有灯）
+    ws2812b_set_brightness(brightness);
+
+    // 设置为白色 (GRB顺序：G=255, R=255, B=255)
+    ws2812b_set_all(255, 255, 255);
+
+    // 更新显示
+    ws2812b_update();
+
+    // 等待本次更新完成
+    if (dma_complete_sem != RT_NULL) {
+        rt_sem_take(dma_complete_sem, 300);
+    }
+}
 
 
 

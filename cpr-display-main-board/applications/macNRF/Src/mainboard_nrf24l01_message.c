@@ -9,6 +9,11 @@
  */
 #include <mainboard_nrf24l01_message.h>
 
+
+#define DBG_TAG "nRF24"
+#define DBG_LVL DBG_INFO
+#include <rtdbg.h>
+
 uint16_t CrcCalc_Crc16Modbus(uint8_t *dat,uint8_t len)
 {
     uint16_t    CRC_index = 0xffff;
@@ -28,7 +33,6 @@ uint16_t CrcCalc_Crc16Modbus(uint8_t *dat,uint8_t len)
     }
     return CRC_index;
 }
-
 
 
 
@@ -208,7 +212,7 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLe
 
 
 
-
+extern char send_step_nums;
 void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
 {
     uint8_t cmd_type = *(CmdBuf + 3);
@@ -245,32 +249,47 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
                         LOG_I("Remote connected (mainboard confirmed).");
                     }
                 }break;
-                //----------------------------------------------------------------------------------------------------
-//                // 接收来自 remote 的 模式控制指令
-//                case FRAME_NRF24_MODE_DATA_IN_CMD:
-//                {
-//                    LOG_I("Receive: Mode Data In.");
-//                    Record.mode_data_in = *(CmdBuf + 6);
-//                    if(nrf24l01_events != RT_NULL){
-//                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_DATA_IN);
-//                    }
-//                }break;
-//                //----------------------------------------------------------------------------------------------------
-//                case FRAME_NRF24_MODE_DATA_OUT_CMD:
-//                {
-//                    LOG_I("Receive: Mode Data Out.");
-//                    Record.mode_data_in = 0;
-//                    if(nrf24l01_events != RT_NULL){
-//                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_DATA_OUT);
-//                    }
-//
-//                }break;
+
+                case FRAME_NRF24_SEND_TO_SENSOR_START_CMD:
+                {
+                    rt_kprintf("Receive: 接收到sensor的开始指令的响应 \n");
+                    Record.sensor_start_cmd_ack = 1;
+                    send_step_nums = 1;
+                }break;
+
+                case FRAME_NRF24_ACK_SHOKE_SENSOR_CMD:
+                {
+                    rt_kprintf("Receive: 接收到传感器板的压电陶瓷片触发指令 \n");
+                    Record.shoke_cmd_ack = 1; // 此时可以执行回应
+                }break;
+
+                case FRAME_NRF24_ASK_WS2812B_LEVEL_CMD:
+                {
+                    rt_kprintf("Receive：接收到传感器板的控制WS2812B亮度的指令响应\n");
+                    Record.sensor_wsrgb_cmd_ack = 1;
+                    send_step_nums = 2;
+                }break;
+
+                case FRAME_NRF24_ASK_MOTOR_STATUS_CMD:
+                {
+                    rt_kprintf("Receive：接收到传感器板的控制电机工作模式的指令响应\n");
+                    Record.sensor_motor_cmd_ack = 1;
+                    send_step_nums = 3;
+                }break;
+
+                case FRAME_NRF24_ACK_CC6201_CMD:
+                {
+                    rt_kprintf("Receive：接收到传感器板的磁传感器的指令响应\n");
+                    MySysCfg.cc6201_state = *(CmdBuf + 6);
+                    Record.cc6201_cmd_ack = 1;
+                }break;
+
+
 
 
                 default:    break;
             }
         }break;
-
 
         default:    break;
     }
@@ -309,29 +328,169 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             }
         }break;
 
-
-        //  响应进入数据模式设置指令：55 AA 05 00 04 31 02 90 3D
-        case Order_nRF24L01_ACK_Mode_Data_In:
+        /* 发送开始指示 */
+        case Order_nRF24L01_SEND_To_Sensor_Start:
         {
             rt_memset(emptyBuf, 0, sizeof(emptyBuf));
-            emptyBuf[0] = FRAME_NRF24_MODE_DATA_IN_CMD;
-            package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
-            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            emptyBuf[0] = FRAME_NRF24_SEND_TO_SENSOR_START_CMD;
+            emptyBuf[1] = MySysCfg.start_status;
+            if(pipe_num == NRF24_PIPE_1){
+                package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+            else if(pipe_num == NRF24_PIPE_2){
+                package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+        }break;
+
+        /* 回应shoke_cmd */
+        case Order_nRF24L01_ACK_Shoke_Sensor_Cmd:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_ACK_SHOKE_SENSOR_CMD;
+            if(pipe_num == NRF24_PIPE_1){
+                package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+            else if(pipe_num == NRF24_PIPE_2){
+                package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
         }break;
 
 
-        //  响应进入数据模式设置指令：55 AA 05 00 04 31 03 50 FC
-        case Order_nRF24L01_ACK_Mode_Data_Out:
+        /* 回应cc6201_cmd */
+        case Order_nRF24L01_ACK_CC6201_State_Cmd:
         {
             rt_memset(emptyBuf, 0, sizeof(emptyBuf));
-            emptyBuf[0] = FRAME_NRF24_MODE_DATA_OUT_CMD;
-            package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT,FRAME_STATE_ACK,emptyBuf,1,frame_package);
-            nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            emptyBuf[0] = FRAME_NRF24_ACK_CC6201_CMD;
+            if(pipe_num == NRF24_PIPE_1){
+                package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+            else if(pipe_num == NRF24_PIPE_2){
+                package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
         }break;
 
+
+        /* WS2812B的亮度等级 */
+        case Order_nRF24L01_SEND_To_Sensor_WS2812_Level:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_ASK_WS2812B_LEVEL_CMD;
+            emptyBuf[1] = MySysCfg.eyes_rgb_level;
+            if(pipe_num == NRF24_PIPE_1){
+                package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+            else if(pipe_num == NRF24_PIPE_2){
+                package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+        }break;
+
+
+        /* 空心杯电机控制 */
+        case Order_nRF24L01_SEND_To_Sensor_Motor_Status:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_ASK_MOTOR_STATUS_CMD;
+            emptyBuf[1] = MySysCfg.motor_work_sta;
+            if(pipe_num == NRF24_PIPE_1){
+                package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+            else if(pipe_num == NRF24_PIPE_2){
+                package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+        }break;
 
         default: break;
     }
 }
 
+
+
+
+rt_err_t nrf24l01_send_with_retry(nrf24_t nrf24, uint8_t order, nrf24_pipe_et pipe, uint8_t max_retry)
+{
+    for(uint8_t r = 0; r < max_retry; r++)
+    {
+        LOG_I("TX order %d to pipe %d, retry %d", order, pipe, r+1);
+
+        // ==================== 关键步骤 ====================
+        if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+
+        // 1. 切换到发送模式 (PTX)
+        _nrf24->nrf24_ops.nrf24_reset_ce();           // 先拉低 CE
+        nRF24L01_Set_Role_Mode(nrf24, ROLE_PTX);      // 切换为 PTX
+        nRF24L01_Flush_TX_FIFO(nrf24);                // 清空 TX FIFO
+
+        // 2. 填充数据并发送
+        nrf24l01_order_to_pipe(order, pipe);          // 里面会调用 nRF24L01_Send_Packet
+
+        // 3. 拉高 CE 触发发送
+        _nrf24->nrf24_ops.nrf24_set_ce();
+
+        if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
+        // ================================================
+
+        // 等待发送完成或失败
+        rt_tick_t poll_start = rt_tick_get();
+        rt_bool_t tx_ok = RT_FALSE;
+
+        while(rt_tick_get() - poll_start < 80)        // 建议给 50~100ms
+        {
+            rt_uint8_t st = nRF24L01_Read_Status_Register(nrf24);
+
+            if(st & NRF24BITMASK_TX_DS)               // 发送成功
+            {
+                LOG_I("TX OK (TX_DS set)");
+                tx_ok = RT_TRUE;
+                break;
+            }
+
+            if(st & NRF24BITMASK_MAX_RT)              // 达到最大重发次数
+            {
+                LOG_W("TX failed: MAX_RT");
+                break;
+            }
+
+            rt_thread_mdelay(5);
+        }
+
+        // 清理中断标志
+        nRF24L01_Clear_IRQ_Flags(nrf24);
+
+        if(tx_ok)
+        {
+            // 发送成功后，建议切回 PRX（因为你的主线程默认是接收模式）
+            if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+            _nrf24->nrf24_ops.nrf24_reset_ce();
+            nRF24L01_Set_Role_Mode(nrf24, ROLE_PRX);
+            _nrf24->nrf24_ops.nrf24_set_ce();
+            if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
+
+            return RT_EOK;
+        }
+
+        // 重试前稍等一下
+        rt_thread_mdelay(20);
+    }
+
+    LOG_E("TX failed after %d retries", max_retry);
+
+    // 最终失败也要切回接收模式
+    if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+    _nrf24->nrf24_ops.nrf24_reset_ce();
+    nRF24L01_Set_Role_Mode(nrf24, ROLE_PRX);
+    _nrf24->nrf24_ops.nrf24_set_ce();
+    if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
+
+    return -RT_ETIMEOUT;
+}
 

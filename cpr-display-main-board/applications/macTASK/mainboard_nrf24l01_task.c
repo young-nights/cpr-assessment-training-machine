@@ -16,7 +16,7 @@ rt_sem_t nrf24_send_sem = RT_NULL;
 /* 创建nRF24L01进入中断的二值信号量 */
 rt_sem_t nrf24_irq_sem = RT_NULL;
 /* nRF24L01 操作互斥锁，防止 Thread_entry 和 Decode_entry 并发访问 */
-static rt_mutex_t nrf24_mutex = RT_NULL;
+rt_mutex_t nrf24_mutex = RT_NULL;
 /* 定义为全局变量 */
 nrf24_t _nrf24 = NULL;
 /**
@@ -150,58 +150,6 @@ void nRF24L01_Thread_entry(void* parameter)
          nRF24L01_Clear_Status_Register(_nrf24, NRF24BITMASK_RX_DR | NRF24BITMASK_TX_DS | NRF24BITMASK_MAX_RT);
 
 
-         // 3. 角色 = 发送端（PTX）
-         if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PTX)
-         {
-             // 3.1 读取status寄存器的 NRF24BITMASK_MAX_RT位，如果为1，说明达到最大重发次数，发送失败
-             if(_nrf24->nrf24_flags.status & NRF24BITMASK_MAX_RT){
-                 nRF24L01_Flush_TX_FIFO(_nrf24);
-                 nRF24L01_Clear_Status_Register(_nrf24, NRF24BITMASK_MAX_RT);
-                 if(_nrf24->nrf24_cb.nrf24l01_tx_done){
-                     _nrf24->nrf24_cb.nrf24l01_tx_done(_nrf24, NRF24_PIPE_NONE);
-                 }
-             }
-
-             // 3.2 分析哪条信道接收的数据
-             uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
-             if(pipe == 0x07){
-                 LOG_I("RX FIFO Empty.\n");
-             }
-             else if(pipe == 0x06){
-                 LOG_I("Not used.\n");
-             }
-             else{
-                 LOG_I("Data pipe number(p%d).\n",pipe);
-             }
-
-
-             /* 3.3 收到 ACK 带载荷（PTX 也能收） */
-             if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR){
-                 uint8_t rec_data[32];
-                 uint8_t len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-                 LOG_I("ACK Receive length = %d. \n",len);
-                 nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
-
-                 cpr_src_type_t src = SRC_UNKNOWN;
-                 if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
-                     LOG_I("ACK Protocol parse succeed from %s",(src==SRC_FROM_SENSOR)?"Sensor":"Remote");
-                 } else {
-                     LOG_W("ACK Protocol parse failed");
-                 }
-
-                 if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
-                     _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
-                 }
-             }
-
-             /* 3.4 发送完成 */
-             if(_nrf24->nrf24_flags.status & NRF24BITMASK_TX_DS){
-                 if(_nrf24->nrf24_cb.nrf24l01_tx_done){
-                     _nrf24->nrf24_cb.nrf24l01_tx_done(_nrf24, pipe);
-                 }
-             }
-         }
-
 
          // 4. 角色 = 接收端（PRX）
          if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX)
@@ -255,9 +203,6 @@ void nRF24L01_Thread_entry(void* parameter)
 void nRF24L01_Decode_entry(void* parameter)
 {
 
-    rt_uint32_t recved = 0;
-    rt_err_t nrf_event_result;
-
     for(;;)
     {
         //============================================================
@@ -280,7 +225,6 @@ void nRF24L01_Decode_entry(void* parameter)
                 _nrf24->nrf24_ops.nrf24_set_ce();
                 rt_thread_mdelay(10);           // CE 稳定 10ms 确保发送完成
                 _nrf24->nrf24_ops.nrf24_reset_ce();
-
                 /* ===== 每次重试后诊断 ===== */
                 uint8_t diag_status = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_STATUS);
                 uint8_t diag_observe = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_OBSERVE_TX);
@@ -308,7 +252,6 @@ void nRF24L01_Decode_entry(void* parameter)
                       diag_txaddr[0], diag_txaddr[1], diag_txaddr[2], diag_txaddr[3], diag_txaddr[4],
                       diag_rxaddr_p1[0], diag_rxaddr_p1[1], diag_rxaddr_p1[2], diag_rxaddr_p1[3], diag_rxaddr_p1[4]);
                 /* ===== 诊断结束 ===== */
-
                 rt_thread_mdelay(50);           // 重试间隔 50ms
             }
 
@@ -354,42 +297,6 @@ void nRF24L01_Decode_entry(void* parameter)
             if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
         }
 
-        //---------------------------------------------------------------------------------------------------
-        /* 处理事件集：来自协议解析线程触发的各种命令事件 */
-        if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
-        nrf_event_result = rt_event_recv( nrf24l01_events,
-                                EVENT_NRF24_ACK_MODE_DATA_IN | EVENT_NRF24_ACK_MODE_DATA_OUT,
-                                RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR, // 只要有一个事件来到，就返回； 并且成功接收后，就自动清除标志
-                                RT_WAITING_NO,  // 非阻塞，立即返回
-                                &recved);
-
-        if(nrf_event_result == RT_EOK)
-        {
-            if(recved & EVENT_NRF24_ACK_MODE_DATA_IN){
-                rt_kprintf("Event: Received MODE_DATA_IN command, sending ACK\n");
-                // 短暂切换为 PTX 发送应答
-                _nrf24->nrf24_ops.nrf24_reset_ce();
-                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-                nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Mode_Data_In, NRF24_PIPE_2);
-                _nrf24->nrf24_ops.nrf24_set_ce();
-                rt_thread_mdelay(1);
-                _nrf24->nrf24_ops.nrf24_reset_ce();
-                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
-                _nrf24->nrf24_ops.nrf24_set_ce();
-            }
-
-            if(recved & EVENT_NRF24_ACK_MODE_DATA_OUT){
-                rt_kprintf("Event: Received MODE_DATA_OUT command, sending ACK\n");
-                _nrf24->nrf24_ops.nrf24_reset_ce();
-                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-                nrf24l01_order_to_pipe(Order_nRF24L01_ACK_Mode_Data_Out, NRF24_PIPE_2);
-                _nrf24->nrf24_ops.nrf24_set_ce();
-                rt_thread_mdelay(1);
-                _nrf24->nrf24_ops.nrf24_reset_ce();
-                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
-                _nrf24->nrf24_ops.nrf24_set_ce();
-            }
-        }
         rt_thread_mdelay(50);
     }
 }
@@ -400,21 +307,80 @@ void nRF24L01_Decode_entry(void* parameter)
   * @brief  This thread entry is used for nRF24L01 data transmit
   * @retval void
   */
+char send_step_nums = 0;
 void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
 {
 
+
     for(;;)
     {
-        if(Record.mode_data_in == 1)
+        if(MySysCfg.start_status == 1)
         {
+            // --------------------------------------------------------------------
+            /* 发送指令-step1：如果按下了开始按键，就给sensor板发送开始指令 */
+            if(send_step_nums == 0 && Record.sensor_start_cmd_ack == 0)
+            {
+                if(nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_Start, NRF24_PIPE_1, 1) == RT_EOK) {
+                    LOG_I("step1：mainboard发送开始指令到sensor成功!");
+                } else {
+                    LOG_E("step1：mainboard发送开始指令到sensor失败!");
+                }
+            }
+            // --------------------------------------------------------------------
+            /* 发送指令-step2：控制ws2812b的灯光亮度，开始后默认亮度1 */
+            if(send_step_nums == 1 && Record.sensor_wsrgb_cmd_ack == 0)
+            {
+                MySysCfg.eyes_rgb_level = 1;
+                if(nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_WS2812_Level, NRF24_PIPE_1, 1) == RT_EOK) {
+                    LOG_I("step2：mainboard发送灯光亮度1指令到sensor成功");
+                } else {
+                    LOG_E("step2：mainboard发送灯光亮度1指令到sensor失败");
+                }
+            }
+            // --------------------------------------------------------------------
+            /* 发送指令-step3：初始状态把sensor的电机震动设置为不响应（即无脉博），sensor板收到按压数据后再自主脉动 */
+            if(send_step_nums == 2 && Record.sensor_motor_cmd_ack == 0)
+            {
+                MySysCfg.motor_work_sta = 0;
+                if(nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_Motor_Status, NRF24_PIPE_1, 1) == RT_EOK) {
+                    LOG_I("step3：mainboard发送电机初始状态指令到sensor成功");
+                } else {
+                    LOG_E("step3：mainboard发送电机初始状态指令到sensor失败");
+                }
+            }
+
+            // --------------------------------------------------------------------
+            /* 发送回应shoke_cmd指令 */
+            if(Record.shoke_cmd_ack == 1)
+            {
+                if(nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_ACK_Shoke_Sensor_Cmd, NRF24_PIPE_1, 1) == RT_EOK) {
+                    LOG_I("正常回应压电陶瓷片的指令");
+                } else {
+                    LOG_E("错误回应压电陶瓷片的指令");
+                }
+                Record.shoke_cmd_ack = 0;
+            }
+            // --------------------------------------------------------------------
+            /* 发送回应cc6201指令 */
+            if(Record.cc6201_cmd_ack == 1)
+            {
+                if(nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_ACK_CC6201_State_Cmd, NRF24_PIPE_1, 1) == RT_EOK) {
+                    LOG_I("正常回应CC6201状态设置的指令");
+                } else {
+                    LOG_E("错误回应CC6201状态设置的指令");
+                }
+                Record.cc6201_cmd_ack = 0;
+            }
+
 
         }
-        else if(Record.mode_data_in == 2){
-
+        // 一个急救流程完成状态
+        else {
+            MySysCfg.eyes_rgb_level = 1;
+            nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_WS2812_Level, NRF24_PIPE_1, 5);
         }
-        else if(Record.mode_data_in == 3){
 
-        }
+
 
         rt_thread_mdelay(50);
     }
@@ -461,7 +427,7 @@ int nRF24L01_Thread_Init(void)
 
     return RT_EOK;
 }
-//INIT_APP_EXPORT(nRF24L01_Thread_Init);
+
 
 
 

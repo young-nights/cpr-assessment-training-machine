@@ -306,6 +306,7 @@ struct nRF24L01_STRUCT
 extern rt_sem_t nrf24_send_sem;
 extern rt_sem_t nrf24_irq_sem;
 extern nrf24_t _nrf24;
+extern rt_mutex_t nrf24_mutex;
 
 // 函数声明 -------------------------------------------------------------------
 int nRF24L01_Param_Config(nrf24_param_t param);

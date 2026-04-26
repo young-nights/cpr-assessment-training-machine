@@ -192,7 +192,7 @@ static const rs485_dev_cfg_t rs485_dev_cfg_table[] = RS485_DEV_CFG_TABLE;
  * @return rt_err_t  RT_EOK 成功，-RT_ENOMEM 内存不足
  */
 
-static int rs485_dev_create(void)
+int rs485_dev_create(void)
 {
     // 计算设备数量
     for(int i=0; i<(sizeof(rs485_dev_cfg_table)/sizeof(rs485_dev_cfg_table[0])); i++)
@@ -250,7 +250,7 @@ static int rs485_dev_create(void)
 
     return(RT_EOK);
 }
-INIT_DEVICE_EXPORT(rs485_dev_create);
+//INIT_DEVICE_EXPORT(rs485_dev_create);
 
 
 
