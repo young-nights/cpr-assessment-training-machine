@@ -6,6 +6,7 @@
  * Change Logs:
  * Date           Author       Notes
  * 2025-02-23     teati       the first version
+ * 2026-04-29     coder       添加头部上仰检测逻辑（head_tilt_detect_update/calibrate）
  */
 #include "bsp_mpu6050_euler_angles.h"
 
@@ -22,6 +23,25 @@
 
 struct mpu6xxx_3axes bsp_accel, bsp_gyro;
 
+
+/* ====== 头部上仰检测共享数据 ====== */
+head_tilt_shared_st head_tilt_data = {
+    .pitch_zero_offset = 0.0f,
+    .is_head_tilt_up   = 0,
+    .tilt_start_tick   = 0,
+    .params = {
+        .pressure_threshold   = 3500.0f,         /* 默认压力 ADC 阈值 */
+        .pitch_threshold_deg  = PITCH_THRESHOLD_DEG,
+        .pitch_rate_threshold = PITCH_RATE_THRESHOLD,
+        .confirm_window_ms    = BLOW_CONFIRM_WINDOW_MS,
+        .blow_hold_ms         = BLOW_HOLD_MS
+    }
+};
+
+/* 静态变量：用于计算 pitch 变化速率 */
+static float    s_prev_pitch = 0.0f;
+static uint32_t s_prev_tick  = 0;
+static uint8_t  s_zero_calibrated = 0;  /* 零位标定完成标志 */
 
 
 
@@ -128,8 +148,73 @@ void calculate_euler_angles(struct mpu6xxx_device *dev, EulerAngles *angles)
 }
 
 
+/**
+  * @brief  头部上仰检测更新
+  * @param  current_pitch: 当前融合后的 pitch 角度 (°)
+  * @param  current_tick:  当前系统 tick (ms)
+  *
+  *         判定条件（全部满足才确认上仰）：
+  *         1. 相对 pitch ≥ 阈值 (默认15°)
+  *         2. pitch 变化速率 ≥ 阈值 (默认30°/s)
+  *         3. 满足以上条件持续 ≥ 持续时间 (默认100ms)
+  */
+void head_tilt_detect_update(float current_pitch, uint32_t current_tick)
+{
+    /* 首次调用时初始化前值 */
+    if (s_prev_tick == 0) {
+        s_prev_pitch = current_pitch - head_tilt_data.pitch_zero_offset;
+        s_prev_tick  = current_tick;
+        return;
+    }
+
+    float relative_pitch = current_pitch - head_tilt_data.pitch_zero_offset;
+
+    float dt = (current_tick - s_prev_tick) / 1000.0f;
+    if (dt <= 0) dt = 0.005f; /* 最小 5ms，防止除零 */
+
+    float pitch_rate = (relative_pitch - s_prev_pitch) / dt;
+
+    /* 条件1: pitch 角超过阈值（上仰为正方向） */
+    uint8_t angle_ok = (relative_pitch >= head_tilt_data.params.pitch_threshold_deg);
+    /* 条件2: 变化速率超过阈值 */
+    uint8_t rate_ok  = (fabsf(pitch_rate) >= head_tilt_data.params.pitch_rate_threshold);
+
+    if (angle_ok && rate_ok) {
+        if (head_tilt_data.tilt_start_tick == 0) {
+            head_tilt_data.tilt_start_tick = current_tick;
+        }
+        /* 条件3: 持续时间足够 */
+        if ((current_tick - head_tilt_data.tilt_start_tick) >= head_tilt_data.params.blow_hold_ms) {
+            head_tilt_data.is_head_tilt_up = 1;
+        }
+    } else {
+        head_tilt_data.tilt_start_tick = 0;
+        head_tilt_data.is_head_tilt_up = 0;
+    }
+
+    s_prev_pitch = relative_pitch;
+    s_prev_tick  = current_tick;
+}
 
 
+/**
+  * @brief  启动时自动标定 pitch 零位
+  * @param  startup_pitch: 启动时采集的 pitch 初始值 (°)
+  *
+  *         在 MPU6050 初始化完成后、正式检测前调用，
+  *         取前若干次 pitch 均值作为零位补偿
+  */
+void head_tilt_calibrate_zero(float startup_pitch)
+{
+    head_tilt_data.pitch_zero_offset = startup_pitch;
+    s_prev_pitch = 0.0f;
+    s_prev_tick  = 0;
+    head_tilt_data.is_head_tilt_up = 0;
+    head_tilt_data.tilt_start_tick = 0;
+    s_zero_calibrated = 1;
+
+    rt_kprintf("HEAD TILT: zero calibrated, offset = %.2f°\n", startup_pitch);
+}
 
 
 
@@ -147,11 +232,23 @@ void euler_angles_thread_entry(void* parameter)
 {
 
 #define USER_PRINTF_EULER_ANGELES 0
+
+    /* 启动前延迟等待传感器稳定，然后标定零位 */
+    rt_thread_mdelay(2000);
+    calculate_euler_angles(mpu6050_dev, &carEulerAngles);
+    head_tilt_calibrate_zero(carEulerAngles.pitch);
+
     while(1)
     {
-        calculate_euler_angles(mpu6050_dev,&carEulerAngles);
+        calculate_euler_angles(mpu6050_dev, &carEulerAngles);
+
+        /* 头部上仰检测 */
+        head_tilt_detect_update(carEulerAngles.pitch, rt_tick_get_millisecond());
+
 #if USER_PRINTF_EULER_ANGELES
-        rt_kprintf("Pitch:%0.2f°, Roll:%0.2f°, Yaw:%0.2f° \r\n",carEulerAngles.pitch,carEulerAngles.roll,carEulerAngles.yaw);
+        rt_kprintf("Pitch:%0.2f°, Roll:%0.2f°, Yaw:%0.2f°, tilt:%d \r\n",
+                   carEulerAngles.pitch, carEulerAngles.roll, carEulerAngles.yaw,
+                   head_tilt_data.is_head_tilt_up);
 #endif
         rt_thread_mdelay(1000/SAMPLE_RATE);
     }
@@ -175,6 +272,3 @@ int euler_angles_Thread_Init(void)
     }
     return RT_EOK;
 }
-
-
-

@@ -8,9 +8,11 @@
  * 2025-12-05     18452       the first version
  * 2026-04-25     coder       完善光栅板通信协议解析与指令发送
  * 2026-04-27     coder       适配光栅板纯采集架构：接收脉冲增量帧，删除成绩帧处理
+ * 2026-04-29     coder       添加模式切换指令发送和三路信号联合判别
  */
 
 #include "uart2_protocol.h"
+#include "bsp_mpu6050_euler_angles.h"
 #include "string.h"
 
 /* 串口2连接光栅板，用于接收按压/吹气脉冲增量数据 */
@@ -62,6 +64,11 @@ static parse_state_t parse_state = PARSE_WAIT_HEAD;
 static uint8_t  parse_buf[10];     /* 帧缓冲 (最大10字节) */
 static uint8_t  parse_idx = 0;    /* 当前接收索引 */
 static uint8_t  parse_len = 0;    /* LEN字段值 */
+
+
+/* ====== 联合判别状态 ====== */
+#define JOINT_DISCRIM_PRESSURE_THRESHOLD  3500   /* 压力 ADC 阈值 */
+static detect_state_et s_detect_state = DETECT_IDLE;
 
 
 /**
@@ -322,6 +329,143 @@ void USART2_Send_Stop_To_Raster(void)
 
     rt_device_write(serial2, 0, buf, 6);
     rt_kprintf("UART2 Send STOP to Raster\n");
+}
+
+
+/* ====== 模式切换指令发送 ====== */
+
+/**
+  * @brief  发送进入按压模式指令到光栅板
+  *         帧格式: 0xAA + 0x02 + 0x11 + 0x01 + CHK + 0x55 (6字节)
+  *         CMD=0x11 表示模式切换类指令，DATA=CMD_ACTIVATE_PRESSURE(0x01)
+  */
+void send_activate_pressure_cmd(void)
+{
+    uint8_t buf[6];
+    uint8_t chk;
+
+    buf[0] = 0xAA;                         /* 帧头 */
+    buf[1] = 0x02;                         /* LEN */
+    buf[2] = 0x11;                         /* CMD: 模式切换指令 */
+    buf[3] = CMD_ACTIVATE_PRESSURE;        /* DATA: 进入按压模式 */
+
+    chk = buf[0] + buf[1] + buf[2] + buf[3];
+    buf[4] = chk;
+    buf[5] = 0x55;
+
+    rt_device_write(serial2, 0, buf, 6);
+    rt_kprintf("UART2 Send ACTIVATE_PRESSURE to Raster\n");
+}
+
+
+/**
+  * @brief  发送退出按压模式指令到光栅板
+  *         帧格式: 0xAA + 0x02 + 0x11 + 0x02 + CHK + 0x55 (6字节)
+  */
+void send_idle_pressure_cmd(void)
+{
+    uint8_t buf[6];
+    uint8_t chk;
+
+    buf[0] = 0xAA;
+    buf[1] = 0x02;
+    buf[2] = 0x11;                         /* CMD: 模式切换指令 */
+    buf[3] = CMD_IDLE_PRESSURE;            /* DATA: 退出按压模式 */
+
+    chk = buf[0] + buf[1] + buf[2] + buf[3];
+    buf[4] = chk;
+    buf[5] = 0x55;
+
+    rt_device_write(serial2, 0, buf, 6);
+    rt_kprintf("UART2 Send IDLE_PRESSURE to Raster\n");
+}
+
+
+/**
+  * @brief  发送进入吹气模式指令到光栅板
+  *         帧格式: 0xAA + 0x02 + 0x11 + 0x03 + CHK + 0x55 (6字节)
+  */
+void send_activate_blow_cmd(void)
+{
+    uint8_t buf[6];
+    uint8_t chk;
+
+    buf[0] = 0xAA;
+    buf[1] = 0x02;
+    buf[2] = 0x11;                         /* CMD: 模式切换指令 */
+    buf[3] = CMD_ACTIVATE_BLOW;            /* DATA: 进入吹气模式 */
+
+    chk = buf[0] + buf[1] + buf[2] + buf[3];
+    buf[4] = chk;
+    buf[5] = 0x55;
+
+    rt_device_write(serial2, 0, buf, 6);
+    rt_kprintf("UART2 Send ACTIVATE_BLOW to Raster\n");
+}
+
+
+/* ====== 三路信号联合判别 ====== */
+
+/**
+  * @brief  三路信号联合判别函数
+  *
+  *         输入: ADC128S 压力值 + MPU6050 pitch 上仰标志
+  *         输出: 通过 UART2 发送模式切换指令到光栅板
+  *
+  *         判别组合表:
+  *         | 压力超阈值 | pitch 上仰 | 结果            | 发送指令            |
+  *         |-----------|-----------|----------------|-------------------|
+  *         | 0         | 0         | DETECT_IDLE    | idle_pressure     |
+  *         | 1         | 0         | DETECT_PRESS   | activate_pressure |
+  *         | 0         | 1         | DETECT_BLOW    | activate_blow     |
+  *         | 1         | 1         | DETECT_CONFLICT| activate_pressure (按压优先) |
+  *
+  * @param  pressure_raw: ADC128S 压力通道原始值
+  */
+void joint_discrimination(uint16_t pressure_raw)
+{
+    uint8_t pressure_triggered = (pressure_raw >= JOINT_DISCRIM_PRESSURE_THRESHOLD) ? 1 : 0;
+    uint8_t tilt_triggered     = head_tilt_data.is_head_tilt_up;
+    detect_state_et new_state  = DETECT_IDLE;
+
+    /* 判别逻辑 */
+    if (pressure_triggered && tilt_triggered) {
+        /* 冲突: 两者同时触发，按压优先 */
+        new_state = DETECT_PRESS_CONFIRMED;
+    } else if (pressure_triggered) {
+        new_state = DETECT_PRESS_CONFIRMED;
+    } else if (tilt_triggered) {
+        new_state = DETECT_BLOW_CONFIRMED;
+    } else {
+        new_state = DETECT_IDLE;
+    }
+
+    /* 状态变化时才发送指令，避免重复发送 */
+    if (new_state != s_detect_state)
+    {
+        switch (new_state)
+        {
+            case DETECT_PRESS_CONFIRMED:
+                send_activate_pressure_cmd();
+                break;
+
+            case DETECT_BLOW_CONFIRMED:
+                send_activate_blow_cmd();
+                break;
+
+            case DETECT_IDLE:
+                send_idle_pressure_cmd();
+                break;
+
+            default:
+                break;
+        }
+
+        s_detect_state = new_state;
+
+        rt_kprintf("JOINT: press=%u tilt=%u -> state=%d\n",
+                   pressure_triggered, tilt_triggered, new_state);
+    }
 }
 
 
