@@ -114,7 +114,7 @@ int USART2_Init(void)
     }
 
     rt_device_control(serial2, RT_DEVICE_CTRL_CONFIG, &usart2Config);
-    rt_device_open(serial2, RT_DEVICE_OFLAG_RDONLY | RT_DEVICE_FLAG_INT_RX);
+    rt_device_open(serial2, RT_DEVICE_OFLAG_RDWR | RT_DEVICE_FLAG_INT_RX);
     rt_device_set_rx_indicate(serial2, Usart2_RX_Callback);
 
     /* 初始化循环队列 */
@@ -280,12 +280,17 @@ void uart2_thread_entry(void* parameter)
             }
         }
 
-        /* 三路信号联合判别（每循环调用一次） */
+        /* 三路信号联合判别（每50ms调用一次） */
         {
-            rt_uint16_t pressure_raw = 0;
-            /* TODO: 确认压力 ADC 通道号，暂用 Channel_0 */
-            adc128s102_read_raw(ADC128S_Channel_0, &pressure_raw);
-            joint_discrimination(pressure_raw);
+            static uint32_t last_discrim_tick = 0;
+            uint32_t now = rt_tick_get();
+            if ((now - last_discrim_tick) >= (50 * RT_TICK_PER_SECOND / 1000))
+            {
+                last_discrim_tick = now;
+                rt_uint16_t pressure_raw = 0;
+                adc128s102_read_raw(ADC128S_Channel_0, &pressure_raw);
+                joint_discrimination(pressure_raw);
+            }
         }
 
         rt_thread_mdelay(10);

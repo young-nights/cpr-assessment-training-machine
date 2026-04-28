@@ -26,6 +26,7 @@ void main(void)
     int32_t prev_press;
     int32_t prev_blow;
     uint32_t last_send_tick = 0;   /* 上次发送时间戳 */
+    uint8_t first_active = 1;      /* 首次进入ACTIVE标志 */
 
     /* 关闭所有中断 */
     disableInterrupts();
@@ -62,9 +63,16 @@ void main(void)
                 /* 待机状态: 等待开始指令，不发送任何数据 */
                 prev_press = 0;
                 prev_blow = 0;
+                first_active = 1;   /* 重置首帧标志 */
                 break;
 
             case RASTER_ACTIVE:
+                if (first_active) {
+                    /* 首次进入：同步prev与当前计数，避免首帧delta异常 */
+                    prev_press = depth_count_press;
+                    prev_blow = depth_count_blow;
+                    first_active = 0;
+                }
                 /* 每100ms发送一次（非阻塞） */
                 if ((g_system_tick_ms - last_send_tick) >= 100)
                 {

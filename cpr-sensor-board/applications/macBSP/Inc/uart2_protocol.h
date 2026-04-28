@@ -92,13 +92,13 @@ void send_activate_pressure_cmd(void);
 
 /**
   * @brief  发送退出按压模式指令到光栅板
-  *         帧格式: 0xAA + 0x02 + 0x12 + 0x02 + CHK + 0x55 (6字节)
+  *         帧格式: 0xAA + 0x02 + 0x11 + 0x02 + CHK + 0x55 (6字节)
   */
 void send_idle_pressure_cmd(void);
 
 /**
   * @brief  发送进入吹气模式指令到光栅板
-  *         帧格式: 0xAA + 0x02 + 0x13 + 0x03 + CHK + 0x55 (6字节)
+  *         帧格式: 0xAA + 0x02 + 0x11 + 0x03 + CHK + 0x55 (6字节)
   */
 void send_activate_blow_cmd(void);
 

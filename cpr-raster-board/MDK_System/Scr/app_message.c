@@ -71,9 +71,10 @@ static void switch_detect_mode(uint8_t mode_code)
 
         case CMD_IDLE_PRESSURE:
             g_raster_detect_mode = RASTER_DETECT_IDLE;
-            /* 退出按压模式时清零计数器 */
             depth_count_press = 0;
             direction_press = 0;
+            depth_count_blow = 0;
+            direction_blow = 0;
             break;
 
         case CMD_ACTIVATE_BLOW:

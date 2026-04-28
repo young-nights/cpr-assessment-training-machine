@@ -2,7 +2,6 @@
 #define __SYS_H
 #include "stm8s.h"
 
-#define PITCH_MM_01MM    20       /* 齿距 2mm = 20 (0.1mm单位) */
 #define MM_PER_PULSE_01  5        /* 每脉冲 0.5mm = 5 (0.1mm单位) */
 
 extern volatile int32_t depth_count_press;    // 按压脉冲计数（正=下压，负=回弹）
