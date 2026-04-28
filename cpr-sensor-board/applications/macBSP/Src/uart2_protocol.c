@@ -17,6 +17,9 @@
 
 /* 串口2连接光栅板，用于接收按压/吹气脉冲增量数据 */
 
+/* ADC128S 压力通道读取函数（声明在 adc128s102cimtx.c 中） */
+extern rt_err_t adc128s102_read_raw(adc128s_channel_et ch, rt_uint16_t *value);
+
 
 /* ====== UART2 配置 ====== */
 #define RT_SERIAL_CONFIG_USART2            \
@@ -64,6 +67,7 @@ static parse_state_t parse_state = PARSE_WAIT_HEAD;
 static uint8_t  parse_buf[10];     /* 帧缓冲 (最大10字节) */
 static uint8_t  parse_idx = 0;    /* 当前接收索引 */
 static uint8_t  parse_len = 0;    /* LEN字段值 */
+static uint32_t parse_start_tick = 0;  /* 帧解析开始时间戳 */
 
 
 /* ====== 联合判别状态 ====== */
@@ -203,6 +207,15 @@ void uart2_thread_entry(void* parameter)
             /* 释放互斥锁 */
             rt_mutex_release(Uart2Buf.lock);
 
+            /* ====== 帧解析超时保护 ====== */
+            if (parse_state != PARSE_WAIT_HEAD) {
+                /* 超过 50ms 未完成解析，强制重置 */
+                if ((rt_tick_get() - parse_start_tick) > (50 * RT_TICK_PER_SECOND / 1000)) {
+                    parse_state = PARSE_WAIT_HEAD;
+                    parse_idx = 0;
+                }
+            }
+
             /* ====== 帧解析状态机 ====== */
             switch (parse_state)
             {
@@ -210,6 +223,7 @@ void uart2_thread_entry(void* parameter)
                     /* 等待帧头 0xAA */
                     if (recDat == FRAME_HEAD)
                     {
+                        parse_start_tick = rt_tick_get();
                         parse_state = PARSE_WAIT_LEN;
                         parse_idx = 0;
                     }
@@ -264,6 +278,14 @@ void uart2_thread_entry(void* parameter)
                     parse_idx = 0;
                     break;
             }
+        }
+
+        /* 三路信号联合判别（每循环调用一次） */
+        {
+            rt_uint16_t pressure_raw = 0;
+            /* TODO: 确认压力 ADC 通道号，暂用 Channel_0 */
+            adc128s102_read_raw(ADC128S_Channel_0, &pressure_raw);
+            joint_discrimination(pressure_raw);
         }
 
         rt_thread_mdelay(10);

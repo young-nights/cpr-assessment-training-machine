@@ -76,8 +76,8 @@ void main(void)
                     prev_press = depth_count_press;
                     prev_blow  = depth_count_blow;
 
-                    /* 发送按压或吹气帧（二选一，不同时发生） */
-                    if (direction_blow != 0) {
+                    /* 发送按压或吹气帧（根据检测模式或方向判别） */
+                    if (g_raster_detect_mode == RASTER_DETECT_BLOW || direction_blow != 0) {
                         /* 吹气阶段 */
                         USART1_SendRealtimeData(delta_blow, direction_blow, 0x02);
                     } else {

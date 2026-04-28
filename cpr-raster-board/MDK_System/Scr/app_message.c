@@ -65,6 +65,8 @@ static void switch_detect_mode(uint8_t mode_code)
     {
         case CMD_ACTIVATE_PRESSURE:
             g_raster_detect_mode = RASTER_DETECT_PRESSURE;
+            depth_count_blow = 0;
+            direction_blow = 0;
             break;
 
         case CMD_IDLE_PRESSURE:
@@ -76,6 +78,8 @@ static void switch_detect_mode(uint8_t mode_code)
 
         case CMD_ACTIVATE_BLOW:
             g_raster_detect_mode = RASTER_DETECT_BLOW;
+            depth_count_press = 0;
+            direction_press = 0;
             break;
 
         default:
