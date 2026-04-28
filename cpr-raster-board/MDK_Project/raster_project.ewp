@@ -1615,18 +1615,6 @@
             <name>$PROJ_DIR$\..\MDK_APP\app_bsp.h</name>
         </file>
         <file>
-            <name>$PROJ_DIR$\..\MDK_APP\app_calculator.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\MDK_APP\app_calculator.h</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\MDK_APP\app_report.c</name>
-        </file>
-        <file>
-            <name>$PROJ_DIR$\..\MDK_APP\app_report.h</name>
-        </file>
-        <file>
             <name>$PROJ_DIR$\..\MDK_APP\app_timming.c</name>
         </file>
         <file>
