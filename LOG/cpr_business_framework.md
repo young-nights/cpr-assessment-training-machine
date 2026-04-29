@@ -931,7 +931,7 @@ DM32 打印机 (用户触发打印)
 
 ```
 用户按压 → 光栅编码器 → Raster板(中断计数) → UART发送深度方向
-    → Sensor板(UART2接收) → STM32内置ADC(压电陶瓷片震动确认) → MPU6050(角度)
+    → Sensor板(UART2接收) → ADC128S102CIMTX(薄膜压力传感器点位检测) → MPU6050(头部角度)
     → nRF24L01打包 → Mainboard(Pipe1接收) → 评分运算
     → 数码管显示/语音播报 → nRF24L01(Pipe2) → Remote(LVGL显示)
 ```
