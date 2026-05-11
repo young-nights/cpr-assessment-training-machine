@@ -1,7 +1,7 @@
 # CPR 心肺复苏训练考核系统 - 业务框架设计文档
 
-> **版本**:v2.0
-> **日期**:2026-04-25
+> **版本**:v2.1
+> **日期**:2026-05-12
 > **作者**:coder
 > **关联文档**:[业务需求.md](./业务需求.md)(各板业务流程规范)
 > **项目仓库**:`cpr-assessment-training-machine`
@@ -101,7 +101,7 @@ CPR(Cardiopulmonary Resuscitation)心肺复苏训练考核系统是一套用于�
 - **按压点位检测**:ADC128S102CIMTX 采集薄膜压力传感器,判断按压位置(上/中/下/左/右五个方位 + 气道开启 LED + 吹气进胃 LED)
 - **头部上仰检测**:MPU6050 安置在模拟人头部,测量吹气时头部上仰角度
 - **光栅数据接收**:UART2 连接光栅板,接收按压深度、按压频率、有效/无效按压次数、潮气深度、吹气参数等数据
-- **眼灯控制**:WS2812B 眼灯控制(瞳孔状态模拟)
+- **眼部状态显示**:OLED (0.66寸, PC10/PC11 I2C) + WS2812B (PA11 PWM) 协同控制眼睛状态(濒死: WS2812B最低亮度+OLED黑屏; 正常: WS2812B白灯全亮+OLED白底黑圆)
 - **颈动脉模拟**:空心杯电机控制(颈动脉脉搏模拟,参见下方状态机)
 - **异物检测**:CC6201 霍尔传感器检测异物
 - **无线通信**:nRF24L01 与 Mainboard 通信
@@ -117,7 +117,8 @@ CPR(Cardiopulmonary Resuscitation)心肺复苏训练考核系统是一套用于�
 | nRF24L01 | 无线通信(与 Mainboard) | SPI |
 | UART2 | 光栅板数据接收(按压/吹气参数) | 串口 115200 |
 | RS485 | 有线通信备用(与 Mainboard) | UART |
-| WS2812B | 眼灯控制(瞳孔状态) | GPIO (单总线) |
+| WS2812B | 眼灯白光控制(PA11) | PWM |
+| OLED (0.66寸) | 眼部屏幕(PC10/PC11) | I2C |
 | 空心杯电机 | 颈动脉脉搏模拟 | PWM |
 | CC6201 | 异物检测 | GPIO |
 
@@ -176,7 +177,8 @@ cpr-sensor-board/applications/
 ├── macBSP/
 │   ├── adc1115idgsr.c/h       # ADC 芯片驱动
 │   ├── adc128s102cimtx.c/h    # ADC 芯片驱动
-│   ├── bsp_ws2812b.c/h        # WS2812B 眼灯控制
+│   ├── bsp_ws2812b.c/h        # WS2812B 眼灯控制 (PA11 PWM)
+│   ├── bsp_oled_eye.c/h       # OLED 眼屏控制 (PC10/PC11 I2C, 0.66寸)
 │   ├── bsp_rs485_*.c/h        # RS485 有线通信
 │   ├── uart2_protocol.c/h     # UART2 光栅板通信
 │   └── uart3_protocol.c/h     # UART3 通信
@@ -594,7 +596,7 @@ CRC:CRC16-Modbus 校验,计算范围从 LEN 字节开始到参数列表末尾
 |-----|--------|----------|------|
 | 0x02 | `FRAME_NRF24_SEND_TO_SENSOR_START_CMD` | `FRAME_TYPE_ACT` | 发送开始指令 |
 | 0x03 | `FRAME_NRF24_ACK_SHOKE_SENSOR_CMD` | `FRAME_TYPE_ACT` | 应答压电反馈 |
-| 0x04 | `FRAME_NRF24_ASK_WS2812B_LEVEL_CMD` | `FRAME_TYPE_ACT` | 设置眼灯亮度挡位 |
+| 0x04 | `FRAME_NRF24_ASK_WS2812B_LEVEL_CMD` | `FRAME_TYPE_ACT` | 设置眼部状态(濒死/正常, WS2812B+OLED联动) |
 | 0x05 | `FRAME_NRF24_ASK_MOTOR_STATUS_CMD` | `FRAME_TYPE_ACT` | 设置空心杯电机工作模式 |
 | 0x06 | `FRAME_NRF24_ACK_CC6201_CMD` | `FRAME_TYPE_ACT` | 应答磁传感器状态 |
 
@@ -604,7 +606,7 @@ CRC:CRC16-Modbus 校验,计算范围从 LEN 字节开始到参数列表末尾
 |-----|--------|----------|------|
 | 0x02 | `FRAME_NRF24_ACK_START_CMD` | `FRAME_TYPE_ACT` | 确认收到开始指令 |
 | 0x03 | `FRAME_NRF24_ASK_SHOKE_SENSOR_CMD` | `FRAME_TYPE_ACT` | 压电陶瓷片震动反馈 |
-| 0x04 | `FRAME_NRF24_ACK_WS2812B_LEVEL_CMD` | `FRAME_TYPE_ACT` | 眼灯挡位设置应答 |
+| 0x04 | `FRAME_NRF24_ACK_WS2812B_LEVEL_CMD` | `FRAME_TYPE_ACT` | 眼部状态设置应答 |
 | 0x05 | `FRAME_NRF24_ACK_MOTOR_STATUS_CMD` | `FRAME_TYPE_ACT` | 电机状态应答 |
 | 0x06 | `FRAME_NRF24_ASK_CC6201_CMD` | `FRAME_TYPE_ACT` | 磁传感器状态上报 |
 
@@ -835,7 +837,7 @@ DM32 打印机 (用户触发打印)
 | 0x0005 | `REG_ANGLE_Y` | int16 | MPU6050 Y轴角度 |
 | 0x0006 | `REG_HALL_STATUS` | uint16 | 霍尔传感器状态 (0:有异物 1:无异物) |
 | 0x0007 | `REG_POSITION` | uint16 | 按压位置 1-7 |
-| 0x0008 | `REG_WS2812_LEVEL` | uint16 | 眼灯挡位 (0:关闭 1:弱光 2:强光) |
+| 0x0008 | `REG_WS2812_LEVEL` | uint16 | 眼部状态 (0:濒死 WS2812B最低+OLED黑屏 1:正常 WS2812B白灯+OLED白底黑圆) |
 | 0x0009 | `REG_MOTOR_STATUS` | uint16 | 电机状态 (0:关闭 1:随按压 2:自主) |
 | 0x000A | `REG_DEVICE_STATUS` | uint16 | 设备状态位图 |
 
@@ -1536,7 +1538,7 @@ typedef struct {
     System_Mode_t current_mode;     // 训练/考核/竞赛
     uint8_t       start_status;     // 0:未开始 1:已开始 2:已结束
     uint8_t       cc6201_state;     // 0:有异物  1:无异物
-    uint8_t       eyes_rgb_level;   // 0:关闭 1:弱光 2:强光
+    uint8_t       eyes_rgb_level;   // 0:濒死(WS2812B最低+OLED黑屏) 1:正常(WS2812B白灯+OLED白底黑圆)
     uint8_t       motor_work_sta;   // 0:关闭 1:随按压 2:自主震动
     Mode_Params_t params[MODE_MAX]; // 各模式参数(时间/达标率/计数)
 } System_Config_t;
@@ -1702,6 +1704,7 @@ DM32 热敏打印机通过 RS232 接口连接 Mainboard 板,根据系统模式�
 |------|------|---------|
 | v1.0 | 2026-04-24 | 初始版本,硬件架构、通信协议、线程架构、数据结构 |
 | v2.0 | 2026-04-25 | **重构合并**:统一命令码定义(合并 FRAME_NRF24_ 系列与 CMD_ 系列),删除 Sensor 外设表重复条目,统一子节编号格式;**交叉补充**:§3 各板业务流程总览(引用业务需求.md),颈动脉模拟三状态,三种模式成绩单格式(§11.5),考核模式操作流程检查(§6.4);**协议优化**:明确 5.2 实时帧与 5.3 成绩帧的边界区分 |
+| v2.1 | 2026-05-12 | 眼部板由 WS2812B 单组件变更为 OLED(0.66寸) + WS2812B(PA11) 双组件；§3.1 Sensor职责更新、关键外设表新增OLED行、源码结构新增bsp_oled_eye；眼灯亮度由3档改为濒死/正常2态；§5.1.4命令描述、§5.4寄存器说明、§11.2系统配置结构同步更新 |
 
 ---
 
