@@ -343,7 +343,7 @@ MSH_CMD_EXPORT(cmd1, WS2812B_demo);
 
 // 外部句柄（CubeMX 生成）
 extern TIM_HandleTypeDef htim1;
-extern DMA_HandleTypeDef hdma_tim1_ch4;
+extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 // 内部宏定义
 #define BYTES_PER_LED   3           // RGB=3, RGBW=4
@@ -381,9 +381,7 @@ void ws2812b_init(void)
     dma_complete_sem = rt_sem_create("ws_sem", 0, RT_IPC_FLAG_FIFO);
     RT_ASSERT(dma_complete_sem != RT_NULL);
 
-    // NVIC中断启用
-    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+    // NVIC interrupt is configured by CubeMX in main.c
 }
 
 
@@ -515,17 +513,23 @@ void update_sequence(uint8_t is_tc)
     }
 }
 
-// [FIX3-6] HT/TC 中断处理（移除HAL_DMA_IRQHandler避免它清除HT/TC标志）
-void DMA1_Channel4_IRQHandler(void)
+/* DMA1_Channel4 IRQ handler is defined in cubemx/Src/stm32f1xx_it.c (CubeMX generated).
+ * It calls HAL_DMA_IRQHandler which triggers the callbacks below. */
+
+// [FIX3-6] DMA Half-Transfer callback (HT)
+void HAL_DMA_XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
 {
-    if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4, DMA_FLAG_HT4))
+    if (hdma == &hdma_tim1_ch4_trig_com)
     {
-        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4, DMA_FLAG_HT4);
         update_sequence(0);  // HT
     }
-    if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4, DMA_FLAG_TC4))
+}
+
+// [FIX3-6] DMA Transfer-Complete callback (TC)
+void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef *hdma)
+{
+    if (hdma == &hdma_tim1_ch4_trig_com)
     {
-        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4, DMA_FLAG_TC4);
         update_sequence(1);  // TC
     }
 }
