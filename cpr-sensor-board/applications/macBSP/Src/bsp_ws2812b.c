@@ -343,7 +343,7 @@ MSH_CMD_EXPORT(cmd1, WS2812B_demo);
 
 // 外部句柄（CubeMX 生成）
 extern TIM_HandleTypeDef htim1;
-extern DMA_HandleTypeDef hdma_tim1_ch1;
+extern DMA_HandleTypeDef hdma_tim1_ch4;
 
 // 内部宏定义
 #define BYTES_PER_LED   3           // RGB=3, RGBW=4
@@ -382,8 +382,8 @@ void ws2812b_init(void)
     RT_ASSERT(dma_complete_sem != RT_NULL);
 
     // NVIC中断启用
-    HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 }
 
 
@@ -458,11 +458,11 @@ rt_err_t ws2812b_update(void)
     is_updating = 1;
     led_index = 0;
 
-    HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_1);  // 确保干净启动
+    HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);  // 确保干净启动
 
     memset(ws2812_buffer, 0, sizeof(ws2812_buffer));
 
-    if (HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_1, (uint32_t *)ws2812_buffer, DMA_BUFF_LEN) != HAL_OK)
+    if (HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_4, (uint32_t *)ws2812_buffer, DMA_BUFF_LEN) != HAL_OK)
     {
         rt_kprintf("DMA启动失败\n");
         is_updating = 0;
@@ -505,7 +505,7 @@ void update_sequence(uint8_t is_tc)
     // 全部发送完成 + 足够复位后停止
     if (led_index >= RESET_PRE_MIN + LED_COUNT + RESET_POST_MIN + 20)  // 多加20个周期确保复位
     {
-        HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_1);
+        HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);
         // HAL_TIM_Base_Stop(&htim3);   // 可选
 
         is_updating = 0;
@@ -516,16 +516,16 @@ void update_sequence(uint8_t is_tc)
 }
 
 // [FIX3-6] HT/TC 中断处理（移除HAL_DMA_IRQHandler避免它清除HT/TC标志）
-void DMA1_Channel2_IRQHandler(void)
+void DMA1_Channel4_IRQHandler(void)
 {
-    if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch1, DMA_FLAG_HT2))
+    if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4, DMA_FLAG_HT4))
     {
-        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch1, DMA_FLAG_HT2);
+        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4, DMA_FLAG_HT4);
         update_sequence(0);  // HT
     }
-    if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch1, DMA_FLAG_TC2))
+    if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4, DMA_FLAG_TC4))
     {
-        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch1, DMA_FLAG_TC2);
+        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4, DMA_FLAG_TC4);
         update_sequence(1);  // TC
     }
 }
@@ -621,46 +621,32 @@ void ws2812b_demo_effects(void)
 
 
 /**
- * @brief 设置全白色灯，三档亮度控制
- * @param level 亮度档位： 0=关闭， 1=40%， 2=80%
+ * @brief Set WS2812B eye LED state
+ * @param state 0=dying(min brightness), 1=normal(full white)
  */
-void ws2812b_set_white(uint8_t level)
+void ws2812b_set_white(uint8_t state)
 {
-    uint8_t brightness = 0;
-
-    switch (level)
+    switch (state)
     {
-        case 0:     // 关闭
-            brightness = 0;
-            LOG_I("WS2812B 全白灯已关闭");
+        case 0:  // Dying - minimum brightness
+            ws2812b_set_brightness(3);
+            ws2812b_set_all(255, 255, 255);
+            ws2812b_update();
+            LOG_I("WS2812B: dying state (min brightness)");
             break;
-
-        case 1:     // 中亮 5%
-            brightness = 5;
-            LOG_I("WS2812B 全白灯设置为 中亮 (5%%)");
+        case 1:  // Normal - full white
+            ws2812b_set_brightness(100);
+            ws2812b_set_all(255, 255, 255);
+            ws2812b_update();
+            LOG_I("WS2812B: normal state (full white)");
             break;
-
-        case 2:     // 高亮 80%
-            brightness = 80;
-            LOG_I("WS2812B 全白灯设置为 高亮 (80%%)");
-            break;
-
-        default:    // 非法参数默认关闭
-            brightness = 0;
-            LOG_W("WS2812B set_white 参数错误，已关闭");
+        default:
+            ws2812b_set_brightness(0);
+            ws2812b_set_all(0, 0, 0);
+            ws2812b_update();
+            LOG_W("WS2812B set_white unknown state, turned off");
             break;
     }
-
-    // 调用已有的亮度设置函数（会自动应用到所有灯）
-    ws2812b_set_brightness(brightness);
-
-    // 设置为白色 (GRB顺序：G=255, R=255, B=255)
-    ws2812b_set_all(255, 255, 255);
-
-    // 更新显示
-    ws2812b_update();
-
-    // 等待本次更新完成
     if (dma_complete_sem != RT_NULL) {
         rt_sem_take(dma_complete_sem, 300);
     }

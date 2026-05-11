@@ -71,6 +71,7 @@ int main(void)
   mpu6xxxParameter.if_start_gyro_cali_process = 1;
 
   ws2812b_init();
+  oled_eye_init();
   Hard_Thread_Init();
 
   nRF24L01_Thread_Init();

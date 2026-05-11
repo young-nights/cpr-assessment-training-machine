@@ -40,6 +40,7 @@
 #include "bsp_rs485_dev.h"
 #include "bsp_rs485_message.h"
 #include "bsp_ws2812b.h"
+#include "bsp_oled_eye.h"
 
 /* macNRF 头文件 */
 #include <macNRF/Inc/sensor_nrf24l01_driver.h>

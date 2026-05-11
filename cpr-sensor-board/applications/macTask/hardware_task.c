@@ -28,9 +28,14 @@ void Hard_Thread_entry(void* parameter)
             // step1：模拟人进入初始状态（双侧瞳孔涣散）
             switch(Record.ws2812b_levle)
             {
-                case 0: ws2812b_set_white(0); break;
-                case 1: ws2812b_set_white(1); break;
-                case 2: ws2812b_set_white(2); break;
+                case 0:  /* Dying state: min brightness + black OLED */
+                    ws2812b_set_white(0);
+                    oled_eye_dying();
+                    break;
+                case 1:  /* Normal state: full white + pupil OLED */
+                    ws2812b_set_white(1);
+                    oled_eye_normal();
+                    break;
                 default: break;
             }
 
