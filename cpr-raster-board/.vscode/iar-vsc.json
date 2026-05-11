@@ -1,0 +1,18 @@
+{
+  "workspace": {
+    "path": "${workspaceFolder}\\MDK_Project\\raster_project.eww"
+  },
+  "workspaces": {
+    "${workspaceFolder}\\MDK_Project\\raster_project.eww": {
+      "configs": {
+        "${workspaceFolder}\\MDK_Project\\raster_project.ewp": "Debug"
+      },
+      "selected": {
+        "path": "${workspaceFolder}\\MDK_Project\\raster_project.ewp"
+      }
+    }
+  },
+  "workbench": {
+    "path": "D:\\Program Files (x86)\\IAR Systems\\Embedded Workbench 8.0"
+  }
+}
