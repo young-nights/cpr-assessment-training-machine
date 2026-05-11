@@ -43,7 +43,7 @@ extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi3;
 
 extern TIM_HandleTypeDef htim1;
-extern DMA_HandleTypeDef hdma_tim1_ch1;
+extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;

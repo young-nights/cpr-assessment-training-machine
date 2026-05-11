@@ -47,7 +47,7 @@ SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
 
 TIM_HandleTypeDef htim1;
-DMA_HandleTypeDef hdma_tim1_ch1;
+DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 UART_HandleTypeDef huart1;
 UART_HandleTypeDef huart2;
@@ -58,6 +58,7 @@ UART_HandleTypeDef huart3;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -385,11 +386,10 @@ void MX_TIM1_Init(void)
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
-  sConfigOC.OCNPolarity = TIM_OCNPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
+  if (HAL_TIM_PWM_ConfigChannel(&htim1, &sConfigOC, TIM_CHANNEL_4) != HAL_OK)
   {
     Error_Handler();
   }
@@ -520,9 +520,9 @@ void MX_DMA_Init(void)
   __HAL_RCC_DMA1_CLK_ENABLE();
 
   /* DMA interrupt init */
-  /* DMA1_Channel2_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Channel2_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Channel2_IRQn);
+  /* DMA1_Channel4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 
 }
 
@@ -611,6 +611,7 @@ void MX_GPIO_Init(void)
 /* USER CODE BEGIN 4 */
 
 /* USER CODE END 4 */
+
 
 #ifdef USE_FULL_ASSERT
 /**
