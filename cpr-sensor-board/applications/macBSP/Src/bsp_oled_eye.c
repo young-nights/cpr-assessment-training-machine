@@ -6,6 +6,7 @@
  * Change Logs:
  * Date           Author       Notes
  * 2026-05-12     coder        the first version - OLED eye driver (SSD1306, bit-bang I2C)
+ * 2026-05-12     coder        migrated from SSD1306 (128x64) to ST7315 (64x48)
  */
 
 #include "bsp_oled_eye.h"
@@ -30,7 +31,7 @@
 #define SCL_LOW()           HAL_GPIO_WritePin(OLED_SCL_PORT, OLED_SCL_PIN, GPIO_PIN_RESET)
 #define SDA_READ()          HAL_GPIO_ReadPin(OLED_SDA_PORT, OLED_SDA_PIN)
 
-/* --- Framebuffer: 128x64 = 1024 bytes --- */
+/* --- Framebuffer: 64x6 = 384 bytes (ST7315 64x48) --- */
 static uint8_t framebuffer[OLED_WIDTH * OLED_PAGES];
 
 /* ================================================================
@@ -130,7 +131,7 @@ static void i2c_send_addr(void)
 }
 
 /**
- * @brief Send a command byte to SSD1306
+ * @brief Send a command byte to ST7315
  */
 static void oled_send_cmd(uint8_t cmd)
 {
@@ -141,7 +142,7 @@ static void oled_send_cmd(uint8_t cmd)
 }
 
 /**
- * @brief Send data buffer to SSD1306 (continuous I2C burst)
+ * @brief Send data buffer to ST7315 (continuous I2C burst)
  */
 static void oled_send_data(const uint8_t *data, uint16_t len)
 {
@@ -177,7 +178,7 @@ static void fb_fill_white(void)
 /**
  * @brief Draw a filled circle in the framebuffer
  * @param cx  Center X
- * @param cy  Center Y (pixel coordinate, 0-63)
+ * @param cy  Center Y (pixel coordinate, 0-47)
  * @param r   Radius in pixels
  * @param color 0=black (clear bits), 1=white (set bits)
  */
@@ -206,22 +207,25 @@ static void fb_draw_filled_circle(int cx, int cy, int r, uint8_t color)
 }
 
 /**
- * @brief Flush the entire framebuffer to OLED
+ * @brief Flush the entire framebuffer to ST7315
+ *
+ * ST7315 requires page-by-page addressing with column offset 32.
+ * Cannot send all 384 bytes in one burst.
  */
 static void fb_flush(void)
 {
-    /* Set column address 0-127 */
-    oled_send_cmd(SSD1306_CMD_COL_ADDR);
-    oled_send_cmd(0);
-    oled_send_cmd(127);
+    for (uint8_t page = 0; page < OLED_PAGES; page++)
+    {
+        /* Set page address */
+        oled_send_cmd(0xB0 + page);
 
-    /* Set page address 0-7 */
-    oled_send_cmd(SSD1306_CMD_PAGE_ADDR);
-    oled_send_cmd(0);
-    oled_send_cmd(7);
+        /* Set column address (offset 32 for 64x48 mapping) */
+        oled_send_cmd(0x10 | ((32) >> 4));    /* Higher nibble */
+        oled_send_cmd(0x00 | ((32) & 0x0F));  /* Lower nibble */
 
-    /* Send framebuffer in one burst */
-    oled_send_data(framebuffer, sizeof(framebuffer));
+        /* Send one page of data (64 bytes) */
+        oled_send_data(&framebuffer[page * OLED_WIDTH], OLED_WIDTH);
+    }
 }
 
 /* ================================================================
@@ -256,43 +260,45 @@ static void oled_gpio_init(void)
  * ================================================================ */
 
 /**
- * @brief Initialize OLED (SSD1306) for eye display
+ * @brief Initialize OLED (ST7315) for eye display
  */
 void oled_eye_init(void)
 {
     oled_gpio_init();
     rt_thread_mdelay(100);  /* Wait for OLED power-up */
 
-    /* SSD1306 initialization sequence */
-    oled_send_cmd(SSD1306_CMD_DISPLAY_OFF);         /* 0xAE */
-    oled_send_cmd(SSD1306_CMD_SET_CLK_DIV);         /* 0xD5 */
-    oled_send_cmd(0x80);                            /* Default clock */
-    oled_send_cmd(SSD1306_CMD_SET_MUX);             /* 0xA8 */
-    oled_send_cmd(0x3F);                            /* 64 mux */
-    oled_send_cmd(SSD1306_CMD_SET_OFFSET);          /* 0xD3 */
-    oled_send_cmd(0x00);                            /* No offset */
-    oled_send_cmd(SSD1306_CMD_SET_START_LINE);      /* 0x40 | 0 */
-    oled_send_cmd(SSD1306_CMD_CHARGE_PUMP);         /* 0x8D */
-    oled_send_cmd(0x14);                            /* Enable charge pump */
-    oled_send_cmd(SSD1306_CMD_SEG_REMAP | 0x01);    /* 0xA1: column 127 = SEG0 */
-    oled_send_cmd(SSD1306_CMD_COM_SCAN_DIR | 0x08); /* 0xC8: remapped COM */
-    oled_send_cmd(SSD1306_CMD_COM_PINS);            /* 0xDA */
-    oled_send_cmd(0x12);                            /* Alternative COM config */
-    oled_send_cmd(SSD1306_CMD_SET_CONTRAST);        /* 0x81 */
-    oled_send_cmd(0xCF);
-    oled_send_cmd(SSD1306_CMD_SET_CHARGE);          /* 0xD9 */
-    oled_send_cmd(0xF1);
-    oled_send_cmd(SSD1306_CMD_SET_VCOM);            /* 0xDB */
+    /* ST7315 initialization sequence */
+    oled_send_cmd(0xAE);    /* display off */
+    oled_send_cmd(0x00);    /* set lower column address */
+    oled_send_cmd(0x12);    /* set higher column address */
+    oled_send_cmd(0x40);    /* set display start line */
+    oled_send_cmd(0xB0);    /* set page address */
+    oled_send_cmd(0x81);    /* contrast control */
+    oled_send_cmd(0xFF);    /* max contrast */
+    oled_send_cmd(0xA1);    /* set segment remap */
+    oled_send_cmd(0xA6);    /* normal (non-inverted) */
+    oled_send_cmd(0xA8);    /* multiplex ratio */
+    oled_send_cmd(0x2F);    /* duty = 1/48 */
+    oled_send_cmd(0xC8);    /* COM scan direction */
+    oled_send_cmd(0xD3);    /* set display offset */
+    oled_send_cmd(0x00);
+    oled_send_cmd(0xD5);    /* set osc division */
+    oled_send_cmd(0x80);
+    oled_send_cmd(0xD9);    /* set pre-charge period */
+    oled_send_cmd(0x21);    /* ST7315 uses 0x21 (SSD1306 uses 0xF1) */
+    oled_send_cmd(0xDA);    /* set COM pins */
+    oled_send_cmd(0x12);
+    oled_send_cmd(0xDB);    /* set VCOMH */
     oled_send_cmd(0x40);
-    oled_send_cmd(SSD1306_CMD_ENTIRE_ON);           /* 0xA4: output follows RAM */
-    oled_send_cmd(SSD1306_CMD_NORMAL);              /* 0xA6: non-inverted */
-    oled_send_cmd(SSD1306_CMD_DISPLAY_ON);          /* 0xAF */
+    oled_send_cmd(0x8D);    /* set charge pump enable */
+    oled_send_cmd(0x14);
+    oled_send_cmd(0xAF);    /* display ON */
 
     /* Clear screen */
     fb_clear();
     fb_flush();
 
-    LOG_I("OLED eye initialized (SSD1306, I2C bit-bang PC10/PC11)");
+    LOG_I("OLED eye initialized (ST7315, 64x48, I2C bit-bang PC10/PC11)");
 }
 
 /**
@@ -314,9 +320,9 @@ void oled_eye_normal(void)
     fb_fill_white();
 
     /* Draw black filled circle in center (pupil) */
-    int cx = OLED_WIDTH / 2;    /* 64 */
-    int cy = OLED_HEIGHT / 2;   /* 32 */
-    int radius = 16;            /* Pupil radius in pixels */
+    int cx = 32;            /* Center X for 64-pixel width */
+    int cy = 24;            /* Center Y for 48-pixel height */
+    int radius = 10;        /* Pupil radius, fits 64x48 */
     fb_draw_filled_circle(cx, cy, radius, 0);  /* color=0 means black */
 
     fb_flush();
