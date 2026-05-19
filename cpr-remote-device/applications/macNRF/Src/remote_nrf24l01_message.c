@@ -272,7 +272,7 @@ void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num)
             rt_memset(emptyBuf, 0, sizeof(emptyBuf));
             emptyBuf[0] = FRAME_NRF24_CONNECT_CTRL_PANEL_CMD;
             package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ASK,emptyBuf,1,frame_package);
-            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             Record.nrf_sending = 1;
         }break;
 

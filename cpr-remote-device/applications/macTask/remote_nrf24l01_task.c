@@ -144,75 +144,66 @@ void nRF24L01_Thread_entry(void* parameter)
     /* ====================== 主循环（状态机） ====================== */
     for(;;)
     {
-        static int conn_try = 0;
         /* 尚未连接则持续广播 */
         if(Record.nrf_if_connected == 0){
-            conn_try++;
-            if(conn_try % 20 == 0) {
-                rt_kprintf("Rem-NRF: trying connect (attempt %d)...\n", conn_try);
+            static rt_tick_t last_send = 0;
+            if(rt_tick_get() - last_send >= 300) {
+                last_send = rt_tick_get();
+                /* ----------  1. PTX 发送  ---------- */
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+                nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel, NRF24_PIPE_2);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+                rt_thread_mdelay(5);
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                rt_kprintf("NRF TX connect req\n");
             }
-            /* ----------  1. PTX 发送  ---------- */
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-            nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel,NRF24_PIPE_2);
+
+            /* ----------  2. Flush + Clear + 切换 PRX  ---------- */
+            nRF24L01_Flush_RX_FIFO(_nrf24);
+            nRF24L01_Clear_IRQ_Flags(_nrf24);
+            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
             _nrf24->nrf24_ops.nrf24_set_ce();
-            rt_kprintf("NRF TX connect req\n");
-            rt_thread_mdelay(2);
-            _nrf24->nrf24_ops.nrf24_reset_ce();
 
-            /* ----------  2. 立即进入 PRX 接收窗口  ---------- */
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);          /* 切 PRX */
-            _nrf24->nrf24_ops.nrf24_set_ce();                  /* 开始监听 */
+            /* ----------  3. 预检查 RX_DR（数据可能在切 PRX 前已到达）  ---------- */
+            uint8_t pre_status = nRF24L01_Read_Status_Register(_nrf24);
+            if(pre_status & NRF24BITMASK_RX_DR) {
+                uint8_t len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+                if(len > 0 && len <= 32) {
+                    uint8_t rec_data[32];
+                    nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
+                    nRF24L01_Clear_IRQ_Flags(_nrf24);
+                    cpr_src_type_t src = SRC_UNKNOWN;
+                    if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
+                        rt_kprintf("NRF: ACK received (precheck)\n");
+                    }
+                }
+            }
 
-            /* ----------  3. 限时等待 IRQ（ACK 或独立回包）  ---------- */
-            rt_err_t  rx_ok = rt_sem_take(nrf24_irq_sem, 100);
-
-            /* ----------  4. 处理本次 IRQ  ---------- */
-            if(rx_ok == RT_EOK)
-            {
+            /* ----------  4. 等待 IRQ（主板手动 ACK）  ---------- */
+            rt_err_t rx_ok = rt_sem_take(nrf24_irq_sem, 200);
+            if(rx_ok == RT_EOK) {
                 rt_kprintf("NRF IRQ fired!\n");
                 _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
                 rt_kprintf("NRF STATUS=0x%02X\n", _nrf24->nrf24_flags.status);
                 nRF24L01_Clear_IRQ_Flags(_nrf24);
 
-                /* Check for received data (manual ACK from Mainboard) */
-                uint8_t got_data = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) ? 1 : 0;
-
-                if(!got_data) {
-                    /* Only TX_DS, wait for Mainboard's manual ACK packet */
-                    rt_kprintf("NRF: got TX_DS, waiting for manual ACK...\n");
-                    rt_err_t rx_ok2 = rt_sem_take(nrf24_irq_sem, 200);
-                    if(rx_ok2 == RT_EOK) {
-                        _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
-                        rt_kprintf("NRF STATUS2=0x%02X\n", _nrf24->nrf24_flags.status);
-                        nRF24L01_Clear_IRQ_Flags(_nrf24);
-                        got_data = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) ? 1 : 0;
+                if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) {
+                    uint8_t len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+                    if(len > 0 && len <= 32) {
+                        uint8_t rec_data[32];
+                        nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
+                        cpr_src_type_t src = SRC_UNKNOWN;
+                        if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
+                            rt_kprintf("NRF: ACK received (irq)\n");
+                        }
                     }
-                }
-
-                if(got_data)
-                {
-                    uint8_t len, rec_data[32];
-                    len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-                    nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
-
-                    cpr_src_type_t src = SRC_UNKNOWN;
-                    if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
-                        LOG_I("Remote received ACK from Main");
-                    }
-
-                    uint8_t pipe = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1;
-                    if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
-                        _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
-                    }
-                    rt_kprintf("NRF: data processed\n");
                 }
             }
-            /* ----------  5. 窗口结束，切回 PTX  ---------- */
+
+            /* ----------  5. 切回 PTX  ---------- */
             _nrf24->nrf24_ops.nrf24_reset_ce();
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-
-            rt_thread_mdelay(150);
         }
         /* 已连接后的业务循环（双向通信） */
         else
