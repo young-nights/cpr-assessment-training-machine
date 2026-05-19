@@ -41,6 +41,12 @@
 #define FRAME_NRF24_ASK_MOTOR_STATUS_CMD        (0x05)  // 设置：空心杯电机工作模式
 #define FRAME_NRF24_ACK_CC6201_CMD              (0x06)  // 回应：磁传感器工作状态（异物检测）
 
+/* Remote ↔ Mainboard bidirectional communication commands */
+#define FRAME_NRF24_REMOTE_START_CMD            (0x11)  // Remote → Mainboard: start CPR
+#define FRAME_NRF24_REMOTE_MODE_SWITCH_CMD      (0x12)  // Remote → Mainboard: switch mode [mode_value]
+#define FRAME_NRF24_REMOTE_START_ACK            (0x21)  // Mainboard → Remote: start confirmation [0x11, start_status]
+#define FRAME_NRF24_REMOTE_STATUS_SYNC          (0x22)  // Mainboard → Remote: status sync [0x12, mode, ...]
+
 
 /* ==================== 数据来源区分 ==================== */
 typedef enum {
@@ -60,6 +66,8 @@ typedef enum {
     Order_nRF24L01_SEND_To_Sensor_WS2812_Level,
     Order_nRF24L01_SEND_To_Sensor_Motor_Status,
 
+    Order_nRF24L01_SEND_To_Remote_Start_Status,
+    Order_nRF24L01_SEND_To_Remote_Mode_Sync,
 
 } nRF24L01_Order_StructType;
 

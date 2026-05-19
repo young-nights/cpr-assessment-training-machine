@@ -196,11 +196,43 @@ void nRF24L01_Thread_entry(void* parameter)
 
             rt_thread_mdelay(150);
         }
-        /* 已连接后的业务循环（示例：每 400 ms 心跳） */
+        /* 已连接后的业务循环（双向通信） */
         else
         {
-            /* 这里放正常双向通信代码 */
-            rt_thread_mdelay(400);
+            // 1. Handle outgoing command: send START to Mainboard
+            if(Record.nrf_send_start == 1) {
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+                nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_SEND_To_Main_Start, NRF24_PIPE_2);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+                rt_thread_mdelay(5);
+                _nrf24->nrf24_ops.nrf24_reset_ce();
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+                Record.nrf_send_start = 0;
+                Record.nrf_sending = 0;
+                LOG_I("Remote sent START command to Mainboard");
+            }
+
+            // 2. Listen for incoming data from Mainboard (ACKs and status sync)
+            rt_err_t rx_result = rt_sem_take(nrf24_irq_sem, 50);
+            if(rx_result == RT_EOK) {
+                _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
+                nRF24L01_Clear_IRQ_Flags(_nrf24);
+
+                if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) {
+                    uint8_t len, rec_data[32];
+                    len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+                    nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
+
+                    cpr_src_type_t src = SRC_UNKNOWN;
+                    if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
+                        LOG_I("Remote received data from Main in connected state");
+                    }
+                }
+            }
+
+            rt_thread_mdelay(100);
         }
 
     }
@@ -258,6 +290,39 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
 
 
 
+/**
+  * @brief  Handle events from protocol parser and trigger GUI updates
+  * @retval void
+  */
+void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
+{
+    rt_uint32_t recved = 0;
+    rt_err_t result;
+
+    for(;;)
+    {
+        result = rt_event_recv(nrf24l01_events,
+                               EVENT_NRF24_ACK_START_STATUS | EVENT_NRF24_ACK_MODE_SYNC,
+                               RT_EVENT_FLAG_OR | RT_EVENT_FLAG_CLEAR,
+                               RT_WAITING_FOREVER,
+                               &recved);
+
+        if(result == RT_EOK)
+        {
+            if(recved & EVENT_NRF24_ACK_START_STATUS) {
+                LOG_I("Mainboard start status updated: %d", Record.main_start_status);
+            }
+            if(recved & EVENT_NRF24_ACK_MODE_SYNC) {
+                LOG_I("Mainboard mode synced: %d", Record.synced_mode);
+            }
+        }
+
+        rt_thread_mdelay(10);
+    }
+}
+
+
+
 
 
 
@@ -267,6 +332,7 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
   */
 rt_thread_t nRF24L01_Task_Handle = RT_NULL;
 rt_thread_t nRF24L01_Decode_Task_Handle = RT_NULL;
+rt_thread_t nRF24L01_Data_Transmit_Task_Handle = RT_NULL;
 int nRF24L01_Thread_Init(void)
 {
     nRF24L01_Task_Handle = rt_thread_create("nRF24L01_Thread_entry", nRF24L01_Thread_entry, RT_NULL, 4096, 9, 100);
@@ -290,6 +356,17 @@ int nRF24L01_Thread_Init(void)
     }
     else {
         LOG_E("[nRF24L01]nRF24L01_Decode_Thread_entry is Failed \r\n");
+    }
+
+    // Data Transmit thread for handling events from Mainboard ACKs
+    nRF24L01_Data_Transmit_Task_Handle = rt_thread_create("nRF24L01_DataTx_entry", nRF24L01_Data_Transmit_Thread_entry, RT_NULL, 2048, 10, 50);
+    if(nRF24L01_Data_Transmit_Task_Handle != RT_NULL)
+    {
+        LOG_I("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Succeed!! \r\n");
+        rt_thread_startup(nRF24L01_Data_Transmit_Task_Handle);
+    }
+    else {
+        LOG_E("[nRF24L01]nRF24L01_Data_Transmit_Thread_entry is Failed \r\n");
     }
 
     return RT_EOK;

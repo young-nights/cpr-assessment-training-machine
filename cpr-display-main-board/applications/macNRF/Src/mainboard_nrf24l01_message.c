@@ -284,8 +284,56 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
                     Record.cc6201_cmd_ack = 1;
                 }break;
 
+                // --- Remote operation commands -------------------------------------------------
+                case FRAME_NRF24_REMOTE_START_CMD:  // (0x11) Remote triggers CPR start
+                {
+                    LOG_I("Receive START command from %s",
+                          (src == SRC_FROM_REMOTE) ? "Remote" : "Unknown");
+                    if(src == SRC_FROM_REMOTE) {
+                        MySysCfg.start_status = 1;
+                        MySysCfg.start_press_cnt = 1;
+                        MySysCfg.reset_press_cnt = 0;
+                        MySysCfg.setting_mode = 0;
 
+                        WT588D_Set_Cmd(WT588D_ADDR_VOICE_2);
+                        LED_On(LED_Name_Start);
+                        LED_Off(LED_Name_Reset);
+                        LED_Off(LED_Name_Setting);
 
+                        Record.sensor_start_cmd_ack = 0;
+                        Record.sensor_wsrgb_cmd_ack = 0;
+                        Record.sensor_motor_cmd_ack = 0;
+                        send_step_nums = 0;
+
+                        LOG_I("CPR started from Remote.");
+                    }
+                }break;
+
+                case FRAME_NRF24_REMOTE_MODE_SWITCH_CMD:  // (0x12) Remote switches mode
+                {
+                    uint8_t mode = *(CmdBuf + 6);
+                    LOG_I("Receive MODE SWITCH from %s: mode=%d",
+                          (src == SRC_FROM_REMOTE) ? "Remote" : "Unknown", mode);
+                    if(src == SRC_FROM_REMOTE && mode < MODE_MAX) {
+                        MySysCfg.current_mode = (System_Mode_t)mode;
+                        if(mode == MODE_TRAIN) {
+                            LED_On(LED_Name_Train);
+                            LED_Off(LED_Name_Assess);
+                            LED_Off(LED_Name_Competition);
+                            WT588D_Set_Cmd(WT588D_ADDR_VOICE_5);
+                        } else if(mode == MODE_ASSESS) {
+                            LED_Off(LED_Name_Train);
+                            LED_On(LED_Name_Assess);
+                            LED_Off(LED_Name_Competition);
+                            WT588D_Set_Cmd(WT588D_ADDR_VOICE_6);
+                        } else if(mode == MODE_COMPETE) {
+                            LED_Off(LED_Name_Train);
+                            LED_Off(LED_Name_Assess);
+                            LED_On(LED_Name_Competition);
+                            WT588D_Set_Cmd(WT588D_ADDR_VOICE_7);
+                        }
+                    }
+                }break;
 
                 default:    break;
             }
@@ -405,6 +453,30 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             }
             else if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+        }break;
+
+        /* Send start status confirmation to Remote (Pipe2 only) */
+        case Order_nRF24L01_SEND_To_Remote_Start_Status:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_REMOTE_START_ACK;
+            emptyBuf[1] = MySysCfg.start_status;
+            if(pipe_num == NRF24_PIPE_2){
+                package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 2, frame_package);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+            }
+        }break;
+
+        /* Sync mode info to Remote (Pipe2 only) */
+        case Order_nRF24L01_SEND_To_Remote_Mode_Sync:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_REMOTE_STATUS_SYNC;
+            emptyBuf[1] = (uint8_t)MySysCfg.current_mode;
+            if(pipe_num == NRF24_PIPE_2){
+                package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 2, frame_package);
                 nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
             }
         }break;

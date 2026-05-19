@@ -71,6 +71,15 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}/libraries//STM32F1xx_HAL_Driver//Inc//Legacy}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}/.}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}/applications}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/lvgl_custom}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/lvgl_gui}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/lvgl_examples}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macAPP/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/porting}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macBSP/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macSYS/Inc}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/lvgl_fonts}&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macNRF/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}//.}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}//cubemx/Inc}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}//cubemx}&quot;"/>
@@ -146,16 +155,6 @@
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}//rt-thread/include}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}//rt-thread/libcpu/arm/common}&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${workspace_loc://${ProjName}//rt-thread/libcpu/arm/cortex-m3}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/lvgl_custom}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/lvgl_gui}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/lvgl_examples}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macAPP/Inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/porting}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macSRAM/Inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macBSP/Inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macSYS/Inc}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macGUI/lvgl_fonts}&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/cpr-remote-device/applications/macNRF/Inc}&quot;"/>
 								</option>
 								<option IS_BUILTIN_EMPTY="false" IS_VALUE_EMPTY="false" id="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs.100549972" name="Defined symbols (-D)" superClass="ilg.gnuarmeclipse.managedbuild.cross.option.c.compiler.defs" useByScannerDiscovery="true" valueType="definedSymbols">
 									<listOptionValue builtIn="false" value="SOC_FAMILY_STM32"/>
@@ -350,7 +349,7 @@
 	<storageModule moduleId="org.eclipse.cdt.core.LanguageSettingsProviders"/>
 	<storageModule moduleId="refreshScope" versionNumber="2">
 		<configuration configurationName="Debug">
-			<resource resourceType="PROJECT" workspacePath="/project"/>
+			<resource resourceType="PROJECT" workspacePath="/cpr-remote-device"/>
 		</configuration>
 	</storageModule>
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets"/>

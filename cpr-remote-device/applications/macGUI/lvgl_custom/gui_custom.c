@@ -51,9 +51,17 @@ void unlock_screen_input(void)
     if(mask) lv_obj_add_flag(mask, LV_OBJ_FLAG_HIDDEN);
 }
 
-
-
-
-
+/* Universal button press feedback: brief scale + opacity flash */
+void ui_btn_press_feedback(lv_obj_t *btn)
+{
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, btn);
+    lv_anim_set_values(&a, 256, 230);  /* 90% scale */
+    lv_anim_set_time(&a, 80);
+    lv_anim_set_playback_time(&a, 80);
+    lv_anim_set_exec_cb(&a, (lv_anim_exec_xcb_t)lv_obj_set_style_transform_zoom);
+    lv_anim_start(&a);
+}
 
 

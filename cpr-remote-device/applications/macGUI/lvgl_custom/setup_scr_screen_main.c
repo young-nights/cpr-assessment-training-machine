@@ -144,12 +144,14 @@ static void screen_main_btn_1_start_event_handler (lv_event_t *e)
 {
     LV_LOG_USER("Clicked");
     if (Record.nrf_if_connected) {
-        // 已连接，直接切换到控制菜单页面
+        // Send wireless start command to Mainboard
+        Record.nrf_send_start = 1;
+        // Then navigate to menu page
         ui_load_scr_animation(&guider_lvgl, &guider_lvgl.screen_menu, guider_lvgl.screen_menu_del, &guider_lvgl.screen_main_del, setup_scr_screen_menu, LV_SCR_LOAD_ANIM_NONE, 0, 10, true, true);
         Record.menu_index = 1;
     }
     else {
-        // 未连接，隐藏按钮，显示“连接中...”
+        // Not connected, hide button and show "Connecting..."
         lv_obj_add_flag(guider_lvgl.screen_main_btn_1_start, LV_OBJ_FLAG_HIDDEN);
         lv_obj_clear_flag(guider_lvgl.screen_main_label_2_connect, LV_OBJ_FLAG_HIDDEN);
         Record.nrf_connect_failed = 1;

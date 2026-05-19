@@ -218,6 +218,25 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
                   }
                 }break;
 
+                // --- Mainboard → Remote status sync commands -------------------------------
+                case FRAME_NRF24_REMOTE_START_ACK:  // (0x21) Mainboard confirms CPR start
+                {
+                    LOG_I("Receive: Mainboard START ACK, status=%d", *(CmdBuf + 6));
+                    Record.main_start_status = *(CmdBuf + 6);
+                    if(nrf24l01_events != RT_NULL){
+                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_START_STATUS);
+                    }
+                }break;
+
+                case FRAME_NRF24_REMOTE_STATUS_SYNC:  // (0x22) Mainboard syncs mode/status
+                {
+                    LOG_I("Receive: Mainboard STATUS SYNC, mode=%d", *(CmdBuf + 6));
+                    Record.synced_mode = *(CmdBuf + 6);
+                    if(nrf24l01_events != RT_NULL){
+                        rt_event_send(nrf24l01_events, EVENT_NRF24_ACK_MODE_SYNC);
+                    }
+                }break;
+
                 default:    break;
             }
         }break;
@@ -274,6 +293,25 @@ void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num)
             nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
         }break;
 
+        // --- Remote → Mainboard commands -----------------------------------------------
+        case Order_nRF24L01_SEND_To_Main_Start:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_REMOTE_START_CMD;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 1, frame_package);
+            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+            Record.nrf_sending = 1;
+        }break;
+
+        case Order_nRF24L01_SEND_To_Main_Mode_Switch:
+        {
+            rt_memset(emptyBuf, 0, sizeof(emptyBuf));
+            emptyBuf[0] = FRAME_NRF24_REMOTE_MODE_SWITCH_CMD;
+            emptyBuf[1] = Record.mode_data_in;
+            package_len = nrf24l01_build_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
+            nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
+            Record.nrf_sending = 1;
+        }break;
 
         default: break;
     }

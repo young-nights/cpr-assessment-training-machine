@@ -24,6 +24,9 @@ typedef struct {
     rt_uint8_t  nrf_if_connected;                // 是否建立连接(0：未建立连接  1：已建立连接)
     rt_uint8_t  nrf_sending;                     // 正在发送标志(0：未发送          1：已发送)
     rt_uint8_t  nrf_connect_failed;              // 连接失败标志(0: 未进行连接  1：连接失败)
+    rt_uint8_t  nrf_send_start;                  // Flag to send start command via NRF (0: idle, 1: pending)
+    rt_uint8_t  main_start_status;               // Mainboard start status synced from Main
+    rt_uint8_t  synced_mode;                     // Mode synced from Mainboard
     //------------------------------------------------------------
     rt_uint8_t  menu_index;                      // 菜单页面索引(0：主页面  1：菜单页面  2：其他子页面)
     rt_uint8_t  mode_data_in;                    // 数据模式(0：未进行数据传输   1：考核模式   2：竞赛模式    3：训练模式)
@@ -72,6 +75,8 @@ void system_param_init(void);
 extern rt_event_t nrf24l01_events;
 
 #define     EVENT_NRF24_ACK_BODY_LED    (1<<0)
+#define     EVENT_NRF24_ACK_START_STATUS (1<<1)
+#define     EVENT_NRF24_ACK_MODE_SYNC    (1<<2)
 
 
 

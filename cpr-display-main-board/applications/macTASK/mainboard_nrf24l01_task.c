@@ -325,6 +325,15 @@ void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
                 } else {
                     LOG_E("step1：mainboard发送开始指令到sensor失败!");
                 }
+
+                // Also notify Remote that CPR has started
+                if(Record.remote_connected == 1) {
+                    if(nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Remote_Start_Status, NRF24_PIPE_2, 1) == RT_EOK) {
+                        LOG_I("step1：mainboard发送开始状态到Remote成功!");
+                    } else {
+                        LOG_E("step1：mainboard发送开始状态到Remote失败!");
+                    }
+                }
             }
             // --------------------------------------------------------------------
             /* 发送指令-step2：控制ws2812b的灯光亮度，开始后默认亮度1 */
@@ -378,6 +387,11 @@ void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
         else {
             MySysCfg.eyes_rgb_level = 1;
             nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_WS2812_Level, NRF24_PIPE_1, 5);
+
+            // Notify Remote that CPR has stopped / completed
+            if(Record.remote_connected == 1) {
+                nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Remote_Start_Status, NRF24_PIPE_2, 1);
+            }
         }
 
 

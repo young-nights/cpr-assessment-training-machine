@@ -42,6 +42,12 @@
 #define      FRAME_NRF24_MODE_DATA_OUT_CMD                       (0x03)      // 设置：退出考核/竞赛/训练模式指令
 #define      FRAME_NRF24_PRESS_LED_CTRL_CMD                      (0x04)      // 设置：根据接收的指令控制数据页面的按压位置圆形填充色
 
+/* Remote ↔ Mainboard bidirectional communication commands */
+#define      FRAME_NRF24_REMOTE_START_CMD                        (0x11)      // Remote → Mainboard: start CPR
+#define      FRAME_NRF24_REMOTE_MODE_SWITCH_CMD                  (0x12)      // Remote → Mainboard: switch mode
+#define      FRAME_NRF24_REMOTE_START_ACK                        (0x21)      // Mainboard → Remote: start confirmation
+#define      FRAME_NRF24_REMOTE_STATUS_SYNC                      (0x22)      // Mainboard → Remote: status sync
+
 
 
 /**
@@ -80,6 +86,8 @@ typedef enum
     Order_nRF24L01_ASK_Data_Mode_In = 50,
     Order_nRF24L01_ASK_Data_Mode_Out,
 
+    Order_nRF24L01_SEND_To_Main_Start,
+    Order_nRF24L01_SEND_To_Main_Mode_Switch,
 
 }nRF24L01_Order_StructType;
 
@@ -91,6 +99,7 @@ uint16_t CrcCalc_Crc16Modbus(uint8_t *dat, uint8_t len);
 rt_uint8_t nrf24l01_build_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *data, uint8_t data_len,uint8_t *out_frame);
 uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdLength, cpr_src_type_t *out_src);
 void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src);
+void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num);
 
 
 
