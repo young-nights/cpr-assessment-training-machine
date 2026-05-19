@@ -144,13 +144,19 @@ void nRF24L01_Thread_entry(void* parameter)
     /* ====================== 主循环（状态机） ====================== */
     for(;;)
     {
+        static int conn_try = 0;
         /* 尚未连接则持续广播 */
         if(Record.nrf_if_connected == 0){
+            conn_try++;
+            if(conn_try % 20 == 0) {
+                rt_kprintf("Rem-NRF: trying connect (attempt %d)...\n", conn_try);
+            }
             /* ----------  1. PTX 发送  ---------- */
             _nrf24->nrf24_ops.nrf24_reset_ce();
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
             nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel,NRF24_PIPE_2);
             _nrf24->nrf24_ops.nrf24_set_ce();
+            rt_kprintf("NRF TX connect req\n");
             rt_thread_mdelay(2);
             _nrf24->nrf24_ops.nrf24_reset_ce();
 
@@ -164,8 +170,10 @@ void nRF24L01_Thread_entry(void* parameter)
             /* ----------  4. 处理本次 IRQ  ---------- */
             if(rx_ok == RT_EOK)
             {
+                rt_kprintf("NRF IRQ fired!\n");
                 /* 读 STATUS 并清中断 */
                 _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
+                rt_kprintf("NRF STATUS=0x%02X\n", _nrf24->nrf24_flags.status);
                 nRF24L01_Clear_IRQ_Flags(_nrf24);
                 /* 4.1 收到数据（ACK-Payload 或独立包） */
                 if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR)
