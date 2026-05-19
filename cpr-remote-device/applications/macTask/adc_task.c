@@ -89,9 +89,9 @@ void adc_thread_entry(void* parameter)
         }
 
         /*! 计算充电电流值 */
-        tp5400_prog_current = battery_get_current_data(tp5400_prog_adc_values);
+        tp5400_prog_current = battery_get_current_ma(tp5400_prog_adc_values);
         /*! 计算电池电压值 */
-        tp5400_battery_vol = battery_get_vol_data(tp5400_bat_adc_values);
+        tp5400_battery_vol = battery_get_vol_mv(tp5400_bat_adc_values);
 
         // 格式化字符串
         rt_snprintf(buffer, sizeof(buffer),

@@ -71,6 +71,7 @@ typedef enum
 
 
 void system_param_init(void);
+void all_project_event_init(void);
 
 extern rt_event_t nrf24l01_events;
 

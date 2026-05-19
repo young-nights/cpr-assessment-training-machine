@@ -7,6 +7,7 @@
  * Date           Author       Notes
  * 2025-09-12     18452       the first version
  */
+#include "bsp_sys.h"
 #include <remote_nrf24l01_message.h>
 
 

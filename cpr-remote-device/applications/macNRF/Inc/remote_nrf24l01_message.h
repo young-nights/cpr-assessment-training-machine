@@ -10,7 +10,11 @@
 #ifndef APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
 #define APPLICATIONS_MACBSP_INC_BSP_NRF24L01_MESSAGE_H_
 
-#include "bsp_sys.h"
+#include <rtthread.h>
+#include <stdint.h>
+
+/* Forward declaration to avoid circular include with remote_nrf24l01_driver.h */
+typedef struct nRF24L01_STRUCT *nrf24_t;
 
 #define DEVICE_ID_H     0x00
 #define DEVICE_ID_L     0x04

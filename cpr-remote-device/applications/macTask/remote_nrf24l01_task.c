@@ -27,17 +27,12 @@ rt_sem_t nrf24_irq_sem = RT_NULL;
 nrf24_t _nrf24 = NULL;
 
 
-/* Remote 内部状态机 */
+/* Remote 内部状态机（保留枚举供后续使用） */
 typedef enum {
     REMOTE_NRF_DISCONNECTED = 0,
     REMOTE_NRF_CONNECTING,
     REMOTE_NRF_CONNECTED,
 } remote_nrf_state_t;
-
-
-static remote_nrf_state_t nrf_state = REMOTE_NRF_DISCONNECTED;
-static rt_tick_t last_heartbeat_tick = 0;
-static uint16_t heartbeat_seq = 0;
 
 /**
   * @brief  This thread entry is used for nRF24L01
