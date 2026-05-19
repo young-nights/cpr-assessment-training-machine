@@ -171,12 +171,26 @@ void nRF24L01_Thread_entry(void* parameter)
             if(rx_ok == RT_EOK)
             {
                 rt_kprintf("NRF IRQ fired!\n");
-                /* 读 STATUS 并清中断 */
                 _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
                 rt_kprintf("NRF STATUS=0x%02X\n", _nrf24->nrf24_flags.status);
                 nRF24L01_Clear_IRQ_Flags(_nrf24);
-                /* 4.1 收到数据（ACK-Payload 或独立包） */
-                if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR)
+
+                /* Check for received data (manual ACK from Mainboard) */
+                uint8_t got_data = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) ? 1 : 0;
+
+                if(!got_data) {
+                    /* Only TX_DS, wait for Mainboard's manual ACK packet */
+                    rt_kprintf("NRF: got TX_DS, waiting for manual ACK...\n");
+                    rt_err_t rx_ok2 = rt_sem_take(nrf24_irq_sem, 200);
+                    if(rx_ok2 == RT_EOK) {
+                        _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
+                        rt_kprintf("NRF STATUS2=0x%02X\n", _nrf24->nrf24_flags.status);
+                        nRF24L01_Clear_IRQ_Flags(_nrf24);
+                        got_data = (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) ? 1 : 0;
+                    }
+                }
+
+                if(got_data)
                 {
                     uint8_t len, rec_data[32];
                     len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
@@ -191,6 +205,7 @@ void nRF24L01_Thread_entry(void* parameter)
                     if(_nrf24->nrf24_cb.nrf24l01_rx_ind){
                         _nrf24->nrf24_cb.nrf24l01_rx_ind(_nrf24, rec_data, len, pipe);
                     }
+                    rt_kprintf("NRF: data processed\n");
                 }
             }
             /* ----------  5. 窗口结束，切回 PTX  ---------- */
