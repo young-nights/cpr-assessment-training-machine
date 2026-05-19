@@ -256,6 +256,13 @@ static void touchpad_read(lv_indev_drv_t * indev_drv, lv_indev_data_t * data)
 static bool touchpad_is_pressed(void)
 {
     /*Your code comes here*/
+    static uint8_t last_flag = 0;
+    if(Record.touch_down_flag != last_flag) {
+        rt_kprintf("TOUCH: flag=%d fingers=%d x=%d y=%d\n",
+            Record.touch_down_flag, Record.touch_fingers,
+            tp_dev_xy.point1_x, tp_dev_xy.point1_y);
+        last_flag = Record.touch_down_flag;
+    }
     if( Record.touch_down_flag && Record.touch_fingers){
         return true;
     }

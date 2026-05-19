@@ -25,12 +25,12 @@ static void FT6336U_INT_Callback(void *args)
     if (rt_pin_read(GET_PIN(A,6)) == PIN_LOW){
         /* 下降沿：手指按下 */
         Record.touch_down_flag = 1;
-//        rt_kprintf("down\r\n");
+        rt_kprintf("TOUCH IRQ: down\n");
     }
     else{
         /* 上升沿：手指离开 */
         Record.touch_down_flag = 0;
-//        rt_kprintf("up\r\n");
+        rt_kprintf("TOUCH IRQ: up\n");
     }
 
     rt_interrupt_leave();
