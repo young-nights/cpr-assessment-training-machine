@@ -388,10 +388,12 @@ void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
 
 
         }
-        // 一个急救流程完成状态
+        // Idle or completed state — do NOT send to Sensor unless connected
         else {
-            MySysCfg.eyes_rgb_level = 1;
-            nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_WS2812_Level, NRF24_PIPE_1, 5);
+            if(Record.sensor_connected == 1) {
+                MySysCfg.eyes_rgb_level = 1;
+                nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_WS2812_Level, NRF24_PIPE_1, 1);
+            }
 
             // Notify Remote that CPR has stopped / completed
             if(Record.remote_connected == 1) {
