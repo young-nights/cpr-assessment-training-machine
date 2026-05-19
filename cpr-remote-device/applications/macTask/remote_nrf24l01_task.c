@@ -160,6 +160,7 @@ void nRF24L01_Thread_entry(void* parameter)
             }
 
             /* ----------  2. Flush + Clear + 切换 PRX  ---------- */
+            nRF24L01_Flush_TX_FIFO(_nrf24);
             nRF24L01_Flush_RX_FIFO(_nrf24);
             nRF24L01_Clear_IRQ_Flags(_nrf24);
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);

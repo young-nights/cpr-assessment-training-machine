@@ -33,7 +33,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* EN_AA */
     param->en_aa.p0 = 1;
     param->en_aa.p1 = 0;
-    param->en_aa.p2 = 1;
+    param->en_aa.p2 = 0;   /* Disable auto-ACK on Pipe2, use manual handshake like Sensor */
     param->en_aa.p3 = 0;
     param->en_aa.p4 = 0;
     param->en_aa.p5 = 0;
