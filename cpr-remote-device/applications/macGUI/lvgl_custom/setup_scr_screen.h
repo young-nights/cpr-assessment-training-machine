@@ -60,9 +60,6 @@ typedef struct
     lv_obj_t *screen_data_circle_7;
     lv_obj_t *screen_data_bar_left_grid;   // 左边 50 个小格的父容器
     lv_obj_t *screen_data_bar_right_grid;  // 右边 50 个小格的父容器
-    lv_obj_t *screen_data_label_mode;
-    lv_obj_t *screen_data_label_depth;
-    lv_obj_t *screen_data_label_freq;
     lv_obj_t *screen_setting;
     bool screen_setting_del;
     lv_obj_t *screen_setting_cont_setting;

@@ -137,8 +137,8 @@ void setup_scr_screen_data(lvgl_ui_t *ui)
             lv_obj_set_style_border_width(cell, 0, 0);
             lv_obj_set_style_shadow_width(cell, 0, 0);
 
-            /* Default unlit: soft light gray */
-            lv_obj_set_style_bg_color(cell, lv_color_hex(0xD0D5DD), 0);
+            // 默认未点亮：深灰不透明
+            lv_obj_set_style_bg_color(cell, lv_color_hex(0x444444), 0);
             lv_obj_set_style_bg_opa(cell, 255, 0);
 
             // 存格子序号，方便后面快速取（可选）
@@ -150,82 +150,7 @@ void setup_scr_screen_data(lvgl_ui_t *ui)
 //    update_left_bar(ui, 100);
 //    update_right_bar(ui, 50);
 
-    // ==================== Mode indicator label (title bar) ====================
-    ui->screen_data_label_mode = lv_label_create(ui->screen_data_cont_data);
-    lv_label_set_text(ui->screen_data_label_mode, "");
-    lv_obj_set_pos(ui->screen_data_label_mode, 60, 42);
-    lv_obj_set_size(ui->screen_data_label_mode, 120, 20);
-    lv_obj_set_style_text_color(ui->screen_data_label_mode, lv_color_hex(0x555555), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_data_label_mode, &lv_font_SourceHanSerifSC_Regular_12, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_data_label_mode, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui->screen_data_label_mode, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_top(ui->screen_data_label_mode, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_width(ui->screen_data_label_mode, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_width(ui->screen_data_label_mode, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_add_flag(ui->screen_data_label_mode, LV_OBJ_FLAG_HIDDEN);
-
-    // ==================== Depth label (left bar) ====================
-    ui->screen_data_label_depth = lv_label_create(ui->screen_data_cont_data);
-    lv_label_set_text(ui->screen_data_label_depth, "深度");
-    lv_obj_set_pos(ui->screen_data_label_depth, 0, 55);
-    lv_obj_set_size(ui->screen_data_label_depth, 42, 14);
-    lv_obj_set_style_text_color(ui->screen_data_label_depth, lv_color_hex(0x666666), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_data_label_depth, &lv_font_SourceHanSerifSC_Regular_12, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_data_label_depth, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui->screen_data_label_depth, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_width(ui->screen_data_label_depth, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_width(ui->screen_data_label_depth, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_top(ui->screen_data_label_depth, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    // ==================== Frequency label (right bar) ====================
-    ui->screen_data_label_freq = lv_label_create(ui->screen_data_cont_data);
-    lv_label_set_text(ui->screen_data_label_freq, "频率");
-    lv_obj_set_pos(ui->screen_data_label_freq, 198, 55);
-    lv_obj_set_size(ui->screen_data_label_freq, 42, 14);
-    lv_obj_set_style_text_color(ui->screen_data_label_freq, lv_color_hex(0x666666), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(ui->screen_data_label_freq, &lv_font_SourceHanSerifSC_Regular_12, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(ui->screen_data_label_freq, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(ui->screen_data_label_freq, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_border_width(ui->screen_data_label_freq, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_shadow_width(ui->screen_data_label_freq, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_pad_top(ui->screen_data_label_freq, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-
-    /* Mode label: shows current operating mode (assessment/competition/training) */
-    lv_obj_t *label_mode = lv_label_create(ui->screen_data_cont_data);
-    lv_obj_set_pos(label_mode, 40, 45);
-    lv_obj_set_size(label_mode, 160, 20);
-    lv_obj_set_style_text_color(label_mode, lv_color_hex(0x009EA9), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(label_mode, &lv_font_SourceHanSerifSC_Regular_12, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(label_mode, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(label_mode, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    switch (Record.mode_data_in) {
-        case 1: lv_label_set_text(label_mode, "- \u8003\u6838\u6a21\u5f0f -"); break;  /* assessment mode */
-        case 2: lv_label_set_text(label_mode, "- \u7ade\u8d5b\u6a21\u5f0f -"); break;  /* competition mode */
-        case 3: lv_label_set_text(label_mode, "- \u8bad\u7ec3\u6a21\u5f0f -"); break;  /* training mode */
-        default: lv_label_set_text(label_mode, "- \u5f85\u673a -"); break;               /* standby */
-    }
-
-    /* Left bar label: depth */
-    lv_obj_t *label_left = lv_label_create(ui->screen_data_cont_data);
-    lv_obj_set_pos(label_left, 2, 56);
-    lv_obj_set_size(label_left, 8, 40);
-    lv_obj_set_style_text_color(label_left, lv_color_hex(0x666666), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(label_left, &lv_font_SourceHanSerifSC_Regular_12, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(label_left, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(label_left, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text(label_left, "\u6df1\n\u5ea6");  /* depth (vertical) */
-
-    /* Right bar label: frequency */
-    lv_obj_t *label_right = lv_label_create(ui->screen_data_cont_data);
-    lv_obj_set_pos(label_right, 232, 56);
-    lv_obj_set_size(label_right, 8, 40);
-    lv_obj_set_style_text_color(label_right, lv_color_hex(0x666666), LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_font(label_right, &lv_font_SourceHanSerifSC_Regular_12, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_text_align(label_right, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_obj_set_style_bg_opa(label_right, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
-    lv_label_set_text(label_right, "\u9891\n\u7387");  /* frequency (vertical) */
-
-    // ==================== Update layout ====================
+    // ==================== 更新布局 ====================
     lv_obj_update_layout(ui->screen_data);
 }
 
@@ -238,23 +163,36 @@ lv_color_t get_gradient_color(int percentage)
     if (percentage < 0) percentage = 0;
     if (percentage > 100) percentage = 100;
 
+    // 定义关键颜色点 (R, G, B)
+    // 浅绿 (0%) - R:0, G:120, B:0 (深草绿)
+    // 深绿 (50%) - R:0, G:50, B:0 (墨绿)
+    // 黄色 (75%) - R:160, G:120, B:0 (暗金/褐黄)
+    // 红色 (100%) - R:140, G:0, B:0 (深红/酒红)
+
     if (percentage <= 50) {
-        /* 0-50%: deep grass green -> dark green */
-        float factor = (float)percentage / 50.0f;
+        // 0% (深草绿) -> 50% (墨绿)
+        float factor = (float)percentage / 50.0f; // 0.0 -> 1.0
+
+        int r = (int)(0 - (0 - 0) * factor);
         int g = (int)(120 - (120 - 50) * factor);
-        return lv_color_make(0, g, 0);
+        int b = (int)(0 - (0 - 0) * factor);
+        return lv_color_make(r, g, b);
     } else if (percentage <= 75) {
-        /* 50-75%: dark green -> dark gold */
-        float factor = ((float)percentage - 50.0f) / 25.0f;
-        int r = (int)(160 * factor);
+        // 50% (墨绿) -> 75% (暗金)
+        float factor = ((float)percentage - 50.0f) / 25.0f; // 0.0 -> 1.0
+
+        int r = (int)(0 + (160 - 0) * factor);
         int g = (int)(50 + (120 - 50) * factor);
-        return lv_color_make(r, g, 0);
-    } else {
-        /* 75-100%: dark gold -> deep red */
-        float factor = ((float)percentage - 75.0f) / 25.0f;
+        int b = (int)(0 + (0 - 0) * factor); // 保持 B 不变
+        return lv_color_make(r, g, b);
+    } else { // 75% 到 100%
+        // 75% (暗金) -> 100% (深红)
+        float factor = ((float)percentage - 75.0f) / 25.0f; // 0.0 -> 1.0
+
         int r = (int)(160 + (140 - 160) * factor);
-        int g = (int)(120 - 120 * factor);
-        return lv_color_make(r, g, 0);
+        int g = (int)(120 - (120 - 0) * factor);
+        int b = (int)(0 + (0 - 0) * factor); // 保持 B 不变
+        return lv_color_make(r, g, b);
     }
 }
 
@@ -354,7 +292,7 @@ static void left_timer_cb(lv_timer_t *t)
         lv_obj_set_style_bg_color(cell, get_gradient_color(pct), 0);
         cell_light_up(cell);
     } else {
-        lv_obj_set_style_bg_color(cell, lv_color_hex(0xD0D5DD), 0);
+        lv_obj_set_style_bg_color(cell, lv_color_hex(0x444444), 0);
         cell_light_down(cell);
     }
 }
@@ -382,7 +320,7 @@ static void right_timer_cb(lv_timer_t *t)
         lv_obj_set_style_bg_color(cell, get_gradient_color(pct), 0);
         cell_light_up(cell);
     } else {
-        lv_obj_set_style_bg_color(cell, lv_color_hex(0xD0D5DD), 0);
+        lv_obj_set_style_bg_color(cell, lv_color_hex(0x444444), 0);
         cell_light_down(cell);
     }
 }
