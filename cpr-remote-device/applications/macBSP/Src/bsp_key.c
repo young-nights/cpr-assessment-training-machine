@@ -21,7 +21,7 @@ const char keys[3][3] = {
 
 /* ------------------- 消抖 & 事件 ------------------- */
 static uint8_t debounce_cnt[3][3] = {{0}};      // 计数器
-static uint8_t stable_state[3][3] = {{1}};      // 1 = 释放，0 = 按下（上电默认高）
+static uint8_t stable_state[3][3] = {{1, 1, 1}, {1, 1, 1}, {1, 1, 1}}; // 1 = released, 0 = pressed
 key_event_t current_key = {0, 0, KEY_NONE};
 
 

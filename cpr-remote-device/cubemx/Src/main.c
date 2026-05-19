@@ -419,7 +419,7 @@ void MX_GPIO_Init(void)
   /*Configure GPIO pins : Matrixkey_Row1_Pin Matrixkey_Row2_Pin Matrixkey_Row3_Pin */
   GPIO_InitStruct.Pin = Matrixkey_Row1_Pin|Matrixkey_Row2_Pin|Matrixkey_Row3_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pins : Matrixkey_Column1_Pin Matrixkey_Column2_Pin Matrixkey_Column3_Pin */
