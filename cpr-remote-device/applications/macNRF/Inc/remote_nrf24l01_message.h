@@ -19,9 +19,6 @@ typedef struct nRF24L01_STRUCT *nrf24_t;
 #define DEVICE_REMOTE_ID_H   0x00
 #define DEVICE_REMOTE_ID_L   0x04
 
-#define DEVICE_MAINBOARD_ID_H   0x00
-#define DEVICE_MAINBOARD_ID_L   0x01
-
 /* 函数进行解析指令后的返回宏 */
 #define CMD_ERROR   0
 #define CMD_TRUE    1

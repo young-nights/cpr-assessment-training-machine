@@ -155,8 +155,8 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdL
     }
     if(Decode_Step == Decode_Step_3)
     {
-        /* Validate frame source: must be from Mainboard (DEVICE_MAINBOARD=0x0001) */
-        if(*(cmdBuf + 3) != DEVICE_MAINBOARD_ID_H || *(cmdBuf + 4) != DEVICE_MAINBOARD_ID_L) {
+        /* Validate frame destination: must be addressed to this device (Sensor 0x0005) */
+        if(*(cmdBuf + 3) != DEVICE_SENSOR_ID_H || *(cmdBuf + 4) != DEVICE_SENSOR_ID_L) {
             Decode_Step = Decode_Step_0;
             return CMD_ERROR;
         }
