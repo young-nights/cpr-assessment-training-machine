@@ -176,18 +176,27 @@ void nRF24L01_Thread_entry(void* parameter)
              if(src != SRC_UNKNOWN) {
                  uint8_t data_buf[32];
                  uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-                 rt_kprintf("\n----------------------\n");
-                 LOG_I("Receive length = %d from %s (Pipe%d)", length,
-                       (src==SRC_FROM_SENSOR)?"Sensor":"Remote", pipe);
 
-                 nRF24L01_Read_Rx_Payload(_nrf24, data_buf, length);
+                 // Skip if FIFO is empty (may have been flushed by another thread)
+                 if(length == 0 || length > 32) {
+                     LOG_W("RX FIFO empty or invalid length=%d, skipping", length);
+                     src = SRC_UNKNOWN;
+                 }
 
-                 // 使用我们修改后的统一解析函数
-                 if(nrf24l01_portocol_get_command(data_buf, length, &src) == CMD_TRUE) {
-                     LOG_I("Protocol parse succeed from %s",
-                           (src==SRC_FROM_SENSOR)?"Sensor":"Remote");
-                 } else {
-                     LOG_W("Protocol parse failed");
+                 if(src != SRC_UNKNOWN) {
+                     rt_kprintf("\n----------------------\n");
+                     LOG_I("Receive length = %d from %s (Pipe%d)", length,
+                           (src==SRC_FROM_SENSOR)?"Sensor":"Remote", pipe);
+
+                     nRF24L01_Read_Rx_Payload(_nrf24, data_buf, length);
+
+                     // 使用我们修改后的统一解析函数
+                     if(nrf24l01_portocol_get_command(data_buf, length, &src) == CMD_TRUE) {
+                         LOG_I("Protocol parse succeed from %s",
+                               (src==SRC_FROM_SENSOR)?"Sensor":"Remote");
+                     } else {
+                         LOG_W("Protocol parse failed");
+                     }
                  }
              }
          }
@@ -262,7 +271,7 @@ void nRF24L01_Decode_entry(void* parameter)
             }
 
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
-            nRF24L01_Flush_RX_FIFO(_nrf24);
+            // Do NOT Flush RX FIFO here — incoming data from other pipes may already be buffered
             nRF24L01_Clear_IRQ_Flags(_nrf24);
             _nrf24->nrf24_ops.nrf24_set_ce();
 
@@ -295,7 +304,7 @@ void nRF24L01_Decode_entry(void* parameter)
             }
 
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
-            nRF24L01_Flush_RX_FIFO(_nrf24);
+            // Do NOT Flush RX FIFO here — incoming data from other pipes may already be buffered
             nRF24L01_Clear_IRQ_Flags(_nrf24);
             _nrf24->nrf24_ops.nrf24_set_ce();
 

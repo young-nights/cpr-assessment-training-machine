@@ -172,7 +172,7 @@ void nRF24L01_Thread_entry(void* parameter)
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
             _nrf24->nrf24_ops.nrf24_set_ce();
 
-#if 1
+#if 0
             /* 验证 PRX 模式是否生效 */
             {
                 uint8_t cfg_val = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_CONFIG);
