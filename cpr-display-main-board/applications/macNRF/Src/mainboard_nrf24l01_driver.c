@@ -38,7 +38,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* 使能自动应答（Auto Acknowledgment） */
     param->en_aa.p0 = 1;   // 管道 0 使能自动应答
     param->en_aa.p1 = 1;   // 管道 1 使能自动应答
-    param->en_aa.p2 = 1;   // 管道 2 使能自动应答
+    param->en_aa.p2 = 0;   // 管道 2 关闭自动应答（统一走手动ACK）
     param->en_aa.p3 = 0;   // 管道 3 关闭自动应答
     param->en_aa.p4 = 0;   // 管道 4 关闭自动应答
     param->en_aa.p5 = 0;   // 管道 5 关闭自动应答

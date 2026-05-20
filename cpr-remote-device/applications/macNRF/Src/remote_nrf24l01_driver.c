@@ -33,15 +33,15 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* EN_AA */
     param->en_aa.p0 = 1;
     param->en_aa.p1 = 0;
-    param->en_aa.p2 = 1;   /* Disable auto-ACK on Pipe2, use manual handshake like Sensor */
+    param->en_aa.p2 = 0;   /* Disable auto-ACK on Pipe2, use manual handshake */
     param->en_aa.p3 = 0;
     param->en_aa.p4 = 0;
     param->en_aa.p5 = 0;
 
     /* EN_RXADDR */
     param->en_rxaddr.p0 = RT_TRUE;      // Pipe0：接收主板公共 ACK
-    param->en_rxaddr.p1 = RT_FALSE;     // 关闭 Pipe1（避免与 Sensor 冲突）
-    param->en_rxaddr.p2 = RT_TRUE;      // Pipe2：接收主板定向回复
+    param->en_rxaddr.p1 = RT_FALSE;
+    param->en_rxaddr.p2 = RT_FALSE;
     param->en_rxaddr.p3 = RT_FALSE;
     param->en_rxaddr.p4 = RT_FALSE;
     param->en_rxaddr.p5 = RT_FALSE;
@@ -51,7 +51,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* SET_RETR */
     param->setup_retr.arc = 15;         // 最大重发15次
-    param->setup_retr.ard = ADR_1Mbps;
+    param->setup_retr.ard = ADR_2Mbps;
 
     /* RF_CH */
     param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
@@ -66,7 +66,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* DYNPD */
     param->dynpd.p0 = 1;
     param->dynpd.p1 = 0;
-    param->dynpd.p2 = 1;
+    param->dynpd.p2 = 1;   /* Match mainboard DYNPD p2 setting */
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
     param->dynpd.p5 = 0;
@@ -91,10 +91,8 @@ int nRF24L01_Param_Config(nrf24_param_t param)
         param->rx_addr_p1[i]   = rx_addr_p1[i];
     }
 
-    /* RX_ADDR_P2：接收主板定向回复（主板会用 Pipe2 发送给 Remote） */
-    param->rx_addr_p2 = 0x03;   // 与主板 RX_ADDR_P2 一致
-
     /* 其余管道关闭或设为无效值 */
+    param->rx_addr_p2 = 9;
     param->rx_addr_p3 = 9;
     param->rx_addr_p4 = 9;
     param->rx_addr_p5 = 9;
