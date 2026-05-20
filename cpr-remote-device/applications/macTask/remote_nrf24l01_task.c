@@ -200,7 +200,7 @@ void nRF24L01_Thread_entry(void* parameter)
                 }
             }
 
-            /* ----------  4. 等待 IRQ（主板手动 ACK）  ---------- */
+            /* ----------  4. 等待 IRQ（主板接收到消息后 ACK）  ---------- */
             rt_err_t rx_ok = rt_sem_take(nrf24_irq_sem, 200);
             if(rx_ok == RT_EOK)
             {
