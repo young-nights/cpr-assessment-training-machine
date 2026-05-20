@@ -45,8 +45,8 @@ rt_uint8_t nrf24l01_build_remote_frame(uint8_t cmd_type, uint8_t cmd_status,uint
     out_frame[index++] = 0x55;
     out_frame[index++] = 0xAA;
     out_frame[index++] = 4 + data_len; // 长度 = ID(2) + cmd_type + cmd_status + data
-    out_frame[index++] = DEVICE_REMOTE_ID_H;
-    out_frame[index++] = DEVICE_REMOTE_ID_L;
+    out_frame[index++] = DEVICE_MAINBOARD_ID_H;  // Source ID: Mainboard
+    out_frame[index++] = DEVICE_MAINBOARD_ID_L;
     out_frame[index++] = cmd_type;
     out_frame[index++] = cmd_status;
 
@@ -71,8 +71,8 @@ rt_uint8_t nrf24l01_build_sensor_frame(uint8_t cmd_type, uint8_t cmd_status,uint
     out_frame[index++] = 0x55;
     out_frame[index++] = 0xAA;
     out_frame[index++] = 4 + data_len; // 长度 = ID(2) + cmd_type + cmd_status + data
-    out_frame[index++] = DEVICE_SENSOR_ID_H;
-    out_frame[index++] = DEVICE_SENSOR_ID_L;
+    out_frame[index++] = DEVICE_MAINBOARD_ID_H;  // Source ID: Mainboard
+    out_frame[index++] = DEVICE_MAINBOARD_ID_L;
     out_frame[index++] = cmd_type;
     out_frame[index++] = cmd_status;
 

@@ -15,6 +15,9 @@
 #define DEVICE_SENSOR_ID_H   0x00
 #define DEVICE_SENSOR_ID_L   0x05
 
+#define DEVICE_MAINBOARD_ID_H   0x00
+#define DEVICE_MAINBOARD_ID_L   0x01
+
 /* 函数返回宏 */
 #define CMD_ERROR   0
 #define CMD_TRUE    1
