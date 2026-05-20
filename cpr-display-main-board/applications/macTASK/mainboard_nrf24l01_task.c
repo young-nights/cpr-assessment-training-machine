@@ -156,8 +156,9 @@ void nRF24L01_Thread_entry(void* parameter)
 
 
 
-         // 4. 角色 = 接收端（PRX）
-         if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX)
+         // 4. Check hardware RX_DR flag instead of software prim_rx config
+         //    (send_with_retry may change prim_rx to PTX during TX polling)
+         if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR)
          {
 
              // 分析哪条信道接收的数据 -----------------------------------------------------------------

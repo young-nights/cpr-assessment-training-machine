@@ -368,11 +368,11 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             emptyBuf[0] = FRAME_NRF24_CONNECT_CTRL_PANEL_CMD;
             if(pipe_num == NRF24_PIPE_1){
                 package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
             else if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
 
@@ -384,11 +384,11 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             emptyBuf[1] = MySysCfg.start_status;
             if(pipe_num == NRF24_PIPE_1){
                 package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
             else if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
 
@@ -399,11 +399,11 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             emptyBuf[0] = FRAME_NRF24_ACK_SHOKE_SENSOR_CMD;
             if(pipe_num == NRF24_PIPE_1){
                 package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
             else if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
 
@@ -415,11 +415,11 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             emptyBuf[0] = FRAME_NRF24_ACK_CC6201_CMD;
             if(pipe_num == NRF24_PIPE_1){
                 package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
             else if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 1, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
 
@@ -432,11 +432,11 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             emptyBuf[1] = MySysCfg.eyes_rgb_level;
             if(pipe_num == NRF24_PIPE_1){
                 package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
             else if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
 
@@ -449,11 +449,11 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             emptyBuf[1] = MySysCfg.motor_work_sta;
             if(pipe_num == NRF24_PIPE_1){
                 package_len = nrf24l01_build_sensor_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
             else if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
 
@@ -465,7 +465,7 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             emptyBuf[1] = MySysCfg.start_status;
             if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 2, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
 
@@ -477,7 +477,7 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             emptyBuf[1] = (uint8_t)MySysCfg.current_mode;
             if(pipe_num == NRF24_PIPE_2){
                 package_len = nrf24l01_build_remote_frame(FRAME_TYPE_ACT, FRAME_STATE_ACK, emptyBuf, 2, frame_package);
-                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NEED_ACK);
+                nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
 
@@ -490,43 +490,43 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
 
 rt_err_t nrf24l01_send_with_retry(nrf24_t nrf24, uint8_t order, nrf24_pipe_et pipe, uint8_t max_retry)
 {
+    /* Take mutex once for the entire TX sequence to prevent the main
+       thread from reading/modifying STATUS registers during PTX mode */
+    if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+
+    rt_err_t result = -RT_ETIMEOUT;
+
     for(uint8_t r = 0; r < max_retry; r++)
     {
         LOG_I("TX order %d to pipe %d, retry %d", order, pipe, r+1);
 
-        // ==================== 关键步骤 ====================
-        if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+        // 1. Switch to PTX mode
+        _nrf24->nrf24_ops.nrf24_reset_ce();
+        nRF24L01_Set_Role_Mode(nrf24, ROLE_PTX);
+        nRF24L01_Flush_TX_FIFO(nrf24);
 
-        // 1. 切换到发送模式 (PTX)
-        _nrf24->nrf24_ops.nrf24_reset_ce();           // 先拉低 CE
-        nRF24L01_Set_Role_Mode(nrf24, ROLE_PTX);      // 切换为 PTX
-        nRF24L01_Flush_TX_FIFO(nrf24);                // 清空 TX FIFO
+        // 2. Fill and send
+        nrf24l01_order_to_pipe(order, pipe);
 
-        // 2. 填充数据并发送
-        nrf24l01_order_to_pipe(order, pipe);          // 里面会调用 nRF24L01_Send_Packet
-
-        // 3. 拉高 CE 触发发送
+        // 3. Pulse CE to trigger transmission
         _nrf24->nrf24_ops.nrf24_set_ce();
 
-        if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
-        // ================================================
-
-        // 等待发送完成或失败
+        // 4. Poll for TX completion or failure (mutex held)
         rt_tick_t poll_start = rt_tick_get();
         rt_bool_t tx_ok = RT_FALSE;
 
-        while(rt_tick_get() - poll_start < 80)        // 建议给 50~100ms
+        while(rt_tick_get() - poll_start < 80)
         {
             rt_uint8_t st = nRF24L01_Read_Status_Register(nrf24);
 
-            if(st & NRF24BITMASK_TX_DS)               // 发送成功
+            if(st & NRF24BITMASK_TX_DS)
             {
                 LOG_I("TX OK (TX_DS set)");
                 tx_ok = RT_TRUE;
                 break;
             }
 
-            if(st & NRF24BITMASK_MAX_RT)              // 达到最大重发次数
+            if(st & NRF24BITMASK_MAX_RT)
             {
                 LOG_W("TX failed: MAX_RT");
                 break;
@@ -535,34 +535,33 @@ rt_err_t nrf24l01_send_with_retry(nrf24_t nrf24, uint8_t order, nrf24_pipe_et pi
             rt_thread_mdelay(5);
         }
 
-        // 清理中断标志
+        // 5. Clear IRQ flags
         nRF24L01_Clear_IRQ_Flags(nrf24);
 
         if(tx_ok)
         {
-            // 发送成功后，建议切回 PRX（因为你的主线程默认是接收模式）
-            if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
-            _nrf24->nrf24_ops.nrf24_reset_ce();
-            nRF24L01_Set_Role_Mode(nrf24, ROLE_PRX);
-            _nrf24->nrf24_ops.nrf24_set_ce();
-            if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
-
-            return RT_EOK;
+            result = RT_EOK;
+            break;
         }
 
-        // 重试前稍等一下
+        // Wait before retry
         rt_thread_mdelay(20);
     }
 
-    LOG_E("TX failed after %d retries", max_retry);
-
-    // 最终失败也要切回接收模式
-    if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+    /* Always restore PRX mode, flush RX FIFO, and clear IRQ flags */
     _nrf24->nrf24_ops.nrf24_reset_ce();
     nRF24L01_Set_Role_Mode(nrf24, ROLE_PRX);
+    nRF24L01_Flush_RX_FIFO(nrf24);
+    nRF24L01_Clear_IRQ_Flags(nrf24);
     _nrf24->nrf24_ops.nrf24_set_ce();
+
+    /* Release mutex on all exit paths */
     if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
 
-    return -RT_ETIMEOUT;
+    if(result != RT_EOK) {
+        LOG_E("TX failed after %d retries", max_retry);
+    }
+
+    return result;
 }
 
