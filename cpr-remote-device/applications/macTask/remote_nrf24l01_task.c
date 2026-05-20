@@ -1,5 +1,4 @@
 /*
-#include <remote_nrf24l01_driver.h>
  * Copyright (c) 2006-2021, RT-Thread Development Team
  *
  * SPDX-License-Identifier: Apache-2.0
@@ -8,6 +7,7 @@
  * Date           Author       Notes
  * 2025-11-02     Administrator       the first version
  */
+#include <remote_nrf24l01_driver.h>
 #include "bsp_sys.h"
 #include "setup_scr_screen.h"
 
@@ -42,8 +42,8 @@ void nRF24L01_Thread_entry(void* parameter)
 {
     static int connect_retry_cnt;
 
-    /* 0. 给nrf24开创一个实际空间 */
-    _nrf24 = malloc(sizeof(nrf24_t));
+    /* 0. Allocate memory for the nRF24L01 structure (nrf24_t is a pointer typedef, must use sizeof struct) */
+    _nrf24 = malloc(sizeof(struct nRF24L01_STRUCT));
     if (_nrf24 == NULL) {
         LOG_E("LOG:%d. nrf24 malloc error.",Record.ulog_cnt++);
         return;

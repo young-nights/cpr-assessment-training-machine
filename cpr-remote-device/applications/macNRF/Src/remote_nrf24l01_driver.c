@@ -51,7 +51,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* SET_RETR */
     param->setup_retr.arc = 15;         // 最大重发15次
-    param->setup_retr.ard = ADR_2Mbps;
+    param->setup_retr.ard = ADR_2Mbps;    // ARD = 500µs (enum naming inverted: ADR_2Mbps=1 = 500µs, correct for 1Mbps)
 
     /* RF_CH */
     param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
@@ -63,10 +63,10 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->rf_setup.rf_dr_low   = 0;
     param->rf_setup.cont_wave   = 0;
 
-    /* DYNPD */
+    /* DYNPD — enable dynamic payload on all active pipes (p0=p1=p2=1) to match FEATURE EN_DPL */
     param->dynpd.p0 = 1;
-    param->dynpd.p1 = 0;
-    param->dynpd.p2 = 1;   /* Match mainboard DYNPD p2 setting */
+    param->dynpd.p1 = 1;
+    param->dynpd.p2 = 1;
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
     param->dynpd.p5 = 0;
@@ -91,11 +91,11 @@ int nRF24L01_Param_Config(nrf24_param_t param)
         param->rx_addr_p1[i]   = rx_addr_p1[i];
     }
 
-    /* 其余管道关闭或设为无效值 */
-    param->rx_addr_p2 = 9;
-    param->rx_addr_p3 = 9;
-    param->rx_addr_p4 = 9;
-    param->rx_addr_p5 = 9;
+    /* Remaining pipes unused but set to consistent values */
+    param->rx_addr_p2 = 0x03;  /* Match Mainboard RX_ADDR_P2 / TX_ADDR[4] for pipe2 consistency */
+    param->rx_addr_p3 = 0xF0;
+    param->rx_addr_p4 = 0xF0;
+    param->rx_addr_p5 = 0xF0;
 
     LOG_I("Remote nRF24 Param Config: TX=0x03, RX_P0=0xAA, RX_P2=0x03");
 
@@ -221,20 +221,21 @@ int nRF24L01_Update_Parameter(nrf24_t nrf24)
     rt_kprintf("[WRITE]ccfg->config          = 0x%02x.\r\n", *((uint8_t *)&nrf24->nrf24_cfg.config));
 
 
+    /* Address writes use send_then_send (cmd + data, no readback needed) to match Mainboard/Sensor drivers */
     cmd = NRF24CMD_W_REG | NRF24REG_TX_ADDR;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.txaddr, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.txaddr, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P0;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p0, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p0, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P1;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p1, 5);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p1, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P2;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p2, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p2, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P3;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p3, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p3, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P4;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p4, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p4, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P5;
-    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p5, 1);
+    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p5, 1);
 
 
     return RT_EOK;

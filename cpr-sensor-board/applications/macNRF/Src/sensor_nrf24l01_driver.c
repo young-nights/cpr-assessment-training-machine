@@ -54,7 +54,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* SET_RETR */
     param->setup_retr.arc = 15;
-    param->setup_retr.ard = ADR_2Mbps;
+    param->setup_retr.ard = ADR_2Mbps;    // ARD = 500µs (enum naming inverted: ADR_2Mbps=1 = 500µs, correct for 1Mbps)
 
     /* RF_CH */
     param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
@@ -66,10 +66,10 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->rf_setup.rf_dr_low   = 0;
     param->rf_setup.cont_wave   = 0;
 
-    /* DYNPD */
+    /* DYNPD — enable dynamic payload on all active pipes (p0=p1=p2=1) to match FEATURE EN_DPL */
     param->dynpd.p0 = 1;
     param->dynpd.p1 = 1;
-    param->dynpd.p2 = 0;
+    param->dynpd.p2 = 1;
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
     param->dynpd.p5 = 0;
@@ -80,14 +80,14 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->feature.en_dpl     = 1;
 
 
-    /* ==================== 地址配置（严格对齐约束文件） ==================== */
-    /* TX_ADDR：Sensor 自己的发送地址 (0x01) */
+    /* ==================== Address configuration ==================== */
+    /* TX_ADDR: Sensor's own address (0x01) — must match Mainboard RX_ADDR_P1 */
     rt_uint8_t tx_addr[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
 
-    /* RX_ADDR_P0：必须与主板 TX_ADDR 一致 (0xAA)，用于接收硬件 ACK */
-    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0x01 };
+    /* RX_ADDR_P0: must match Mainboard TX_ADDR (0xAA) — all devices listen on Pipe0 via this address */
+    rt_uint8_t rx_addr_pipe0[5] = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
 
-    /* RX_ADDR_P1：接收主板定向回复（主板用 Pipe1 发给 Sensor） */
+    /* RX_ADDR_P1: also matches Mainboard TX_ADDR for directed reply reception */
     rt_uint8_t rx_addr_pipe1[5] = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
 
     for(int16_t i = 0; i < 5; i++){

@@ -57,7 +57,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* ====================== SETUP_RETR 寄存器配置 ====================== */
     param->setup_retr.arc = 15;           // 自动重发次数：最大 15 次
-    param->setup_retr.ard = ADR_2Mbps;    // 自动重发延时：1Mbps 模式下的推荐值
+    param->setup_retr.ard = ADR_2Mbps;    // ARD = 500µs (enum naming is inverted: ADR_2Mbps=1 gives 500µs, correct for 1Mbps) (see header)
 
     /* ====================== RF_CH 寄存器配置 ====================== */
     param->rf_ch.rf_ch = 100;   // 无线频道 = 100，对应频率 2.500 GHz
