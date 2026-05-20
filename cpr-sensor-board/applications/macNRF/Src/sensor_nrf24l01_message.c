@@ -135,6 +135,19 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdL
     if(Decode_Step == Decode_Step_2)
     {
         CMD_Length = *(cmdBuf + Decode_Step_2);
+
+        // Bounds check: payload must be at least 4 bytes (ID+TYPE+STATUS),
+        // and must fit within CMD_buffer (exclude CRC length from sizeof)
+        if(CMD_Length < 4 || CMD_Length >= sizeof(CMD_buffer)) {
+            Decode_Step = Decode_Step_0;
+            return CMD_ERROR;
+        }
+        // Ensure remaining buffer has enough data for full frame (payload + 2 CRC)
+        if(cmdLength < (uint16_t)(CMD_Length + 5)) {
+            Decode_Step = Decode_Step_0;
+            return CMD_ERROR;
+        }
+
         CMD_DataCnt = 0;
         CMD_buffer[CMD_DataCnt] = CMD_Length;
         CMD_DataCnt++;

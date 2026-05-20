@@ -40,6 +40,7 @@ typedef enum {
   */
 void nRF24L01_Thread_entry(void* parameter)
 {
+    static int connect_retry_cnt;
 
     /* 0. 给nrf24开创一个实际空间 */
     _nrf24 = malloc(sizeof(nrf24_t));
@@ -145,9 +146,12 @@ void nRF24L01_Thread_entry(void* parameter)
     for(;;)
     {
         /* 尚未连接则持续广播 */
-        if(Record.nrf_if_connected == 0){
+        if(Record.nrf_if_connected == 0)
+        {
             static rt_tick_t last_send = 0;
-            if(rt_tick_get() - last_send >= 300) {
+
+            if(rt_tick_get() - last_send >= 300)
+            {
                 last_send = rt_tick_get();
                 /* ----------  1. PTX 发送  ---------- */
                 _nrf24->nrf24_ops.nrf24_reset_ce();
@@ -156,15 +160,29 @@ void nRF24L01_Thread_entry(void* parameter)
                 _nrf24->nrf24_ops.nrf24_set_ce();
                 rt_thread_mdelay(5);
                 _nrf24->nrf24_ops.nrf24_reset_ce();
-                rt_kprintf("NRF TX connect req\n");
+                connect_retry_cnt++;
+                LOG_I("Remote → Mainboard: Send connect request... (retry %d)", connect_retry_cnt);
             }
 
             /* ----------  2. Flush + Clear + 切换 PRX  ---------- */
+            _nrf24->nrf24_ops.nrf24_reset_ce();
             nRF24L01_Flush_TX_FIFO(_nrf24);
             nRF24L01_Flush_RX_FIFO(_nrf24);
             nRF24L01_Clear_IRQ_Flags(_nrf24);
             nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
             _nrf24->nrf24_ops.nrf24_set_ce();
+
+#if 1
+            /* 验证 PRX 模式是否生效 */
+            {
+                uint8_t cfg_val = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_CONFIG);
+                uint8_t status_val = nRF24L01_Read_Status_Register(_nrf24);
+                uint8_t fifo_status = nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_FIFO_STATUS);
+                LOG_I("PRX check: CONFIG=0x%02X PRIM_RX=%d STATUS=0x%02X FIFO=0x%02X",
+                      cfg_val, cfg_val & 0x01, status_val, fifo_status);
+            }
+#endif
+
 
             /* ----------  3. 预检查 RX_DR（数据可能在切 PRX 前已到达）  ---------- */
             uint8_t pre_status = nRF24L01_Read_Status_Register(_nrf24);
@@ -176,27 +194,32 @@ void nRF24L01_Thread_entry(void* parameter)
                     nRF24L01_Clear_IRQ_Flags(_nrf24);
                     cpr_src_type_t src = SRC_UNKNOWN;
                     if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
-                        rt_kprintf("NRF: ACK received (precheck)\n");
+                        LOG_I("PRX rec_data → `nrf24l01_portocol_get_command()` == ASK_Connect_ACK → connected + LOG (precheck, src=%d)", src);
+                        connect_retry_cnt = 0;
                     }
                 }
             }
 
             /* ----------  4. 等待 IRQ（主板手动 ACK）  ---------- */
             rt_err_t rx_ok = rt_sem_take(nrf24_irq_sem, 200);
-            if(rx_ok == RT_EOK) {
-                rt_kprintf("NRF IRQ fired!\n");
+            if(rx_ok == RT_EOK)
+            {
                 _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
-                rt_kprintf("NRF STATUS=0x%02X\n", _nrf24->nrf24_flags.status);
                 nRF24L01_Clear_IRQ_Flags(_nrf24);
 
-                if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) {
+                if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR)
+                {
                     uint8_t len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-                    if(len > 0 && len <= 32) {
+                    if(len > 0 && len <= 32)
+                    {
                         uint8_t rec_data[32];
                         nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
+
                         cpr_src_type_t src = SRC_UNKNOWN;
-                        if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
-                            rt_kprintf("NRF: ACK received (irq)\n");
+                        if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE)
+                        {
+                            LOG_I("PRX rec_data → `nrf24l01_portocol_get_command()` == ASK_Connect_ACK → connected + LOG (irq, src=%d)", src);
+                            connect_retry_cnt = 0;
                         }
                     }
                 }

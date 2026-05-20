@@ -16,15 +16,15 @@
 /* Forward declaration to avoid circular include with remote_nrf24l01_driver.h */
 typedef struct nRF24L01_STRUCT *nrf24_t;
 
-#define DEVICE_ID_H     0x00
-#define DEVICE_ID_L     0x04
+#define DEVICE_REMOTE_ID_H   0x00
+#define DEVICE_REMOTE_ID_L   0x04
 
 /* 函数进行解析指令后的返回宏 */
 #define CMD_ERROR   0
 #define CMD_TRUE    1
 
-// 指令的最小长度为4
-#define CMD_MINI_LENGTH 4
+// Minimum full frame: 2 headers + 1 LEN + 4 min payload (ID+TYPE+STATUS) + 2 CRC = 9
+#define CMD_MINI_LENGTH 9
 
 
 /* 解析指令数据的指令类型以及状态宏 */

@@ -22,8 +22,8 @@ typedef struct nRF24L01_STRUCT *nrf24_t;
 #define CMD_ERROR   0
 #define CMD_TRUE    1
 
-// 指令的最小长度为4
-#define CMD_MINI_LENGTH 4
+// Minimum full frame: 2 headers + 1 LEN + 4 min payload (ID+TYPE+STATUS) + 2 CRC = 9
+#define CMD_MINI_LENGTH 9
 
 
 /* 解析指令数据的指令类型以及状态宏 */
