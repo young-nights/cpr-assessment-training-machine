@@ -33,7 +33,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* EN_AA */
     param->en_aa.p0 = 1;
     param->en_aa.p1 = 0;
-    param->en_aa.p2 = 0;   /* Disable auto-ACK on Pipe2, use manual handshake */
+    param->en_aa.p2 = 1;
     param->en_aa.p3 = 0;
     param->en_aa.p4 = 0;
     param->en_aa.p5 = 0;
@@ -41,7 +41,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* EN_RXADDR */
     param->en_rxaddr.p0 = RT_TRUE;      // Pipe0：接收主板公共 ACK
     param->en_rxaddr.p1 = RT_FALSE;
-    param->en_rxaddr.p2 = RT_FALSE;
+    param->en_rxaddr.p2 = RT_TRUE;
     param->en_rxaddr.p3 = RT_FALSE;
     param->en_rxaddr.p4 = RT_FALSE;
     param->en_rxaddr.p5 = RT_FALSE;
@@ -51,7 +51,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* SET_RETR */
     param->setup_retr.arc = 15;         // 最大重发15次
-    param->setup_retr.ard = ADR_2Mbps;    // ARD = 500µs (enum naming inverted: ADR_2Mbps=1 = 500µs, correct for 1Mbps)
+    param->setup_retr.ard = 3;            // ARD: 3*250us+250us=1000us @1Mbps
 
     /* RF_CH */
     param->rf_ch.rf_ch = 100; /*! 无线频道设为 100（2.500 GHz） */
@@ -65,7 +65,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* DYNPD — enable dynamic payload on all active pipes (p0=p1=p2=1) to match FEATURE EN_DPL */
     param->dynpd.p0 = 1;
-    param->dynpd.p1 = 1;
+    param->dynpd.p1 = 0;
     param->dynpd.p2 = 1;
     param->dynpd.p3 = 0;
     param->dynpd.p4 = 0;
@@ -79,12 +79,12 @@ int nRF24L01_Param_Config(nrf24_param_t param)
 
     /* ==================== 地址配置（严格对齐主板） ==================== */
     /* TX_ADDR：Remote 自己的发送地址（主板 Pipe2 对应的地址） */
-    rt_uint8_t tx_addr[5]      = { 0x55, 0x0A, 0x01, 0x89, 0x03 };
+    rt_uint8_t tx_addr[5]      = { 0x55, 0x0A, 0x01, 0x89, 0x02 };
 
     /* RX_ADDR_P0：必须与主板 TX_ADDR 一致，用于接收 ACK */
     rt_uint8_t rx_addr_p0[5]   = { 0x55, 0x0A, 0x01, 0x89, 0xAA };
 
-    rt_uint8_t rx_addr_p1[5]   = { 0x55, 0x0A, 0x01, 0x89, 0x09 };
+    rt_uint8_t rx_addr_p1[5]   = { 0x55, 0x0A, 0x01, 0x89, 0xF0 };
     for(int16_t i = 0; i < 5; i++) {
         param->txaddr[i]       = tx_addr[i];
         param->rx_addr_p0[i]   = rx_addr_p0[i];
@@ -92,7 +92,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     }
 
     /* Remaining pipes unused but set to consistent values */
-    param->rx_addr_p2 = 0x03;  /* Match Mainboard RX_ADDR_P2 / TX_ADDR[4] for pipe2 consistency */
+    param->rx_addr_p2 = 0xF0;  /* Match Mainboard RX_ADDR_P2 / TX_ADDR[4] for pipe2 consistency */
     param->rx_addr_p3 = 0xF0;
     param->rx_addr_p4 = 0xF0;
     param->rx_addr_p5 = 0xF0;

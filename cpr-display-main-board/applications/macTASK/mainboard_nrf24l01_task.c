@@ -32,6 +32,7 @@ void nRF24L01_Thread_entry(void* parameter)
         LOG_E("LOG:%d. nrf24 malloc error.",Record.ulog_cnt++);
         return;
     }
+    rt_memset(_nrf24, 0, sizeof(struct nRF24L01_STRUCT));
     LOG_I("LOG:%d. nrf24 malloc successful.",Record.ulog_cnt++);
 
 
@@ -152,7 +153,10 @@ void nRF24L01_Thread_entry(void* parameter)
 
         // 2. 读取status状态标志，并清除中断触发标志位
         _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
-         nRF24L01_Clear_Status_Register(_nrf24, NRF24BITMASK_RX_DR | NRF24BITMASK_TX_DS | NRF24BITMASK_MAX_RT);
+         /* Only clear RX_DR to avoid interfering with TX thread polling */
+         if (_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR) {
+             nRF24L01_Clear_Status_Register(_nrf24, NRF24BITMASK_RX_DR);
+         }
 
 
 
@@ -160,11 +164,13 @@ void nRF24L01_Thread_entry(void* parameter)
          //    (send_with_retry may change prim_rx to PTX during TX polling)
          if(_nrf24->nrf24_flags.status & NRF24BITMASK_RX_DR)
          {
+             while (!(nRF24L01_Read_Reg_Data(_nrf24, NRF24REG_FIFO_STATUS) & 0x01))
+             {
+                 // Read current status to get pipe number on each iteration
+                 uint8_t current_status = nRF24L01_Read_Status_Register(_nrf24);
+                 uint8_t pipe = ((current_status & NRF24BITMASK_RX_P_NO) >> 1);
 
-             // 分析哪条信道接收的数据 -----------------------------------------------------------------
-             uint8_t pipe = ((_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1) ;
-
-             // 根据 Pipe 自动识别来源（Pipe1 = Sensor）-----------------------------------------------------
+                 // 根据 Pipe 自动识别来源（Pipe1 = Sensor)-----------------------------------------------------
                  cpr_src_type_t src = SRC_UNKNOWN;
                  if(pipe == 1) {
                      src = SRC_FROM_SENSOR;
@@ -172,18 +178,17 @@ void nRF24L01_Thread_entry(void* parameter)
                      src = SRC_FROM_REMOTE;
                  }
 
-             // ------------------------------------------------------------------------------------
-             if(src != SRC_UNKNOWN) {
-                 uint8_t data_buf[32];
-                 uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-
-                 // Skip if FIFO is empty (may have been flushed by another thread)
-                 if(length == 0 || length > 32) {
-                     LOG_W("RX FIFO empty or invalid length=%d, skipping", length);
-                     src = SRC_UNKNOWN;
-                 }
-
+                 // ------------------------------------------------------------------------------------
                  if(src != SRC_UNKNOWN) {
+                     uint8_t data_buf[32];
+                     uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+
+                     // Skip if FIFO is empty (may have been flushed by another thread)
+                     if(length == 0 || length > 32) {
+                         LOG_W("RX FIFO empty or invalid length=%d, skipping", length);
+                         continue;
+                     }
+
                      rt_kprintf("\n----------------------\n");
                      LOG_I("Receive length = %d from %s (Pipe%d)", length,
                            (src==SRC_FROM_SENSOR)?"Sensor":"Remote", pipe);
@@ -197,6 +202,15 @@ void nRF24L01_Thread_entry(void* parameter)
                      } else {
                          LOG_W("Protocol parse failed");
                      }
+                 } else {
+                     // Unknown pipe - read and discard payload to avoid infinite loop
+                     uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+                     if(length > 0 && length <= 32) {
+                         uint8_t dummy[32];
+                         nRF24L01_Read_Rx_Payload(_nrf24, dummy, length);
+                         LOG_W("RX FIFO discarded %d bytes from unknown Pipe%d", length, pipe);
+                     }
+                     break;
                  }
              }
          }
@@ -227,10 +241,10 @@ void nRF24L01_Decode_entry(void* parameter)
         {
             Record.sensor_connect_pending = 0;
 
-            if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
-
             for(int retry = 0; retry < 3; retry++)
             {
+                if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+
                 _nrf24->nrf24_ops.nrf24_reset_ce();
                 nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
                 nRF24L01_Flush_TX_FIFO(_nrf24);
@@ -267,16 +281,18 @@ void nRF24L01_Decode_entry(void* parameter)
                       diag_txaddr[0], diag_txaddr[1], diag_txaddr[2], diag_txaddr[3], diag_txaddr[4],
                       diag_rxaddr_p1[0], diag_rxaddr_p1[1], diag_rxaddr_p1[2], diag_rxaddr_p1[3], diag_rxaddr_p1[4]);
                 /* ===== 诊断结束 ===== */
+
+                // Switch back to PRX before releasing mutex
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+                nRF24L01_Flush_RX_FIFO(_nrf24);
+                nRF24L01_Clear_IRQ_Flags(_nrf24);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+
+                if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
                 rt_thread_mdelay(50);           // 重试间隔 50ms
             }
 
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
-            // Do NOT Flush RX FIFO here — incoming data from other pipes may already be buffered
-            nRF24L01_Clear_IRQ_Flags(_nrf24);
-            _nrf24->nrf24_ops.nrf24_set_ce();
-
             LOG_I("Sent ACK_Connect to Sensor via Pipe1 (3 retries)");
-            if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
         }
 
         //============================================================
@@ -286,10 +302,10 @@ void nRF24L01_Decode_entry(void* parameter)
         {
             Record.remote_connect_pending = 0;
 
-            if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
-
             for(int retry = 0; retry < 3; retry++)
             {
+                if(nrf24_mutex) rt_mutex_take(nrf24_mutex, RT_WAITING_FOREVER);
+
                 _nrf24->nrf24_ops.nrf24_reset_ce();
                 nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
                 nRF24L01_Flush_TX_FIFO(_nrf24);
@@ -300,16 +316,17 @@ void nRF24L01_Decode_entry(void* parameter)
                 rt_thread_mdelay(10);
                 _nrf24->nrf24_ops.nrf24_reset_ce();
 
+                // Switch back to PRX before releasing mutex
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+                nRF24L01_Flush_RX_FIFO(_nrf24);
+                nRF24L01_Clear_IRQ_Flags(_nrf24);
+                _nrf24->nrf24_ops.nrf24_set_ce();
+
+                if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
                 rt_thread_mdelay(50);
             }
 
-            nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
-            // Do NOT Flush RX FIFO here — incoming data from other pipes may already be buffered
-            nRF24L01_Clear_IRQ_Flags(_nrf24);
-            _nrf24->nrf24_ops.nrf24_set_ce();
-
             LOG_I("Sent ACK_Connect to Remote via Pipe2 (3 retries)");
-            if(nrf24_mutex) rt_mutex_release(nrf24_mutex);
         }
 
         rt_thread_mdelay(50);

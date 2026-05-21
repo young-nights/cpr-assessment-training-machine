@@ -105,6 +105,7 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLe
 
     /* 如果未处理的数据长度小于指令长度 则不可能有完整的指令 */
     if(cmdLength < CMD_MINI_LENGTH){
+        rt_kprintf("ERROR\n");
         return CMD_ERROR;
     }
 
@@ -113,13 +114,17 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLe
     /*****************                第一步数据解析               ****************************/
     if(Decode_Step == Decode_Step_0)
     {
-        if(*cmdBuf != 0x55)return CMD_ERROR;
+        if(*cmdBuf != 0x55){
+            rt_kprintf("cmdBuf != 0x55 \n");
+            return CMD_ERROR;
+        }
         Decode_Step = Decode_Step_1;
     }
     /*****************                第二步数据解析               ****************************/
     if(Decode_Step == Decode_Step_1)
     {
         if(*(cmdBuf + Decode_Step_1) != 0xAA){
+            rt_kprintf("*(cmdBuf + Decode_Step_1) != 0xAA \n");
             Decode_Step = Decode_Step_0;
             return CMD_ERROR;
         }
@@ -138,6 +143,7 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf,const uint16_t cmdLe
     if(Decode_Step == Decode_Step_3)
     {
         if(*(cmdBuf + 3) == DEVICE_REMOTE_ID_H && *(cmdBuf + 4) == DEVICE_REMOTE_ID_L) {
+            rt_kprintf("Device ID Error\n");
             *out_src = SRC_FROM_REMOTE;
             CMD_buffer[CMD_DataCnt++] = *(cmdBuf + 3);
             Decode_Step = Decode_Step_4;

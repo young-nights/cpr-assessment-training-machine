@@ -85,99 +85,77 @@ static uint8_t  CMD_buffer[30] = {0};
 static uint8_t  CMD_DataCnt = 0;
 static uint8_t  CRC16_H,CRC16_L = 0;
 static uint16_t CRC16_Value = 0;
-static uint8_t  consecutive_parse_fails = 0;
 
-uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdLength, cpr_src_type_t *out_src)
+uint8_t nrf24l01_portocol_remote_get_command(const uint8_t *cmdBuf,const uint16_t cmdLength, cpr_src_type_t *out_src)
 {
+
     uint8_t i = 0;
     *out_src = SRC_UNKNOWN;
 
-    if(cmdLength < CMD_MINI_LENGTH) {
-        consecutive_parse_fails++;
-        if(consecutive_parse_fails >= 10) {
-            LOG_E("NRF24L01 protocol parse: 10 consecutive short pkt fails (timeout), resetting.");
-            consecutive_parse_fails = 0;
-            Decode_Step = Decode_Step_0;
-        }
+    /* 如果未处理的数据长度小于指令长度 则不可能有完整的指令 */
+    if(cmdLength < CMD_MINI_LENGTH){
         return CMD_ERROR;
     }
 
+    /* 然后可以进行正常的数据解析流程 */
+    /*--------------------------------*/
+    /*****************                第一步数据解析               ****************************/
     if(Decode_Step == Decode_Step_0)
     {
-        if(*cmdBuf != 0x55) {
-            consecutive_parse_fails++;
-            if(consecutive_parse_fails >= 10) {
-                LOG_E("NRF24L01 protocol parse: 10 consecutive 0x55 fails (timeout), resetting.");
-                consecutive_parse_fails = 0;
-                Decode_Step = Decode_Step_0;
-            }
-            return CMD_ERROR;
-        }
+        if(*cmdBuf != 0x55)return CMD_ERROR;
         Decode_Step = Decode_Step_1;
     }
+    /*****************                第二步数据解析               ****************************/
     if(Decode_Step == Decode_Step_1)
     {
         if(*(cmdBuf + Decode_Step_1) != 0xAA){
             Decode_Step = Decode_Step_0;
-            consecutive_parse_fails++;
-            if(consecutive_parse_fails >= 10) {
-                LOG_E("NRF24L01 protocol parse: 10 consecutive 0xAA fails (timeout), resetting.");
-                consecutive_parse_fails = 0;
-                Decode_Step = Decode_Step_0;
-            }
             return CMD_ERROR;
         }
         Decode_Step = Decode_Step_2;
     }
+    /*****************                第三步数据解析               ****************************/
     if(Decode_Step == Decode_Step_2)
     {
         CMD_Length = *(cmdBuf + Decode_Step_2);
-
-        // Bounds check: payload must be at least 4 bytes (ID+TYPE+STATUS),
-        // and must fit within CMD_buffer (exclude CRC length from sizeof)
-        if(CMD_Length < 4 || CMD_Length >= sizeof(CMD_buffer)) {
-            Decode_Step = Decode_Step_0;
-            return CMD_ERROR;
-        }
-        // Ensure remaining buffer has enough data for full frame (payload + 2 CRC)
-        if(cmdLength < (uint16_t)(CMD_Length + 5)) {
-            Decode_Step = Decode_Step_0;
-            return CMD_ERROR;
-        }
-
         CMD_DataCnt = 0;
         CMD_buffer[CMD_DataCnt] = CMD_Length;
         CMD_DataCnt++;
         Decode_Step = Decode_Step_3;
     }
+    /*****************                第四步数据解析               ****************************/
     if(Decode_Step == Decode_Step_3)
     {
-        /* Validate frame destination: must be addressed to this device (Remote 0x0004) */
-        if(*(cmdBuf + 3) != DEVICE_REMOTE_ID_H || *(cmdBuf + 4) != DEVICE_REMOTE_ID_L) {
+        if(*(cmdBuf + 3) == DEVICE_REMOTE_ID_H && *(cmdBuf + 4) == DEVICE_REMOTE_ID_L) {
+            *out_src = SRC_FROM_REMOTE;
+            CMD_buffer[CMD_DataCnt++] = *(cmdBuf + 3);
+            Decode_Step = Decode_Step_4;
+        }
+        else {
             Decode_Step = Decode_Step_0;
             return CMD_ERROR;
         }
-        *out_src = SRC_FROM_MAIN;
-        CMD_buffer[CMD_DataCnt] = *(cmdBuf + Decode_Step_3);
-        CMD_DataCnt++;
-        Decode_Step = Decode_Step_4;
     }
+    /*****************                第五步数据解析               ****************************/
     if(Decode_Step == Decode_Step_4)
     {
-        CMD_buffer[CMD_DataCnt] = *(cmdBuf + Decode_Step_4);
-        CMD_DataCnt++;
+        CMD_buffer[CMD_DataCnt++] = *(cmdBuf + 4);
         Decode_Step = Decode_Step_5;
     }
+    /*****************                第六步数据解析               ****************************/
     if(Decode_Step == Decode_Step_5)
     {
+        /* 接收数据 */
         for(i = 0; CMD_DataCnt < (CMD_Length + 1); CMD_DataCnt++,i++)
         {
             CMD_buffer[CMD_DataCnt] = *(cmdBuf + Decode_Step_5 + i);
         }
+
         CRC16_H = *(cmdBuf + Decode_Step_5 + i);
         Decode_Step = Decode_Step_6;
         i++;
     }
+    /*****************                第七步数据解析               ****************************/
     if(Decode_Step == Decode_Step_6)
     {
         CRC16_L = *(cmdBuf + Decode_Step_5 + i);
@@ -185,19 +163,33 @@ uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdL
         CRC16_Value = CrcCalc_Crc16Modbus(CMD_buffer, CMD_Length + 1);
         if(((CRC16_H << 8) | CRC16_L) == CRC16_Value)
         {
-            consecutive_parse_fails = 0;
-            nrf24l01_protocol_operation(CMD_buffer, *out_src);
-            return CMD_TRUE;
-        } else {
-            consecutive_parse_fails++;
-            if(consecutive_parse_fails >= 10) {
-                LOG_E("NRF24L01 protocol parse: 10 CRC fails (fault/timeout), resetting state.");
-                consecutive_parse_fails = 0;
-                Decode_Step = Decode_Step_0;
+            /* ====================== 解析成功，打印完整帧 ====================== */
+            LOG_I("=== [nRF24 Protocol] Parse SUCCESS ===");
+            LOG_I("Source: %s", "SENSOR");
+            LOG_I("Length: %d bytes", CMD_Length + 2 + 2);  // 头2 + ID2 + Type+Status + Data + CRC2
+            LOG_I("Frame : 55 AA %02X %02X %02X %02X %02X ... (CRC %02X %02X)",
+                  CMD_Length,
+                  CMD_buffer[1], CMD_buffer[2], CMD_buffer[3], CMD_buffer[4],
+                  CRC16_H, CRC16_L);
+
+            /* 可选：打印整个接收到的原始数据（方便调试） */
+            rt_kprintf("Raw Data: ");
+            for(uint16_t j = 0; j < cmdLength; j++) {
+                rt_kprintf("%02X ", cmdBuf[j]);
             }
+            rt_kprintf("\n");
+
+            /* 调用协议处理函数 */
+            nrf24l01_protocol_operation(CMD_buffer, *out_src);
+
+            return CMD_TRUE;
+        }
+        else
+        {
+            LOG_W("CRC Check FAILED! Calculated=0x%04X, Received=0x%04X",
+                  CRC16_Value, (CRC16_H << 8) | CRC16_L);
         }
     }
-    return CMD_ERROR;
 }
 
 
@@ -309,7 +301,6 @@ void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num)
             emptyBuf[0] = FRAME_NRF24_CONNECT_CTRL_PANEL_CMD;
             package_len = nrf24l01_build_frame(FRAME_TYPE_ACT,FRAME_STATE_ASK,emptyBuf,1,frame_package);
             nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
-            Record.nrf_sending = 1;
         }break;
 
 
@@ -337,7 +328,6 @@ void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num)
             emptyBuf[0] = FRAME_NRF24_REMOTE_START_CMD;
             package_len = nrf24l01_build_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 1, frame_package);
             nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
-            Record.nrf_sending = 1;
         }break;
 
         case Order_nRF24L01_SEND_To_Main_Mode_Switch:
@@ -347,7 +337,6 @@ void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num)
             emptyBuf[1] = Record.mode_data_in;
             package_len = nrf24l01_build_frame(FRAME_TYPE_ACT, FRAME_STATE_ASK, emptyBuf, 2, frame_package);
             nRF24L01_Send_Packet(nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
-            Record.nrf_sending = 1;
         }break;
 
         default: break;

@@ -188,6 +188,7 @@ struct nRF24L01_PARAMETER_STRUCT
 
     /* RF_SETUP */
     struct {
+        uint8_t reserved0   :1;
         uint8_t rf_pwr      :2;
         uint8_t rf_dr_high  :1;
         uint8_t pll_lock    :1;

@@ -101,7 +101,7 @@ typedef enum
 
 uint16_t CrcCalc_Crc16Modbus(uint8_t *dat, uint8_t len);
 rt_uint8_t nrf24l01_build_frame(uint8_t cmd_type, uint8_t cmd_status,uint8_t *data, uint8_t data_len,uint8_t *out_frame);
-uint8_t nrf24l01_portocol_get_command(const uint8_t *cmdBuf, const uint16_t cmdLength, cpr_src_type_t *out_src);
+uint8_t nrf24l01_portocol_remote_get_command(const uint8_t *cmdBuf, const uint16_t cmdLength, cpr_src_type_t *out_src);
 void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src);
 void nrf24l01_order_to_pipe(nrf24_t nrf24, uint8_t order, uint8_t pipe_num);
 

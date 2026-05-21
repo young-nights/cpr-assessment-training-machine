@@ -48,6 +48,7 @@ void nRF24L01_Thread_entry(void* parameter)
         LOG_E("LOG:%d. nrf24 malloc error.",Record.ulog_cnt++);
         return;
     }
+    rt_memset(_nrf24, 0, sizeof(struct nRF24L01_STRUCT));
     LOG_I("LOG:%d. nrf24 malloc successful.",Record.ulog_cnt++);
 
 
@@ -142,6 +143,10 @@ void nRF24L01_Thread_entry(void* parameter)
     _nrf24->nrf24_ops.nrf24_set_ce();
     LOG_I("LOG:%d. Successfully initialized",Record.ulog_cnt++);
 
+    rt_thread_mdelay(10);
+    nRF24L01_Clear_IRQ_Flags(_nrf24);
+    while (rt_sem_take(nrf24_irq_sem, 0) == RT_EOK);
+
     /* ====================== 主循环（状态机） ====================== */
     for(;;)
     {
@@ -150,16 +155,25 @@ void nRF24L01_Thread_entry(void* parameter)
         {
             static rt_tick_t last_send = 0;
 
-            if(rt_tick_get() - last_send >= 300)
+            if(rt_tick_get() - last_send >= 500)
             {
                 last_send = rt_tick_get();
                 /* ----------  1. PTX 发送  ---------- */
                 _nrf24->nrf24_ops.nrf24_reset_ce();
                 nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
+
                 nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel, NRF24_PIPE_2);
                 _nrf24->nrf24_ops.nrf24_set_ce();
                 rt_thread_mdelay(5);
                 _nrf24->nrf24_ops.nrf24_reset_ce();
+
+                /* Clear TX IRQ flags from own NO_ACK transmission + drain semaphore */
+                nRF24L01_Clear_IRQ_Flags(_nrf24);
+                while (rt_sem_take(nrf24_irq_sem, 0) == RT_EOK);
+
+                /* Switch to PRX to listen for ACK */
+                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
+
                 connect_retry_cnt++;
                 LOG_I("Remote → Mainboard: Send connect request... (retry %d)", connect_retry_cnt);
             }
@@ -186,14 +200,18 @@ void nRF24L01_Thread_entry(void* parameter)
 
             /* ----------  3. 预检查 RX_DR（数据可能在切 PRX 前已到达）  ---------- */
             uint8_t pre_status = nRF24L01_Read_Status_Register(_nrf24);
-            if(pre_status & NRF24BITMASK_RX_DR) {
+            if(pre_status & NRF24BITMASK_RX_DR)
+            {
                 uint8_t len = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-                if(len > 0 && len <= 32) {
+                if(len > 0 && len <= 32)
+                {
                     uint8_t rec_data[32];
                     nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
                     nRF24L01_Clear_IRQ_Flags(_nrf24);
+
                     cpr_src_type_t src = SRC_UNKNOWN;
-                    if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
+                    if(nrf24l01_portocol_remote_get_command(rec_data, len, &src) == CMD_TRUE)
+                    {
                         LOG_I("PRX rec_data → `nrf24l01_portocol_get_command()` == ASK_Connect_ACK → connected + LOG (precheck, src=%d)", src);
                         connect_retry_cnt = 0;
                     }
@@ -216,7 +234,7 @@ void nRF24L01_Thread_entry(void* parameter)
                         nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
 
                         cpr_src_type_t src = SRC_UNKNOWN;
-                        if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE)
+                        if(nrf24l01_portocol_remote_get_command(rec_data, len, &src) == CMD_TRUE)
                         {
                             LOG_I("PRX rec_data → `nrf24l01_portocol_get_command()` == ASK_Connect_ACK → connected + LOG (irq, src=%d)", src);
                             connect_retry_cnt = 0;
@@ -243,7 +261,6 @@ void nRF24L01_Thread_entry(void* parameter)
                 nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
                 _nrf24->nrf24_ops.nrf24_set_ce();
                 Record.nrf_send_start = 0;
-                Record.nrf_sending = 0;
                 LOG_I("Remote sent START command to Mainboard");
             }
 
@@ -259,7 +276,7 @@ void nRF24L01_Thread_entry(void* parameter)
                     nRF24L01_Read_Rx_Payload(_nrf24, rec_data, len);
 
                     cpr_src_type_t src = SRC_UNKNOWN;
-                    if(nrf24l01_portocol_get_command(rec_data, len, &src) == CMD_TRUE) {
+                    if(nrf24l01_portocol_remote_get_command(rec_data, len, &src) == CMD_TRUE) {
                         LOG_I("Remote received data from Main in connected state");
                     }
                 }

@@ -38,7 +38,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     /* 使能自动应答（Auto Acknowledgment） */
     param->en_aa.p0 = 1;   // 管道 0 使能自动应答
     param->en_aa.p1 = 1;   // 管道 1 使能自动应答
-    param->en_aa.p2 = 0;   // 管道 2 关闭自动应答（统一走手动ACK）
+    param->en_aa.p2 = 1;   // 管道 2 使能自动应答
     param->en_aa.p3 = 0;   // 管道 3 关闭自动应答
     param->en_aa.p4 = 0;   // 管道 4 关闭自动应答
     param->en_aa.p5 = 0;   // 管道 5 关闭自动应答
@@ -102,7 +102,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     }
 
     /* 管道 2~5 地址仅使用最低字节（与 RX_ADDR_P1 高字节相同） */
-    param->rx_addr_p2 = 0x03;   // RX_ADDR_P3 = RX_ADDR_P1[4:1] + 0x03
+    param->rx_addr_p2 = 0x02;   // RX_ADDR_P2 = RX_ADDR_P1[4:1] + 0x02
 
     param->rx_addr_p3 = 0xF0;   // RX_ADDR_P3 = RX_ADDR_P1[4:1] + 0xf0
     param->rx_addr_p4 = 0xF0;   // RX_ADDR_P4 = RX_ADDR_P1[4:1] + 0xf0
