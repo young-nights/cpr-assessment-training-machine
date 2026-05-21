@@ -143,9 +143,9 @@ void nRF24L01_Thread_entry(void* parameter)
             rt_kprintf("Main-NRF: alive, status=0x%02X\n", _nrf24->nrf24_flags.status);
             last_hb = rt_tick_get();
         }
-        // 1. 如果使用IRQ中断，则获取信号量等待释放
+        // 1. Wait for IRQ with timeout to allow heartbeat and periodic status check
         if(_nrf24->nrf24_flags.using_irq == RT_TRUE){
-            rt_sem_take(nrf24_irq_sem, RT_WAITING_FOREVER);
+            rt_sem_take(nrf24_irq_sem, rt_tick_from_millisecond(1000));
         }
 
         /* 锁定互斥锁，防止 Decode_entry 同时操作 nRF24L01 */
