@@ -180,6 +180,7 @@ void Touch_Key_Event_Handler(Touch_Type_et key, rt_uint8_t event)
         MySysCfg.start_status = 0;
         MySysCfg.start_press_cnt = 0;
         MySysCfg.reset_press_cnt = 1;
+        Record.remote_start_ack_pending = 1;  // Notify Remote on status change
         // 语音播报：复位
         WT588D_Set_Cmd(WT588D_ADDR_VOICE_3);
 

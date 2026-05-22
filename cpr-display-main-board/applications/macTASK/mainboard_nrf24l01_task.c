@@ -398,16 +398,18 @@ void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
 
 
         }
-        // Idle or completed state — do NOT send to Sensor unless connected
+        // Idle or completed state — only send on state change, not every loop
         else {
-            if(Record.sensor_connected == 1) {
+            if(Record.sensor_connected == 1 && Record.sensor_wsrgb_need_send == 1) {
                 MySysCfg.eyes_rgb_level = 1;
                 nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_WS2812_Level, NRF24_PIPE_1, 1);
+                Record.sensor_wsrgb_need_send = 0;
             }
 
-            // Notify Remote that CPR has stopped / completed
-            if(Record.remote_connected == 1) {
+            // Notify Remote that CPR has stopped / completed (event-triggered)
+            if(Record.remote_connected == 1 && Record.remote_start_ack_pending == 1) {
                 nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Remote_Start_Status, NRF24_PIPE_2, 1);
+                Record.remote_start_ack_pending = 0;
             }
         }
 

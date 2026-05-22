@@ -246,11 +246,13 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
                     if(src == SRC_FROM_SENSOR) {
                         Record.sensor_connect_pending = 1;
                         Record.sensor_connected = 1;
+                        Record.sensor_wsrgb_need_send = 1;  // Trigger WS2812B level send on next idle
                         Record.last_sensor_heartbeat = rt_tick_get();
                         LOG_I("Sensor connected (mainboard confirmed).");
                     } else if(src == SRC_FROM_REMOTE) {
                         Record.remote_connect_pending = 1;
                         Record.remote_connected = 1;
+                        Record.remote_start_ack_pending = 1;  // Trigger START_ACK send on next idle
                         Record.last_remote_heartbeat = rt_tick_get();
                         LOG_I("Remote connected (mainboard confirmed).");
                     }

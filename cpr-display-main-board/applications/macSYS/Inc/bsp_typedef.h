@@ -34,6 +34,8 @@ typedef struct {
     uint8_t     remote_connect_pending;          // Remote 连接请求待处理
     uint8_t     sensor_connected;                // Sensor 是否已连接
     uint8_t     remote_connected;                // Remote 是否已连接
+    uint8_t     sensor_wsrgb_need_send;          // 1 = need to send WS2812B level to Sensor (event-triggered)
+    uint8_t     remote_start_ack_pending;        // 1 = need to send START_ACK to Remote (event-triggered)
     uint32_t    last_sensor_heartbeat;           // Sensor 最后心跳时间戳
     uint32_t    last_remote_heartbeat;           // Remote 最后心跳时间戳
     uint8_t     last_connect_src;                // 最后一次收到连接请求的来源（0:none 1: sensor 2:remote 3:main）
