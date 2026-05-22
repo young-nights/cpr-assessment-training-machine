@@ -278,6 +278,21 @@ void nRF24L01_Thread_entry(void* parameter)
 
 
 
+// Called by LVGL in its own context — safe for widget/screen operations
+static void navigate_to_menu_async_cb(void *user_data)
+{
+    (void)user_data;
+    Record.nrf_connect_failed = 0;
+    Record.nrf_send_start = 1;
+    ui_load_scr_animation(&guider_lvgl, &guider_lvgl.screen_menu,
+                          guider_lvgl.screen_menu_del,
+                          &guider_lvgl.screen_main_del,
+                          setup_scr_screen_menu,
+                          LV_SCR_LOAD_ANIM_NONE, 0, 10, true, true);
+    Record.menu_index = 1;
+}
+
+
 void nRF24L01_Decode_Thread_entry(void* parameter)
 {
 
@@ -286,13 +301,10 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
 
     for(;;)
     {
-        // Auto-navigate to menu screen when connection succeeds after button press
+        // Auto-navigate to menu when connection succeeds (via lv_async_call for LVGL thread safety)
         if (Record.nrf_connect_ui_navigate) {
             Record.nrf_connect_ui_navigate = 0;
-            Record.nrf_send_start = 1;
-            setup_scr_screen_menu(&guider_lvgl);
-            lv_scr_load(guider_lvgl.screen_menu);
-            Record.menu_index = 1;
+            lv_async_call(navigate_to_menu_async_cb, NULL);
         }
 
         if(Record.mode_data_in_set == 1){
