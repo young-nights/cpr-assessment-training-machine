@@ -156,80 +156,39 @@ void nRF24L01_Thread_entry(void* parameter)
          //    (send_with_retry may change prim_rx to PTX during TX polling)
          if(_nrf24->nrf24_cfg.config.prim_rx == ROLE_PRX)
          {
-             // Read current status to get pipe number on each iteration
-             uint8_t pipe = ((_nrf24->nrf24_flags.status & NRF24BITMASK_RX_P_NO) >> 1);
-
-             // 根据 Pipe 自动识别来源（Pipe1 = Sensor)-----------------------------------------------------
-             cpr_src_type_t src = SRC_UNKNOWN;
-             if(pipe == 1) {
-                 src = SRC_FROM_SENSOR;
-             } else if(pipe == 2) {
-                 src = SRC_FROM_REMOTE;
-             }
-             else{
-                 rt_kprintf("pipe = %d \n", pipe);
-             }
-
-             // ------------------------------------------------------------------------------------
-             if(src != SRC_UNKNOWN) {
+             // Read RX FIFO width first — reliable regardless of STATUS timing
+             uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
+             if(length > 0 && length <= 32) {
                  uint8_t data_buf[32];
-                 uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-
-                 // Skip if FIFO is empty (may have been flushed by another thread)
-                 if(length == 0 || length > 32) {
-                     LOG_W("RX FIFO empty or invalid length=%d, skipping", length);
-                     continue;
-                 }
-
-                 rt_kprintf("\n----------------------\n");
-                 LOG_I("Receive length = %d from %s (Pipe%d)", length,
-                       (src==SRC_FROM_SENSOR)?"Sensor":"Remote", pipe);
-
                  nRF24L01_Read_Rx_Payload(_nrf24, data_buf, length);
 
-                 // 使用我们修改后的统一解析函数
-                 if(nrf24l01_portocol_get_command(data_buf, length, &src) == CMD_TRUE) {
-                     LOG_I("Protocol parse succeed from %s",
-                           (src==SRC_FROM_SENSOR)?"Sensor":"Remote");
-                 } else {
-                     LOG_W("Protocol parse failed");
+                 // Route by device ID in payload (bytes 3-4), not STATUS pipe number
+                 // Frame: 55 AA Len DEV_ID_H DEV_ID_L CMDType CMDState Data... CRC
+                 cpr_src_type_t src = SRC_UNKNOWN;
+                 if(data_buf[3] == DEVICE_SENSOR_ID_H && data_buf[4] == DEVICE_SENSOR_ID_L) {
+                     src = SRC_FROM_SENSOR;
+                 } else if(data_buf[3] == DEVICE_REMOTE_ID_H && data_buf[4] == DEVICE_REMOTE_ID_L) {
+                     src = SRC_FROM_REMOTE;
                  }
-             } else {
-                 // Stale status: re-check FIFO and dispatch by actual pipe
-                 uint8_t length = nRF24L01_Read_Top_RXFIFO_Width(_nrf24);
-                 if(length > 0 && length <= 32) {
-                     // Re-read STATUS to get real pipe number (data may have arrived after initial read)
-                     uint8_t real_status = nRF24L01_Read_Status_Register(_nrf24);
-                     uint8_t real_pipe = ((real_status & NRF24BITMASK_RX_P_NO) >> 1);
 
-                     uint8_t data_buf[32];
-                     nRF24L01_Read_Rx_Payload(_nrf24, data_buf, length);
+                 if(src != SRC_UNKNOWN) {
+                     rt_kprintf("\n----------------------\n");
+                     LOG_I("Receive length = %d from %s (ID=%02X%02X)", length,
+                           (src==SRC_FROM_SENSOR)?"Sensor":"Remote",
+                           data_buf[3], data_buf[4]);
 
-                     cpr_src_type_t real_src = SRC_UNKNOWN;
-                     if(real_pipe == 1) {
-                         real_src = SRC_FROM_SENSOR;
-                     } else if(real_pipe == 2) {
-                         real_src = SRC_FROM_REMOTE;
-                     }
-
-                     if(real_src != SRC_UNKNOWN) {
-                         rt_kprintf("\n----------------------\n");
-                         LOG_I("Receive length = %d from %s (Pipe%d, recovered from stale status)", length,
-                               (real_src==SRC_FROM_SENSOR)?"Sensor":"Remote", real_pipe);
-
-                         if(nrf24l01_portocol_get_command(data_buf, length, &real_src) == CMD_TRUE) {
-                             LOG_I("Protocol parse succeed from %s",
-                                   (real_src==SRC_FROM_SENSOR)?"Sensor":"Remote");
-                         } else {
-                             LOG_W("Protocol parse failed");
-                         }
+                     if(nrf24l01_portocol_get_command(data_buf, length, &src) == CMD_TRUE) {
+                         LOG_I("Protocol parse succeed from %s",
+                               (src==SRC_FROM_SENSOR)?"Sensor":"Remote");
                      } else {
-                         LOG_W("RX FIFO discarded %d bytes from unknown Pipe%d (still unknown after re-read)", length, real_pipe);
+                         LOG_W("Protocol parse failed");
                      }
                  } else {
-                     break;  // FIFO truly empty, exit loop
+                     LOG_W("RX FIFO discarded %d bytes: unknown device ID %02X%02X",
+                           length, data_buf[3], data_buf[4]);
                  }
              }
+             // FIFO empty: nothing to do
          }
 
         /* 释放互斥锁 */
