@@ -164,7 +164,7 @@ void nRF24L01_Thread_entry(void* parameter)
 
                 nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_ASK_Connect_Control_Panel, NRF24_PIPE_2);
                 _nrf24->nrf24_ops.nrf24_set_ce();
-                rt_thread_mdelay(5);
+                rt_thread_mdelay(10);
                 _nrf24->nrf24_ops.nrf24_reset_ce();
 
                 /* Clear TX IRQ flags from own NO_ACK transmission + drain semaphore */

@@ -97,7 +97,7 @@ int nRF24L01_Param_Config(nrf24_param_t param)
     param->rx_addr_p4 = 0xF0;
     param->rx_addr_p5 = 0xF0;
 
-    LOG_I("Remote nRF24 Param Config: TX=0x03, RX_P0=0xAA, RX_P2=0x03");
+    LOG_I("Remote nRF24 Param Config: TX=0x02, RX_P0=0xAA, RX_P2=0x02");
 
     return RT_EOK;
 
@@ -223,19 +223,19 @@ int nRF24L01_Update_Parameter(nrf24_t nrf24)
 
     /* Address writes use send_then_send (cmd + data, no readback needed) to match Mainboard/Sensor drivers */
     cmd = NRF24CMD_W_REG | NRF24REG_TX_ADDR;
-    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.txaddr, 5);
+    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.txaddr, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P0;
-    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p0, 5);
+    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p0, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P1;
-    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p1, 5);
+    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, nrf24->nrf24_cfg.rx_addr_p1, 5);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P2;
-    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p2, 1);
+    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p2, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P3;
-    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p3, 1);
+    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p3, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P4;
-    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p4, 1);
+    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p4, 1);
     cmd = NRF24CMD_W_REG | NRF24REG_RX_ADDR_P5;
-    nrf24->nrf24_ops.nrf24_send_then_send(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p5, 1);
+    nrf24->nrf24_ops.nrf24_send_then_recv(&nrf24->port_api, &cmd, 1, &nrf24->nrf24_cfg.rx_addr_p5, 1);
 
 
     return RT_EOK;
