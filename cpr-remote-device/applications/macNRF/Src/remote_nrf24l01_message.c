@@ -127,7 +127,7 @@ uint8_t nrf24l01_portocol_remote_get_command(const uint8_t *cmdBuf,const uint16_
     if(Decode_Step == Decode_Step_3)
     {
         if(*(cmdBuf + 3) == DEVICE_REMOTE_ID_H && *(cmdBuf + 4) == DEVICE_REMOTE_ID_L) {
-            *out_src = SRC_FROM_REMOTE;
+            *out_src = SRC_FROM_MAIN;   // Remote receives frames with its own ID from Mainboard
             CMD_buffer[CMD_DataCnt++] = *(cmdBuf + 3);
             Decode_Step = Decode_Step_4;
         }
@@ -165,7 +165,7 @@ uint8_t nrf24l01_portocol_remote_get_command(const uint8_t *cmdBuf,const uint16_
         {
             /* ====================== 解析成功，打印完整帧 ====================== */
             LOG_I("=== [nRF24 Protocol] Parse SUCCESS ===");
-            LOG_I("Source: %s", "SENSOR");
+            LOG_I("Source: %s", (*out_src == SRC_FROM_MAIN) ? "MAIN" : "UNKNOWN");
             LOG_I("Length: %d bytes", CMD_Length + 2 + 2);  // 头2 + ID2 + Type+Status + Data + CRC2
             LOG_I("Frame : 55 AA %02X %02X %02X %02X %02X ... (CRC %02X %02X)",
                   CMD_Length,

@@ -554,10 +554,18 @@ rt_err_t nrf24l01_send_with_retry(nrf24_t nrf24, uint8_t order, nrf24_pipe_et pi
         rt_thread_mdelay(20);
     }
 
-    /* Always restore PRX mode, flush RX FIFO, and clear IRQ flags */
+    /* Restore PRX mode */
     _nrf24->nrf24_ops.nrf24_reset_ce();
     nRF24L01_Set_Role_Mode(nrf24, ROLE_PRX);
-    nRF24L01_Flush_RX_FIFO(nrf24);
+
+    /* Only flush RX FIFO if no new data arrived (avoid discarding legitimate packets) */
+    uint8_t post_tx_status = nRF24L01_Read_Status_Register(nrf24);
+    if (!(post_tx_status & NRF24BITMASK_RX_DR)) {
+        nRF24L01_Flush_RX_FIFO(nrf24);
+    } else {
+        LOG_I("send_with_retry: RX data pending, skip FIFO flush (status=0x%02X)", post_tx_status);
+    }
+
     nRF24L01_Clear_IRQ_Flags(nrf24);
     _nrf24->nrf24_ops.nrf24_set_ce();
 
