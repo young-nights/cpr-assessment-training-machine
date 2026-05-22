@@ -24,6 +24,7 @@ typedef struct {
     rt_uint8_t  nrf_if_connected;                // 是否建立连接(0：未建立连接  1：已建立连接)
     rt_uint8_t  nrf_connect_failed;              // 连接失败标志(0: 未进行连接  1：连接失败)
     rt_uint8_t  nrf_send_start;                  // Flag to send start command via NRF (0: idle, 1: pending)
+    rt_uint8_t  nrf_connect_ui_navigate;          // 1 = navigate to menu screen on next Decode loop
     rt_uint8_t  main_start_status;               // Mainboard start status synced from Main
     rt_uint8_t  synced_mode;                     // Mode synced from Mainboard
     //------------------------------------------------------------

@@ -223,6 +223,7 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
                 {
                     LOG_I("Receive: Connect succeed from Main.");
                     Record.nrf_if_connected = 1;
+                    Record.nrf_connect_ui_navigate = 1;   // Signal Decode thread to navigate UI
                 }break;
                 //----------------------------------------------------------------------------------------------------
                 case FRAME_NRF24_MODE_DATA_IN_CMD:

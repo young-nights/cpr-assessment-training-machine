@@ -11,22 +11,6 @@
 
 lvgl_ui_t guider_lvgl;
 
-// Auto-navigate to menu when nRF connection succeeds after user pressed start button
-static void screen_main_connect_check_timer_cb(lv_timer_t *t)
-{
-    if (Record.nrf_if_connected && Record.nrf_connect_failed) {
-        Record.nrf_connect_failed = 0;
-        Record.nrf_send_start = 1;
-        ui_load_scr_animation(&guider_lvgl, &guider_lvgl.screen_menu,
-                              guider_lvgl.screen_menu_del,
-                              &guider_lvgl.screen_main_del,
-                              setup_scr_screen_menu,
-                              LV_SCR_LOAD_ANIM_NONE, 0, 10, true, true);
-        Record.menu_index = 1;
-        lv_timer_del(t);  // one-shot, delete after navigation
-    }
-}
-
 void setup_scr_screen_main(lvgl_ui_t *ui)
 {
     //Write codes screen_main
@@ -138,9 +122,6 @@ void setup_scr_screen_main(lvgl_ui_t *ui)
 
     //Init events for screen.
     events_init_screen_main(ui);
-
-    // Start a timer to auto-navigate to menu when connection succeeds after button press
-    lv_timer_create(screen_main_connect_check_timer_cb, 200, NULL);
 }
 
 

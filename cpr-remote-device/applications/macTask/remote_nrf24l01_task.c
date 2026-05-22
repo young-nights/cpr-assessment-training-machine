@@ -250,21 +250,7 @@ void nRF24L01_Thread_entry(void* parameter)
         /* 已连接后的业务循环（双向通信） */
         else
         {
-            // 1. Handle outgoing command: send START to Mainboard
-            if(Record.nrf_send_start == 1) {
-                _nrf24->nrf24_ops.nrf24_reset_ce();
-                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PTX);
-                nrf24l01_order_to_pipe(_nrf24, Order_nRF24L01_SEND_To_Main_Start, NRF24_PIPE_2);
-                _nrf24->nrf24_ops.nrf24_set_ce();
-                rt_thread_mdelay(5);
-                _nrf24->nrf24_ops.nrf24_reset_ce();
-                nRF24L01_Set_Role_Mode(_nrf24, ROLE_PRX);
-                _nrf24->nrf24_ops.nrf24_set_ce();
-                Record.nrf_send_start = 0;
-                LOG_I("Remote sent START command to Mainboard");
-            }
-
-            // 2. Listen for incoming data from Mainboard (ACKs and status sync)
+            // 1. Listen for incoming data from Mainboard (ACKs and status sync)
             rt_err_t rx_result = rt_sem_take(nrf24_irq_sem, 50);
             if(rx_result == RT_EOK) {
                 _nrf24->nrf24_flags.status = nRF24L01_Read_Status_Register(_nrf24);
@@ -300,6 +286,15 @@ void nRF24L01_Decode_Thread_entry(void* parameter)
 
     for(;;)
     {
+        // Auto-navigate to menu screen when connection succeeds after button press
+        if (Record.nrf_connect_ui_navigate) {
+            Record.nrf_connect_ui_navigate = 0;
+            Record.nrf_send_start = 1;
+            setup_scr_screen_menu(&guider_lvgl);
+            lv_scr_load(guider_lvgl.screen_menu);
+            Record.menu_index = 1;
+        }
+
         if(Record.mode_data_in_set == 1){
             nrf24l01_order_to_pipe(_nrf24 ,Order_nRF24L01_ASK_Data_Mode_In, NRF24_PIPE_2);
         }
