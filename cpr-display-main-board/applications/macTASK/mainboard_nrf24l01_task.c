@@ -162,30 +162,37 @@ void nRF24L01_Thread_entry(void* parameter)
                  uint8_t data_buf[32];
                  nRF24L01_Read_Rx_Payload(_nrf24, data_buf, length);
 
-                 // Route by device ID in payload (bytes 3-4), not STATUS pipe number
-                 // Frame: 55 AA Len DEV_ID_H DEV_ID_L CMDType CMDState Data... CRC
-                 cpr_src_type_t src = SRC_UNKNOWN;
-                 if(data_buf[3] == DEVICE_SENSOR_ID_H && data_buf[4] == DEVICE_SENSOR_ID_L) {
-                     src = SRC_FROM_SENSOR;
-                 } else if(data_buf[3] == DEVICE_REMOTE_ID_H && data_buf[4] == DEVICE_REMOTE_ID_L) {
-                     src = SRC_FROM_REMOTE;
-                 }
-
-                 if(src != SRC_UNKNOWN) {
-                     rt_kprintf("\n----------------------\n");
-                     LOG_I("Receive length = %d from %s (ID=%02X%02X)", length,
-                           (src==SRC_FROM_SENSOR)?"Sensor":"Remote",
-                           data_buf[3], data_buf[4]);
-
-                     if(nrf24l01_portocol_get_command(data_buf, length, &src) == CMD_TRUE) {
-                         LOG_I("Protocol parse succeed from %s",
-                               (src==SRC_FROM_SENSOR)?"Sensor":"Remote");
-                     } else {
-                         LOG_W("Protocol parse failed");
-                     }
+                 // Validate frame header (0x55 0xAA) before routing
+                 if(data_buf[0] != 0x55 || data_buf[1] != 0xAA) {
+                     LOG_W("RX FIFO discarded %d bytes: invalid frame header %02X%02X",
+                           length, data_buf[0], data_buf[1]);
+                     nRF24L01_Flush_RX_FIFO(_nrf24);
                  } else {
-                     LOG_W("RX FIFO discarded %d bytes: unknown device ID %02X%02X",
-                           length, data_buf[3], data_buf[4]);
+                     // Route by device ID in payload (bytes 3-4), not STATUS pipe number
+                     // Frame: 55 AA Len DEV_ID_H DEV_ID_L CMDType CMDState Data... CRC
+                     cpr_src_type_t src = SRC_UNKNOWN;
+                     if(data_buf[3] == DEVICE_SENSOR_ID_H && data_buf[4] == DEVICE_SENSOR_ID_L) {
+                         src = SRC_FROM_SENSOR;
+                     } else if(data_buf[3] == DEVICE_REMOTE_ID_H && data_buf[4] == DEVICE_REMOTE_ID_L) {
+                         src = SRC_FROM_REMOTE;
+                     }
+
+                     if(src != SRC_UNKNOWN) {
+                         rt_kprintf("\n----------------------\n");
+                         LOG_I("Receive length = %d from %s (ID=%02X%02X)", length,
+                               (src==SRC_FROM_SENSOR)?"Sensor":"Remote",
+                               data_buf[3], data_buf[4]);
+
+                         if(nrf24l01_portocol_get_command(data_buf, length, &src) == CMD_TRUE) {
+                             LOG_I("Protocol parse succeed from %s",
+                                   (src==SRC_FROM_SENSOR)?"Sensor":"Remote");
+                         } else {
+                             LOG_W("Protocol parse failed");
+                         }
+                     } else {
+                         LOG_W("RX FIFO discarded %d bytes: unknown device ID %02X%02X",
+                               length, data_buf[3], data_buf[4]);
+                     }
                  }
              }
              // FIFO empty: nothing to do
