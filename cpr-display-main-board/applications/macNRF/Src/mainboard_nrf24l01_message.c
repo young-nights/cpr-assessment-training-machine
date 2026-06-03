@@ -258,6 +258,11 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
                     }
                 }break;
 
+
+
+                // ------------------------------------------------------------------------------------
+                // 解析到的是属于Sensor板发来的指令
+                // ------------------------------------------------------------------------------------
                 case FRAME_NRF24_SEND_TO_SENSOR_START_CMD:
                 {
                     rt_kprintf("Receive: 接收到sensor的开始指令的响应 \n");
@@ -292,9 +297,13 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
                     Record.cc6201_cmd_ack = 1;
                 }break;
 
+
+                // ------------------------------------------------------------------------------------
+                // 解析到的是属于 Remote 板发来的指令
+                // ------------------------------------------------------------------------------------
                 // --- Remote operation commands -------------------------------------------------
                 case FRAME_NRF24_REMOTE_START_CMD:  // (0x11) Remote triggers CPR start
-                {
+                {// 这个指令在 remote 板的 "" 矩阵按键按下后发送过来的
                     LOG_I("Receive START command from %s",
                           (src == SRC_FROM_REMOTE) ? "Remote" : "Unknown");
                     if(src == SRC_FROM_REMOTE) {
@@ -343,6 +352,14 @@ void nrf24l01_protocol_operation(uint8_t* CmdBuf, cpr_src_type_t src)
                     }
                 }break;
 
+                case FRAME_NRF24_REMOTE_TIME_SET_CMD:   // (0x13) Set work time
+                {
+
+
+
+                }break;
+
+
                 default:    break;
             }
         }break;
@@ -369,6 +386,11 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
     uint8_t package_len = 0;
     switch(order)
     {
+
+        // ------------------------------------------------------------------------------------
+        // 给 Sensor 板发送指令
+        // ------------------------------------------------------------------------------------
+
         /* 回复连接请求：Pipe1 → Sensor (0x05), Pipe2 → Remote (0x04) */
         case Order_nRF24L01_ACK_Connect_Control_Panel:
         {
@@ -465,6 +487,12 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
             }
         }break;
 
+
+
+        // ------------------------------------------------------------------------------------
+        // 给 Remote 板发送指令
+        // ------------------------------------------------------------------------------------
+
         /* Send start status confirmation to Remote (Pipe2 only) */
         case Order_nRF24L01_SEND_To_Remote_Start_Status:
         {
@@ -488,6 +516,8 @@ void nrf24l01_order_to_pipe(uint8_t order, nrf24_pipe_et pipe_num)
                 nRF24L01_Send_Packet(_nrf24, frame_package, package_len, pipe_num, nRF24_SEND_NO_ACK);
             }
         }break;
+
+
 
         default: break;
     }

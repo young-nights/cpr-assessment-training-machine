@@ -44,6 +44,7 @@
 /* Remote ↔ Mainboard bidirectional communication commands */
 #define FRAME_NRF24_REMOTE_START_CMD            (0x11)  // Remote → Mainboard: start CPR
 #define FRAME_NRF24_REMOTE_MODE_SWITCH_CMD      (0x12)  // Remote → Mainboard: switch mode [mode_value]
+#define FRAME_NRF24_REMOTE_TIME_SET_CMD         (0x13)  // Remote → Mainboard: set work time
 #define FRAME_NRF24_REMOTE_START_ACK            (0x21)  // Mainboard → Remote: start confirmation [0x11, start_status]
 #define FRAME_NRF24_REMOTE_STATUS_SYNC          (0x22)  // Mainboard → Remote: status sync [0x12, mode, ...]
 
@@ -68,6 +69,7 @@ typedef enum {
 
     Order_nRF24L01_SEND_To_Remote_Start_Status,
     Order_nRF24L01_SEND_To_Remote_Mode_Sync,
+    Order_nRF24L01_SEND_To_Remote_TimeSet,
 
 } nRF24L01_Order_StructType;
 
