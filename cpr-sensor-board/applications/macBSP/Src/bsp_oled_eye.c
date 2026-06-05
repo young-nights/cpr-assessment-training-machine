@@ -328,3 +328,78 @@ void oled_eye_normal(void)
     fb_flush();
     LOG_I("OLED eye: normal state (white + pupil)");
 }
+
+/* ================================================================
+ *  MSH test command
+ * ================================================================ */
+
+/**
+ * @brief OLED display test routine
+ *
+ * Test sequence:
+ *   1. Init hardware
+ *   2. Fill screen white
+ *   3. Fill screen black
+ *   4. Draw filled circle (center)
+ *   5. Draw circles at 4 corners
+ *   6. Show normal eye state
+ *   7. Show dying eye state (clear)
+ *
+ * Usage: type "oled_test" in MSH console
+ */
+static int oled_test(int argc, char **argv)
+{
+    RT_UNUSED(argc);
+    RT_UNUSED(argv);
+
+    rt_kprintf("[OLED] === Test Start ===\n");
+
+    /* Step 1: Init */
+    rt_kprintf("[OLED] Initializing...\n");
+    oled_eye_init();
+    rt_thread_mdelay(500);
+
+    /* Step 2: Full white */
+    rt_kprintf("[OLED] Fill white\n");
+    fb_fill_white();
+    fb_flush();
+    rt_thread_mdelay(1000);
+
+    /* Step 3: Full black */
+    rt_kprintf("[OLED] Fill black\n");
+    fb_clear();
+    fb_flush();
+    rt_thread_mdelay(1000);
+
+    /* Step 4: Center filled circle */
+    rt_kprintf("[OLED] Draw center circle\n");
+    fb_clear();
+    fb_draw_filled_circle(32, 24, 12, 1);
+    fb_flush();
+    rt_thread_mdelay(1500);
+
+    /* Step 5: 4-corner circles */
+    rt_kprintf("[OLED] Draw corner circles\n");
+    fb_clear();
+    fb_draw_filled_circle(8,  8,  5, 1);   /* top-left     */
+    fb_draw_filled_circle(55, 8,  5, 1);   /* top-right    */
+    fb_draw_filled_circle(8,  39, 5, 1);   /* bottom-left  */
+    fb_draw_filled_circle(55, 39, 5, 1);   /* bottom-right */
+    fb_flush();
+    rt_thread_mdelay(1500);
+
+    /* Step 6: Normal eye state */
+    rt_kprintf("[OLED] Normal eye state\n");
+    oled_eye_normal();
+    rt_thread_mdelay(2000);
+
+    /* Step 7: Dying eye state */
+    rt_kprintf("[OLED] Dying eye state\n");
+    oled_eye_dying();
+    rt_thread_mdelay(1000);
+
+    rt_kprintf("[OLED] === Test Done ===\n");
+    return 0;
+}
+
+MSH_CMD_EXPORT(oled_test, OLED ST7315 display test);
