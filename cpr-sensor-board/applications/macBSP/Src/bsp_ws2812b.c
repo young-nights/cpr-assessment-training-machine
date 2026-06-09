@@ -20,6 +20,9 @@
 /* 创建SPI设备句柄 */
 struct rt_spi_device *ws2812b_spi_dev = RT_NULL;
 
+/* WS2812B SPI访问互斥锁 */
+static rt_mutex_t ws2812_mutex = RT_NULL;
+
 
 
 int WS2812B_SPI_Init(void)
@@ -139,10 +142,12 @@ void ws2812b_set_brightness(uint8_t brightness)
  *        color --> 要设置的颜色
  */
 void ws2812b_set_color(uint16_t index, uint32_t color)
-{  rt_mutex_take(&ws2812_mutex, 10);
+{
+    if (ws2812_mutex) rt_mutex_take(ws2812_mutex, RT_WAITING_FOREVER);
     if (index >= WS2812B_LED_NUMS)
     {
         LOG_E("LED index %d out of range.", index);
+        if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
         return;
     }
 
@@ -156,6 +161,7 @@ void ws2812b_set_color(uint16_t index, uint32_t color)
     ws2812b_encode_color(r, g, b, &ws2812b_buffer[index * WS2812B_RGB_BITS]);
     // 备份颜色
     ws2812b_colors[index] = color;
+    if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
 }
 
 
@@ -164,7 +170,9 @@ void ws2812b_set_color(uint16_t index, uint32_t color)
  */
 void ws2812b_show(void)
 {
+    if (ws2812_mutex) rt_mutex_take(ws2812_mutex, RT_WAITING_FOREVER);
     rt_spi_send(ws2812b_spi_dev, ws2812b_buffer, sizeof(ws2812b_buffer));
+    if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
 }
 
 
@@ -173,10 +181,12 @@ void ws2812b_show(void)
  */
 void ws2812b_clear(void)
 {
+    if (ws2812_mutex) rt_mutex_take(ws2812_mutex, RT_WAITING_FOREVER);
     memset(ws2812b_buffer, WS2812B_CODE_0, sizeof(ws2812b_buffer));
     memset(ws2812b_colors, 0, sizeof(ws2812b_colors));
     ws2812b_show();
-  rt_mutex_release(&ws2812_mutex); }
+    if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
+}
 
 
 /***
@@ -381,6 +391,12 @@ void ws2812b_init(void)
     dma_complete_sem = rt_sem_create("ws_sem", 0, RT_IPC_FLAG_FIFO);
     RT_ASSERT(dma_complete_sem != RT_NULL);
 
+    // WS2812B SPI访问互斥锁
+    if (ws2812_mutex == RT_NULL) {
+        ws2812_mutex = rt_mutex_create("ws2812_mtx", RT_IPC_FLAG_FIFO);
+        RT_ASSERT(ws2812_mutex != RT_NULL);
+    }
+
     // NVIC interrupt is configured by CubeMX in main.c
 }
 
@@ -423,8 +439,10 @@ static void apply_brightness(uint8_t *g, uint8_t *r, uint8_t *b)
 // 设置单个LED颜色 (GRB顺序)
 void ws2812b_set_color(uint16_t index, uint8_t g, uint8_t r, uint8_t b)
 {
+    if (ws2812_mutex) rt_mutex_take(ws2812_mutex, RT_WAITING_FOREVER);
     if (index >= LED_COUNT) {
         rt_kprintf("LED索引超出范围: %d (最大: %d)\n", index, LED_COUNT - 1);
+        if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
         return;
     }
 
@@ -434,6 +452,7 @@ void ws2812b_set_color(uint16_t index, uint8_t g, uint8_t r, uint8_t b)
     leds_color_data[index * BYTES_PER_LED + 0] = g;
     leds_color_data[index * BYTES_PER_LED + 1] = r;
     leds_color_data[index * BYTES_PER_LED + 2] = b;
+    if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
 }
 
 // 设置所有LED同一颜色
@@ -448,8 +467,10 @@ void ws2812b_set_all(uint8_t g, uint8_t r, uint8_t b)
 // 启动更新 (非阻塞)
 rt_err_t ws2812b_update(void)
 {
+    if (ws2812_mutex) rt_mutex_take(ws2812_mutex, RT_WAITING_FOREVER);
     if (is_updating) {
         rt_kprintf("WS2812B 正在更新中，跳过本次\n");
+        if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
         return -RT_EBUSY;
     }
 
@@ -464,9 +485,11 @@ rt_err_t ws2812b_update(void)
     {
         rt_kprintf("DMA启动失败\n");
         is_updating = 0;
+        if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
         return -RT_ERROR;
     }
 
+    if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
     rt_kprintf("WS2812B 更新启动成功\n");
     return RT_EOK;
 }

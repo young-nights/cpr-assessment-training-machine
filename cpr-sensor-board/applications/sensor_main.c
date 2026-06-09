@@ -58,6 +58,8 @@ int main(void)
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
 
+  /* Initialize thread-safe print mutex first */
+  print_mutex_init();
 
   uart3_decodeThread_Init();
   uart2_decodeThread_Init();

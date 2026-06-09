@@ -125,7 +125,10 @@ void CC6201_Hall_Sensor_Ctrl(SWITCH_et sta);
 
 extern rt_event_t nrf24l01_events;
 
-
+/* Thread-safe print functions */
+void print_mutex_init(void);
+void print_lock(void);
+void print_unlock(void);
 
 
 #endif /* APPLICATIONS_MACSYS_INC_BSP_TYPEDEF_H_ */
