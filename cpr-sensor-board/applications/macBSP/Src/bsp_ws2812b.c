@@ -10,6 +10,9 @@
 
 #include "bsp_sys.h"
 
+/* WS2812B SPI访问互斥锁 (shared across SPI/PWM implementations) */
+static rt_mutex_t ws2812_mutex = RT_NULL;
+
 #if USE_SPI_METHOD
 
 
@@ -19,9 +22,6 @@
 #define     WS2812B_SPI_BUS     "spi2"
 /* 创建SPI设备句柄 */
 struct rt_spi_device *ws2812b_spi_dev = RT_NULL;
-
-/* WS2812B SPI访问互斥锁 */
-static rt_mutex_t ws2812_mutex = RT_NULL;
 
 
 
