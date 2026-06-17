@@ -187,11 +187,13 @@ void uart2_thread_entry(void* parameter)
 
     while(1)
     {
+        /* 等待 RX 中断通知有数据 */
+        rt_sem_take(usart2_rec_sem, RT_WAITING_FOREVER);
+
+        /* 从设备读取数据 */
         sizeValue = rt_device_read(serial2, RT_NULL, &recDat, 1);
         if(sizeValue == 1)
         {
-            rt_sem_take(usart2_rec_sem, RT_WAITING_FOREVER);
-
             /* 加锁保护队列操作 */
             rt_mutex_take(Uart2Buf.lock, RT_WAITING_FOREVER);
             /* 计算下一个尾指针位置 */
@@ -502,7 +504,7 @@ rt_thread_t uart2_decodeThread_Handle;
 
 int uart2_decodeThread_Init(void)
 {
-    uart2_decodeThread_Handle = rt_thread_create("uart2_thread_entry", uart2_thread_entry, RT_NULL, 1024, 10, 200);
+    uart2_decodeThread_Handle = rt_thread_create("uart2_thread_entry", uart2_thread_entry, RT_NULL, 4096, 10, 200);
     if(uart2_decodeThread_Handle != RT_NULL){
         rt_kprintf("PRINTF:%d. uart2 Thread is created!!\r\n",Record.kprintf_cnt++);
         USART2_Init();

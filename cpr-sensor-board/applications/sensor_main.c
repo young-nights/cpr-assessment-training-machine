@@ -59,25 +59,25 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   /* Initialize thread-safe print mutex first */
-  print_mutex_init();
+//  print_mutex_init();
 
   uart3_decodeThread_Init();
   uart2_decodeThread_Init();
 
-  adc128s102_spi_init();
-  adc128s102_thread_init();
-
-  BSP_MPU6050_Init();
-  rt_thread_mdelay(20);
-  euler_angles_Thread_Init();
-  bsp_mpu6xxx_calibrate_Thread_Init();
-  mpu6xxxParameter.if_start_gyro_cali_process = 1;
-
-  ws2812b_init();
-  oled_eye_init();
-  Hard_Thread_Init();
-
-  nRF24L01_Thread_Init();
+//  adc128s102_spi_init();
+//  adc128s102_thread_init();
+//
+//  BSP_MPU6050_Init();
+//  rt_thread_mdelay(20);
+//  euler_angles_Thread_Init();
+//  bsp_mpu6xxx_calibrate_Thread_Init();
+//  mpu6xxxParameter.if_start_gyro_cali_process = 1;
+//
+//  ws2812b_init();
+//  oled_eye_init();
+//  Hard_Thread_Init();
+//
+//  nRF24L01_Thread_Init();
 
   rt_kprintf("PRINTF:%d. All peripherals/threads initialized OK\n",Record.kprintf_cnt++);
 

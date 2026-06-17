@@ -96,9 +96,12 @@ void uart3_thread_entry(void* parameter)
     uint8_t decodeStatus = 0;
     while(1)
     {
+        /* 等待 RX 中断通知有数据 */
+        rt_sem_take(usart3_rec_sem, RT_WAITING_FOREVER);
+
+        /* 从设备读取数据 */
         sizeValue = rt_device_read(serial3, RT_NULL, &recDat, 1);
         if(sizeValue == 1){
-            rt_sem_take(usart3_rec_sem, RT_WAITING_FOREVER);
             /* 加锁保护队列操作 */
             rt_mutex_take(Uart3Buf.lock, RT_WAITING_FOREVER);
             /* 计算下一个尾指针位置 */
@@ -131,7 +134,7 @@ void uart3_thread_entry(void* parameter)
 rt_thread_t uart3_decodeThread_Handle;
 int uart3_decodeThread_Init(void)
 {
-    uart3_decodeThread_Handle = rt_thread_create("uart3_thread_entry", uart3_thread_entry, RT_NULL, 1024, 10, 200);
+    uart3_decodeThread_Handle = rt_thread_create("uart3_thread_entry", uart3_thread_entry, RT_NULL, 4096, 10, 200);
     if(uart3_decodeThread_Handle != RT_NULL){
         rt_kprintf("PRINTF:%d. uart3 Thread is created!!\r\n",Record.kprintf_cnt++);
         USART3_Init();
