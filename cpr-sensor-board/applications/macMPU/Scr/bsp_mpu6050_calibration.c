@@ -207,7 +207,7 @@ void mpu6xxx_cali_thread_entry(void* parameter)
 rt_thread_t mpu6xxx_calibrate_Thread_Handle;
 int bsp_mpu6xxx_calibrate_Thread_Init(void)
 {
-    mpu6xxx_calibrate_Thread_Handle = rt_thread_create("mpu6xxx_cali_thread_entry", mpu6xxx_cali_thread_entry, RT_NULL, 2048, 6, 500);
+    mpu6xxx_calibrate_Thread_Handle = rt_thread_create("mpu6xxx_cali_thread_entry", mpu6xxx_cali_thread_entry, RT_NULL, 3072, 6, 500);
     if(mpu6xxx_calibrate_Thread_Handle != RT_NULL){
         rt_kprintf("PRINTF:%d. mpu6xxx calibrate thread is created!!\r\n",Record.kprintf_cnt++);
         rt_thread_startup(mpu6xxx_calibrate_Thread_Handle);

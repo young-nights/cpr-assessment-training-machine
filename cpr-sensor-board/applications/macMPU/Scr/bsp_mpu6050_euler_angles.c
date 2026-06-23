@@ -262,7 +262,7 @@ void euler_angles_thread_entry(void* parameter)
 rt_thread_t euler_angles_Thread_Handle;
 int euler_angles_Thread_Init(void)
 {
-    euler_angles_Thread_Handle = rt_thread_create("euler_angles_thread_entry", euler_angles_thread_entry, RT_NULL, 2048, 5, 20);
+    euler_angles_Thread_Handle = rt_thread_create("euler_angles_thread_entry", euler_angles_thread_entry, RT_NULL, 3072, 5, 20);
     if(euler_angles_Thread_Handle != RT_NULL){
         rt_kprintf("PRINTF:%d. euler_angles_Thread_Handle is created!!\r\n",Record.kprintf_cnt++);
         rt_thread_startup(euler_angles_Thread_Handle);
