@@ -19,8 +19,11 @@ extern void coreless_motor_ctrl(MOTOR_NAME_et name, SWITCH_et status);
 const static struct nrf24_callback g_cb;
 rt_sem_t nrf24_send_sem = RT_NULL;
 rt_sem_t nrf24_irq_sem = RT_NULL;
-nrf24_t _nrf24 = NULL;
 rt_mutex_t nrf24_mutex = RT_NULL;
+
+/* Use static allocation instead of malloc to save heap memory */
+static struct nRF24L01_STRUCT _nrf24_static;
+nrf24_t _nrf24 = &_nrf24_static;
 
 
 /**
@@ -29,15 +32,9 @@ rt_mutex_t nrf24_mutex = RT_NULL;
   */
 void nRF24L01_Thread_entry(void* parameter)
 {
-
-    /* 0. 给nrf24开创一个实际空间 */
-    _nrf24 = malloc(sizeof(struct nRF24L01_STRUCT));
-    if (_nrf24 == NULL) {
-        LOG_E("LOG:%d. nrf24 malloc error.",Record.ulog_cnt++);
-    }
-    else{
-        LOG_I("LOG:%d. nrf24 malloc successful.",Record.ulog_cnt++);
-    }
+    /* _nrf24 uses static allocation, no malloc needed */
+    rt_memset(_nrf24, 0, sizeof(struct nRF24L01_STRUCT));
+    LOG_I("LOG:%d. nrf24 static alloc ok.",Record.ulog_cnt++);
 
 
     /* 1. 创建二值信号量 */
@@ -296,11 +293,7 @@ void nRF24L01_Thread_entry(void* parameter)
         }
         rt_thread_mdelay(20);
     }
-
 }
-
-
-
 
 
 
@@ -312,7 +305,7 @@ void nRF24L01_Thread_entry(void* parameter)
 rt_thread_t nRF24L01_Task_Handle = RT_NULL;
 int nRF24L01_Thread_Init(void)
 {
-    nRF24L01_Task_Handle = rt_thread_create("nRF24L01_Thread_entry", nRF24L01_Thread_entry, RT_NULL, 4096, 22, 100);
+    nRF24L01_Task_Handle = rt_thread_create("nRF24L01_Thread_entry", nRF24L01_Thread_entry, RT_NULL, 2048, 22, 100);
     /* 检查是否创建成功,成功就启动线程 */
     if(nRF24L01_Task_Handle != RT_NULL)
     {

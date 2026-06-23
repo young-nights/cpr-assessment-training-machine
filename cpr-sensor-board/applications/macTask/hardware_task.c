@@ -72,7 +72,7 @@ void Hard_Thread_entry(void* parameter)
 rt_thread_t Hard_Task_Handle = RT_NULL;
 int Hard_Thread_Init(void)
 {
-    Hard_Task_Handle = rt_thread_create("Hard_Thread_entry", Hard_Thread_entry, RT_NULL, 4096, 23, 100);
+    Hard_Task_Handle = rt_thread_create("Hard_Thread_entry", Hard_Thread_entry, RT_NULL, 2048, 23, 100);
     /* 检查是否创建成功,成功就启动线程 */
     if(Hard_Task_Handle != RT_NULL)
     {
