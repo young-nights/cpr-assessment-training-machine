@@ -21,8 +21,13 @@
 #define OLED_SCL_PORT       GPIOC
 #define OLED_SCL_PIN        GPIO_PIN_11
 
-/* --- Bit-bang I2C timing (short delay for ~100kHz) --- */
-#define I2C_DELAY()         do { volatile uint32_t _d = 20; while(_d--); } while(0)
+/* --- Bit-bang I2C timing (1us delay at 72MHz) --- */
+static void i2c_delay_us(void)
+{
+    volatile uint32_t d = 72;  /* ~1us at 72MHz */
+    while (d--);
+}
+#define I2C_DELAY()         i2c_delay_us()
 
 /* --- GPIO helpers --- */
 #define SDA_HIGH()          HAL_GPIO_WritePin(OLED_SDA_PORT, OLED_SDA_PIN, GPIO_PIN_SET)
@@ -68,6 +73,7 @@ static void i2c_start(void)
 {
     sda_output();
     SDA_HIGH();
+    I2C_DELAY();
     SCL_HIGH();
     I2C_DELAY();
     SDA_LOW();
@@ -98,6 +104,8 @@ static uint8_t i2c_write_byte(uint8_t data)
 
     for (i = 0; i < 8; i++)
     {
+        SCL_LOW();
+        I2C_DELAY();
         if (data & 0x80)
             SDA_HIGH();
         else
@@ -106,10 +114,10 @@ static uint8_t i2c_write_byte(uint8_t data)
         I2C_DELAY();
         SCL_HIGH();
         I2C_DELAY();
-        SCL_LOW();
     }
 
     /* Read ACK */
+    SCL_LOW();
     sda_input();
     I2C_DELAY();
     SCL_HIGH();
@@ -127,7 +135,7 @@ static uint8_t i2c_write_byte(uint8_t data)
 static void i2c_send_addr(void)
 {
     i2c_start();
-    i2c_write_byte((OLED_I2C_ADDR << 1) | 0x00);  /* Write mode */
+    i2c_write_byte(0x78);  /* 8-bit address: 0x3C << 1 | 0 */
 }
 
 /**
@@ -135,7 +143,8 @@ static void i2c_send_addr(void)
  */
 static void oled_send_cmd(uint8_t cmd)
 {
-    i2c_send_addr();
+    i2c_start();
+    i2c_write_byte(0x78);   /* 8-bit address */
     i2c_write_byte(0x00);   /* Co=0, D/C#=0 (command) */
     i2c_write_byte(cmd);
     i2c_stop();
@@ -146,7 +155,8 @@ static void oled_send_cmd(uint8_t cmd)
  */
 static void oled_send_data(const uint8_t *data, uint16_t len)
 {
-    i2c_send_addr();
+    i2c_start();
+    i2c_write_byte(0x78);   /* 8-bit address */
     i2c_write_byte(0x40);   /* Co=0, D/C#=1 (data) */
     for (uint16_t i = 0; i < len; i++)
     {
@@ -220,8 +230,8 @@ static void fb_flush(void)
         oled_send_cmd(0xB0 + page);
 
         /* Set column address (offset 32 for 64x48 mapping) */
-        oled_send_cmd(0x10 | ((32) >> 4));    /* Higher nibble */
-        oled_send_cmd(0x00 | ((32) & 0x0F));  /* Lower nibble */
+        oled_send_cmd(0x10 | (32 >> 4));    /* Higher nibble */
+        oled_send_cmd(0x00 | (32 & 0x0F));  /* Lower nibble */
 
         /* Send one page of data (64 bytes) */
         oled_send_data(&framebuffer[page * OLED_WIDTH], OLED_WIDTH);
