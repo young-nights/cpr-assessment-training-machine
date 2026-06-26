@@ -75,6 +75,7 @@ void ws2812b_full_color_test(void);
 void ws2812b_waterfall_light_test(void);
 void ws2812b_brightness_gradient_test(void);
 void ws2812b_breathing_light_test(void);
+int rgb_test(int argc, char **argv);
 
 
 #elif USE_PWM_METHOD

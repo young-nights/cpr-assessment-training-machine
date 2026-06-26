@@ -344,6 +344,125 @@ MSH_CMD_EXPORT(cmd1, WS2812B_demo);
 
 
 
+/**
+ * @brief RGB test function - WS2812B color test for console
+ *
+ * Test sequence:
+ *   1. Red (255, 0, 0)
+ *   2. Green (0, 255, 0)
+ *   3. Blue (0, 0, 255)
+ *   4. Cyan (0, 255, 255)
+ *   5. Magenta (255, 0, 255)
+ *   6. Yellow (255, 255, 0)
+ *   7. White (255, 255, 255)
+ *   8. Breathing effect (white)
+ *   9. Rainbow cycle
+ *
+ * Usage: type "rgb_test" in MSH console
+ */
+static int rgb_test(int argc, char **argv)
+{
+    RT_UNUSED(argc);
+    RT_UNUSED(argv);
+
+    rt_kprintf("[WS2812B] === RGB Test Start ===\n");
+
+    /* Init */
+    WS2812B_SPI_Init();
+    ws2812b_table_init();
+    ws2812b_set_brightness(255);
+
+    /* Color table: R, G, B, name */
+    typedef struct {
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+        const char *name;
+    } color_test_t;
+
+    static const color_test_t test_colors[] = {
+        {255,   0,   0, "Red"      },
+        {  0, 255,   0, "Green"    },
+        {  0,   0, 255, "Blue"     },
+        {  0, 255, 255, "Cyan"     },
+        {255,   0, 255, "Magenta"  },
+        {255, 255,   0, "Yellow"   },
+        {255, 255, 255, "White"    },
+    };
+
+    uint8_t color_count = sizeof(test_colors) / sizeof(test_colors[0]);
+
+    /* Step 1-7: Solid colors */
+    for (uint8_t i = 0; i < color_count; i++)
+    {
+        rt_kprintf("[WS2812B] Color: %s (R=%d, G=%d, B=%d)\n",
+                   test_colors[i].name, test_colors[i].r, test_colors[i].g, test_colors[i].b);
+        ws2812b_set_all(test_colors[i].r, test_colors[i].g, test_colors[i].b);
+        ws2812b_show();
+        rt_thread_mdelay(1000);
+    }
+
+    /* Step 8: Breathing effect */
+    rt_kprintf("[WS2812B] Breathing effect (white)...\n");
+    for (uint8_t round = 0; round < 3; round++)
+    {
+        for (uint8_t brightness = 0; brightness < 255; brightness += 5)
+        {
+            ws2812b_set_all(brightness, brightness, brightness);
+            ws2812b_show();
+            rt_thread_mdelay(20);
+        }
+        for (uint8_t brightness = 255; brightness > 0; brightness -= 5)
+        {
+            ws2812b_set_all(brightness, brightness, brightness);
+            ws2812b_show();
+            rt_thread_mdelay(20);
+        }
+    }
+
+    /* Step 9: Rainbow cycle */
+    rt_kprintf("[WS2812B] Rainbow cycle...\n");
+    for (uint16_t cycle = 0; cycle < 5; cycle++)
+    {
+        for (uint16_t led = 0; led < WS2812B_LED_NUMS; led++)
+        {
+            uint8_t r, g, b;
+            uint8_t pos = (led * 256 / WS2812B_LED_NUMS + cycle * 32) & 0xFF;
+
+            /* HSV to RGB (simplified) */
+            if (pos < 85) {
+                r = pos * 3;
+                g = 255 - pos * 3;
+                b = 0;
+            } else if (pos < 170) {
+                pos -= 85;
+                r = 255 - pos * 3;
+                g = 0;
+                b = pos * 3;
+            } else {
+                pos -= 170;
+                r = 0;
+                g = pos * 3;
+                b = 255 - pos * 3;
+            }
+
+            ws2812b_set_color(led, r, g, b);
+        }
+        ws2812b_show();
+        rt_thread_mdelay(100);
+    }
+
+    /* Clear */
+    ws2812b_clear();
+    ws2812b_show();
+
+    rt_kprintf("[WS2812B] === RGB Test Done ===\n");
+    return RT_EOK;
+}
+MSH_CMD_EXPORT(rgb_test, WS2812B RGB color test);
+
+
+
 #elif USE_PWM_METHOD
 
 
