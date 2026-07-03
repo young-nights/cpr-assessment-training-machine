@@ -38,6 +38,8 @@ extern "C" {
 /* USER CODE BEGIN ET */
 extern ADC_HandleTypeDef hadc1;
 
+extern TIM_HandleTypeDef htim1;
+
 extern UART_HandleTypeDef huart1;
 /* USER CODE END ET */
 
@@ -47,12 +49,15 @@ void SystemClock_Config(void);
 void MX_GPIO_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_ADC1_Init(void);
+void MX_TIM1_Init(void);
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/
 /* USER CODE BEGIN EM */
 
 /* USER CODE END EM */
+
+void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
 
