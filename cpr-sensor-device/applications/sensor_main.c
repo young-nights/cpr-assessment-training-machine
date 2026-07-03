@@ -51,7 +51,7 @@ int main(void)
   MX_TIM1_Init();
   /* USER CODE BEGIN 2 */
 
-  oled_eye_init();
+//  oled_eye_init();
 
 
   /* USER CODE END 2 */
