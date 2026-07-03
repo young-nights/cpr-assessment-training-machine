@@ -32,7 +32,7 @@
 /* macAPP 头文件 */
 #include "rtt_system_work.h"
 /* macBSP 头文件 */
-
+#include "bsp_oled_eye.h"
 
 /* macNRF 头文件 */
 
