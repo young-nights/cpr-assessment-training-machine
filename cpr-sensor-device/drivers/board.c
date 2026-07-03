@@ -12,6 +12,8 @@
 #include <board.h>
 #include <drv_common.h>
 
+#include "bsp_sys.h"
+
 void rt_hw_board_init()
 {
     extern void hw_board_init(char *clock_src, int32_t clock_src_freq, int32_t clock_target_freq);
