@@ -97,6 +97,9 @@ extern uint16_t ws2812_buffer[2 * LEDS_PER_DMA_IRQ * 24];
 // [FIX2] 全局信号量声明，供 ws2812b_demo_effects() 等待 DMA 完成
 extern rt_sem_t dma_complete_sem;
 
+// DMA 传输中标志 (供 IRQ handler 检查)
+extern volatile uint8_t is_updating;
+
 // 函数声明
 void ws2812b_init(void);
 void ws2812b_set_color(uint16_t index, uint8_t g, uint8_t r, uint8_t b);

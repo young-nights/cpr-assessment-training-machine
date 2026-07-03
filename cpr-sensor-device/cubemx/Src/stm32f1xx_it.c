@@ -205,15 +205,16 @@ void SysTick_Handler(void)
 void DMA1_Channel4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Channel4_IRQn 0 */
+  /* Guard: only process when DMA channel is actually enabled (WS2812B active) */
   if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_HT4))
   {
     __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_HT4);
-    update_sequence(0);  // HT
+    if (is_updating) update_sequence(0);  // HT
   }
   if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_TC4))
   {
     __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_TC4);
-    update_sequence(1);  // TC
+    if (is_updating) update_sequence(1);  // TC
   }
   /* USER CODE END DMA1_Channel4_IRQn 0 */
   /* USER CODE BEGIN DMA1_Channel4_IRQn 1 */

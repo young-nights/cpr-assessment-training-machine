@@ -486,7 +486,7 @@ extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 __attribute__((aligned(4))) uint16_t ws2812_buffer[DMA_BUFF_LEN] = {0};
 
 // 控制变量
-static volatile uint8_t is_updating = 0;    // 传输中标志
+volatile uint8_t is_updating = 0;    // 传输中标志
 static volatile uint16_t led_index = 0;     // [FIX3-2] 当前已处理的LED周期计数
 rt_sem_t dma_complete_sem = RT_NULL; // [FIX2] 改为全局可见，供 ws2812b_demo_effects() 使用
 
