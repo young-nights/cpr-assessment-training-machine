@@ -249,6 +249,6 @@ int ADC_Thread_Init(void)
     }
     return RT_EOK;
 }
-INIT_APP_EXPORT(ADC_Thread_Init);
+//INIT_APP_EXPORT(ADC_Thread_Init);
 
 #endif

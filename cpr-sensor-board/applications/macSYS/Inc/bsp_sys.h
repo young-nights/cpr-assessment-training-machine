@@ -32,7 +32,6 @@
 /* macAPP 头文件 */
 #include "rtt_system_work.h"
 /* macBSP 头文件 */
-#include "adc1115idgsr.h"
 #include "adc128s102cimtx.h"
 #include "bsp_hard.h"
 #include "uart2_protocol.h"
