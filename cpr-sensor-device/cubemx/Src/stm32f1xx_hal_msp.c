@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 
 /* USER CODE END Includes */
+extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN TD */

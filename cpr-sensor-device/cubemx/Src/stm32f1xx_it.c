@@ -22,6 +22,7 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "bsp_ws2812b.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -55,7 +56,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -197,6 +198,28 @@ void SysTick_Handler(void)
 /* For the available peripheral interrupt handler names,                      */
 /* please refer to the startup file (startup_stm32f1xx.s).                    */
 /******************************************************************************/
+
+/**
+  * @brief This function handles DMA1 channel4 global interrupt.
+  */
+void DMA1_Channel4_IRQHandler(void)
+{
+  /* USER CODE BEGIN DMA1_Channel4_IRQn 0 */
+  if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_HT4))
+  {
+    __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_HT4);
+    update_sequence(0);  // HT
+  }
+  if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_TC4))
+  {
+    __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_TC4);
+    update_sequence(1);  // TC
+  }
+  /* USER CODE END DMA1_Channel4_IRQn 0 */
+  /* USER CODE BEGIN DMA1_Channel4_IRQn 1 */
+
+  /* USER CODE END DMA1_Channel4_IRQn 1 */
+}
 
 /* USER CODE BEGIN 1 */
 

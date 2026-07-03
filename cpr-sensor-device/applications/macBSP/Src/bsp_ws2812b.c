@@ -655,26 +655,8 @@ void update_sequence(uint8_t is_tc)
     }
 }
 
-/* DMA1_Channel4 IRQ handler is defined in cubemx/Src/stm32f1xx_it.c (CubeMX generated).
- * It calls HAL_DMA_IRQHandler which triggers the callbacks below. */
-
-// [FIX3-6] DMA Half-Transfer callback (HT)
-void HAL_DMA_XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
-{
-    if (hdma == &hdma_tim1_ch4_trig_com)
-    {
-        update_sequence(0);  // HT
-    }
-}
-
-// [FIX3-6] DMA Transfer-Complete callback (TC)
-void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef *hdma)
-{
-    if (hdma == &hdma_tim1_ch4_trig_com)
-    {
-        update_sequence(1);  // TC
-    }
-}
+/* DMA1_Channel4 IRQ handler is now in cubemx/Src/stm32f1xx_it.c,
+ * manually handles HT/TC flags to call update_sequence(). */
 
 // 填充单个LED PWM数据 (GRB, 参考文件适配)
 static void fill_led_pwm_data(uint16_t ledx, uint16_t *ptr)
