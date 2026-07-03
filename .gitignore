@@ -50,3 +50,9 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+cpr-display-main-board/.settings/language.settings.xml
+cpr-display-main-board/.settings/projcfg.ini
+cpr-remote-device/.settings/language.settings.xml
+cpr-remote-device/.settings/projcfg.ini
+cpr-sensor-device/.settings/language.settings.xml
+cpr-sensor-device/.settings/projcfg.ini
