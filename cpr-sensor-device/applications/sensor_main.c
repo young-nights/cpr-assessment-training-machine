@@ -14,6 +14,8 @@
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
 
+#include "bsp_sys.h"
+
 /**
   * @brief  The application entry point.
   * @retval int
