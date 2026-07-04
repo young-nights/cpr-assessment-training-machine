@@ -161,7 +161,7 @@ extern "C"
  *
  */
 
-/*#define BSP_USING_PWM1*/
+#define BSP_USING_PWM1
 /*#define BSP_USING_PWM2*/
 /*#define BSP_USING_PWM3*/
 

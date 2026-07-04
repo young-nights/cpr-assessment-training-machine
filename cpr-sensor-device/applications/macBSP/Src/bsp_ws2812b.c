@@ -516,7 +516,10 @@ void ws2812b_init(void)
         RT_ASSERT(ws2812_mutex != RT_NULL);
     }
 
-    // NVIC interrupt is configured by CubeMX in main.c
+    /* Enable DMA1_Channel4 interrupt AFTER semaphore is ready.
+     * DMA1_Channel4_IRQHandler is defined in this file. */
+    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 1, 0);
+    HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 }
 
 
@@ -655,8 +658,29 @@ void update_sequence(uint8_t is_tc)
     }
 }
 
-/* DMA1_Channel4 IRQ handler is defined in cubemx/Src/stm32f1xx_it.c (CubeMX generated).
- * It calls HAL_DMA_IRQHandler which triggers the callbacks below. */
+/**
+ * @brief DMA1 Channel4 IRQ handler (WS2812B PWM)
+ * @note  Moved here from stm32f1xx_it.c (excluded from build)
+ */
+void DMA1_Channel4_IRQHandler(void)
+{
+    uint32_t flag_it   = __HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
+    uint32_t flag_half = __HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_HT_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
+
+    /* Half Transfer */
+    if (flag_half != RESET)
+    {
+        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_HT_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
+        update_sequence(0);
+    }
+
+    /* Transfer Complete */
+    if (flag_it != RESET)
+    {
+        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
+        update_sequence(1);
+    }
+}
 
 // [FIX3-6] DMA Half-Transfer callback (HT)
 void HAL_DMA_XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
