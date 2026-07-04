@@ -655,8 +655,29 @@ void update_sequence(uint8_t is_tc)
     }
 }
 
-/* DMA1_Channel4 IRQ handler is now in cubemx/Src/stm32f1xx_it.c,
- * manually handles HT/TC flags to call update_sequence(). */
+/**
+ * @brief DMA1 Channel4 IRQ handler (WS2812B PWM)
+ * @note  Moved here from stm32f1xx_it.c (excluded from build)
+ */
+void DMA1_Channel4_IRQHandler(void)
+{
+    uint32_t flag_it  = __HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
+    uint32_t flag_half = __HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_HT_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
+
+    /* Half Transfer */
+    if (flag_half != RESET)
+    {
+        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_HT_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
+        update_sequence(0);
+    }
+
+    /* Transfer Complete */
+    if (flag_it != RESET)
+    {
+        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
+        update_sequence(1);
+    }
+}
 
 // 填充单个LED PWM数据 (GRB, 参考文件适配)
 static void fill_led_pwm_data(uint16_t ledx, uint16_t *ptr)

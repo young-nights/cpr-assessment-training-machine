@@ -17,7 +17,7 @@
 #include <board.h>
 #include "stm32f1xx_hal.h"
 
-#define USE_PWM_METHOD  0
+#define USE_PWM_METHOD  1
 #define USE_SPI_METHOD  0
 
 
