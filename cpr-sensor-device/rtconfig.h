@@ -104,6 +104,7 @@
 
 /* end of Interprocess Communication (IPC) */
 /* end of POSIX (Portable Operating System Interface) layer */
+#define RT_USING_CPLUSPLUS
 /* end of C/C++ and POSIX layer */
 
 /* Network */
@@ -112,6 +113,20 @@
 
 /* Utilities */
 
+#define RT_USING_ULOG
+#define ULOG_OUTPUT_LVL_D
+#define ULOG_OUTPUT_LVL 7
+#define ULOG_ASSERT_ENABLE
+#define ULOG_LINE_BUF_SIZE 128
+
+/* log format */
+
+#define ULOG_USING_COLOR
+#define ULOG_OUTPUT_TIME
+#define ULOG_OUTPUT_LEVEL
+#define ULOG_OUTPUT_TAG
+/* end of log format */
+#define ULOG_BACKEND_USING_CONSOLE
 /* end of Utilities */
 /* end of RT-Thread Components */
 
@@ -182,6 +197,18 @@
 
 /* enhanced kernel services */
 
+#define PKG_USING_RT_VSNPRINTF_FULL
+#define PKG_VSNPRINTF_SUPPORT_DECIMAL_SPECIFIERS
+#define PKG_VSNPRINTF_SUPPORT_EXPONENTIAL_SPECIFIERS
+#define PKG_VSNPRINTF_SUPPORT_WRITEBACK_SPECIFIER
+#define PKG_VSNPRINTF_SUPPORT_LONG_LONG
+#define PKG_VSNPRINTF_CHECK_FOR_NUL_IN_FORMAT_SPECIFIER
+#define PKG_VSNPRINTF_INTEGER_BUFFER_SIZE 32
+#define PKG_VSNPRINTF_DECIMAL_BUFFER_SIZE 32
+#define PKG_VSNPRINTF_DEFAULT_FLOAT_PRECISION 6
+#define PKG_VSNPRINTF_MAX_INTEGRAL_DIGITS_FOR_DECIMAL 9
+#define PKG_VSNPRINTF_LOG10_TAYLOR_TERMS 4
+#define PKG_USING_RT_VSNPRINTF_FULL_LATEST_VERSION
 /* end of enhanced kernel services */
 
 /* acceleration: Assembly language or algorithmic acceleration packages */
