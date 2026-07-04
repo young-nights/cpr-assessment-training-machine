@@ -20,11 +20,7 @@ static void Timing_1ms(void)
 
 
 
-//static int motor1_ticks = 0;
-//static int motor2_ticks = 0;
-//static int motor1_print = 0;
-//static int motor2_print = 0;
-//extern void coreless_motor_ctrl(MOTOR_NAME_et name,SWITCH_et status);
+
 static void Timing_10ms(void)
 {
 
@@ -99,7 +95,7 @@ int sysTimer_Init(void)
 
     return RT_EOK;
 }
-//INIT_APP_EXPORT(sysTimer_Init);
+INIT_APP_EXPORT(sysTimer_Init);
 
 
 

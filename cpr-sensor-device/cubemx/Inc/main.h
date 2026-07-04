@@ -36,8 +36,6 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-extern ADC_HandleTypeDef hadc1;
-
 extern TIM_HandleTypeDef htim1;
 extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
@@ -49,9 +47,8 @@ extern UART_HandleTypeDef huart1;
 void SystemClock_Config(void);
 void MX_GPIO_Init(void);
 void MX_DMA_Init(void);
-void MX_USART1_UART_Init(void);
-void MX_ADC1_Init(void);
 void MX_TIM1_Init(void);
+void MX_USART1_UART_Init(void);
 /* USER CODE END EC */
 
 /* Exported macro ------------------------------------------------------------*/

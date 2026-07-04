@@ -22,7 +22,6 @@
 #include "stm32f1xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "bsp_ws2812b.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -205,18 +204,9 @@ void SysTick_Handler(void)
 void DMA1_Channel4_IRQHandler(void)
 {
   /* USER CODE BEGIN DMA1_Channel4_IRQn 0 */
-  /* Guard: only process when DMA channel is actually enabled (WS2812B active) */
-  if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_HT4))
-  {
-    __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_HT4);
-    if (is_updating) update_sequence(0);  // HT
-  }
-  if (__HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_TC4))
-  {
-    __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, DMA_FLAG_TC4);
-    if (is_updating) update_sequence(1);  // TC
-  }
+
   /* USER CODE END DMA1_Channel4_IRQn 0 */
+  HAL_DMA_IRQHandler(&hdma_tim1_ch4_trig_com);
   /* USER CODE BEGIN DMA1_Channel4_IRQn 1 */
 
   /* USER CODE END DMA1_Channel4_IRQn 1 */

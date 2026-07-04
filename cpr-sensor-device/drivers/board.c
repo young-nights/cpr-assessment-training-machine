@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2026-07-03     RealThread   first version
+ * 2026-07-04     RealThread   first version
  */
 
 #include <rtthread.h>
@@ -14,7 +14,7 @@
 
 #include "bsp_sys.h"
 
-void rt_hw_board_init()
+RT_WEAK void rt_hw_board_init()
 {
     extern void hw_board_init(char *clock_src, int32_t clock_src_freq, int32_t clock_target_freq);
 
@@ -36,6 +36,8 @@ void rt_hw_board_init()
 #endif
 
 }
+
+
 
 
 
@@ -66,69 +68,6 @@ void HAL_MspInit(void)
 }
 
 /**
-  * @brief ADC MSP Initialization
-  * This function configures the hardware resources used in this example
-  * @param hadc: ADC handle pointer
-  * @retval None
-  */
-void HAL_ADC_MspInit(ADC_HandleTypeDef* hadc)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(hadc->Instance==ADC1)
-  {
-    /* USER CODE BEGIN ADC1_MspInit 0 */
-
-    /* USER CODE END ADC1_MspInit 0 */
-    /* Peripheral clock enable */
-    __HAL_RCC_ADC1_CLK_ENABLE();
-
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    /**ADC1 GPIO Configuration
-    PA0-WKUP     ------> ADC1_IN0
-    PA1     ------> ADC1_IN1
-    */
-    GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
-    GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    /* USER CODE BEGIN ADC1_MspInit 1 */
-
-    /* USER CODE END ADC1_MspInit 1 */
-
-  }
-
-}
-
-/**
-  * @brief ADC MSP De-Initialization
-  * This function freeze the hardware resources used in this example
-  * @param hadc: ADC handle pointer
-  * @retval None
-  */
-void HAL_ADC_MspDeInit(ADC_HandleTypeDef* hadc)
-{
-  if(hadc->Instance==ADC1)
-  {
-    /* USER CODE BEGIN ADC1_MspDeInit 0 */
-
-    /* USER CODE END ADC1_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_ADC1_CLK_DISABLE();
-
-    /**ADC1 GPIO Configuration
-    PA0-WKUP     ------> ADC1_IN0
-    PA1     ------> ADC1_IN1
-    */
-    HAL_GPIO_DeInit(GPIOA, GPIO_PIN_0|GPIO_PIN_1);
-
-    /* USER CODE BEGIN ADC1_MspDeInit 1 */
-
-    /* USER CODE END ADC1_MspDeInit 1 */
-  }
-
-}
-
-/**
   * @brief TIM_PWM MSP Initialization
   * This function configures the hardware resources used in this example
   * @param htim_pwm: TIM_PWM handle pointer
@@ -152,7 +91,7 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* htim_pwm)
     hdma_tim1_ch4_trig_com.Init.MemInc = DMA_MINC_ENABLE;
     hdma_tim1_ch4_trig_com.Init.PeriphDataAlignment = DMA_PDATAALIGN_HALFWORD;
     hdma_tim1_ch4_trig_com.Init.MemDataAlignment = DMA_MDATAALIGN_HALFWORD;
-    hdma_tim1_ch4_trig_com.Init.Mode = DMA_NORMAL;
+    hdma_tim1_ch4_trig_com.Init.Mode = DMA_CIRCULAR;
     hdma_tim1_ch4_trig_com.Init.Priority = DMA_PRIORITY_VERY_HIGH;
     if (HAL_DMA_Init(&hdma_tim1_ch4_trig_com) != HAL_OK)
     {

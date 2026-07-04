@@ -486,7 +486,7 @@ extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 __attribute__((aligned(4))) uint16_t ws2812_buffer[DMA_BUFF_LEN] = {0};
 
 // 控制变量
-volatile uint8_t is_updating = 0;    // 传输中标志
+static volatile uint8_t is_updating = 0;    // 传输中标志
 static volatile uint16_t led_index = 0;     // [FIX3-2] 当前已处理的LED周期计数
 rt_sem_t dma_complete_sem = RT_NULL; // [FIX2] 改为全局可见，供 ws2812b_demo_effects() 使用
 
@@ -655,27 +655,24 @@ void update_sequence(uint8_t is_tc)
     }
 }
 
-/**
- * @brief DMA1 Channel4 IRQ handler (WS2812B PWM)
- * @note  Moved here from stm32f1xx_it.c (excluded from build)
- */
-void DMA1_Channel4_IRQHandler(void)
+/* DMA1_Channel4 IRQ handler is defined in cubemx/Src/stm32f1xx_it.c (CubeMX generated).
+ * It calls HAL_DMA_IRQHandler which triggers the callbacks below. */
+
+// [FIX3-6] DMA Half-Transfer callback (HT)
+void HAL_DMA_XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
 {
-    uint32_t flag_it  = __HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
-    uint32_t flag_half = __HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_HT_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
-
-    /* Half Transfer */
-    if (flag_half != RESET)
+    if (hdma == &hdma_tim1_ch4_trig_com)
     {
-        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_HT_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
-        update_sequence(0);
+        update_sequence(0);  // HT
     }
+}
 
-    /* Transfer Complete */
-    if (flag_it != RESET)
+// [FIX3-6] DMA Transfer-Complete callback (TC)
+void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef *hdma)
+{
+    if (hdma == &hdma_tim1_ch4_trig_com)
     {
-        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
-        update_sequence(1);
+        update_sequence(1);  // TC
     }
 }
 

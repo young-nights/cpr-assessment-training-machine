@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2026-07-03     RT-Thread    first version
+ * 2026-07-04     RT-Thread    first version
  */
 
 #include <rtthread.h>
@@ -13,9 +13,6 @@
 #define DBG_TAG "main"
 #define DBG_LVL DBG_LOG
 #include <rtdbg.h>
-
-
-#include "bsp_sys.h"
 
 /**
   * @brief  The application entry point.
@@ -47,13 +44,9 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_USART1_UART_Init();
-  MX_ADC1_Init();
   MX_TIM1_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-
-//  oled_eye_init();
-
 
   /* USER CODE END 2 */
 
@@ -62,7 +55,6 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-
       rt_thread_mdelay(500);
     /* USER CODE BEGIN 3 */
   }

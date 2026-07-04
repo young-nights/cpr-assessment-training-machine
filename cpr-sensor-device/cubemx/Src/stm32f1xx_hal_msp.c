@@ -40,7 +40,7 @@ extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 /* USER CODE END Macro */
 
-/* Private variables --------------------------------------------------------*/
+/* Private variables ---------------------------------------------------------*/
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */

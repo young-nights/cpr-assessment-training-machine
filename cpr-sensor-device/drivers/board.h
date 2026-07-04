@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2026-07-03     RealThread   first version
+ * 2026-07-04     RealThread   first version
  */
 
 #ifndef __BOARD_H__
@@ -86,11 +86,10 @@ extern "C"
  *                             #define BSP_I2C1_SDA_PIN    GET_PIN(port, pin)   ->   GET_PIN(C, 12)
  */
 
-// MPU6050
-#define BSP_USING_I2C1
+/*#define BSP_USING_I2C1*/
 #ifdef BSP_USING_I2C1
-#define BSP_I2C1_SCL_PIN    GET_PIN(B, 0)
-#define BSP_I2C1_SDA_PIN    GET_PIN(C, 5)
+#define BSP_I2C1_SCL_PIN    GET_PIN(port, pin)
+#define BSP_I2C1_SDA_PIN    GET_PIN(port, pin)
 #endif
 
 /*#define BSP_USING_I2C2*/
@@ -185,7 +184,7 @@ extern "C"
  *
  */
 
-#define BSP_USING_ADC1
+/*#define BSP_USING_ADC1*/
 /*#define BSP_USING_ADC2*/
 /*#define BSP_USING_ADC3*/
 
