@@ -35,7 +35,7 @@ int main(void)
 
   /* Initialize peripherals not set up by RT-Thread */
   MX_GPIO_Init();
-  //MX_DMA_Init();
+  MX_DMA_Init();
   //MX_TIM1_Init();
 
   /* USER CODE BEGIN 2 */
