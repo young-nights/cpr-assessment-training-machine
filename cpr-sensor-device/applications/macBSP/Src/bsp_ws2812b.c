@@ -518,7 +518,7 @@ void ws2812b_init(void)
 
     /* Enable DMA1_Channel4 interrupt AFTER semaphore is ready.
      * DMA1_Channel4_IRQHandler is defined in this file. */
-    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 1, 0);
+    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 1, 0);  // Below USART1 priority
     HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
 }
 

@@ -27,28 +27,20 @@ int main(void)
 
   /* USER CODE END 1 */
 
-  /* MCU Configuration--------------------------------------------------------*/
+  /* NOTE: HAL_Init(), SystemClock_Config() and MX_USART1_UART_Init()
+   * are already called by RT-Thread during rt_hw_board_init().
+   * Do NOT call them again here — re-initializing USART1 via
+   * HAL_UART_Init() overwrites USART1->CR1 and clears RXNEIE,
+   * which breaks terminal input. */
 
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
-  HAL_Init();
-
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
-  SystemClock_Config();
-
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
+  /* Initialize peripherals not set up by RT-Thread */
   MX_GPIO_Init();
   MX_DMA_Init();
   MX_TIM1_Init();
-  MX_USART1_UART_Init();
+
   /* USER CODE BEGIN 2 */
+
+  ws2812b_init();
 
   /* USER CODE END 2 */
 
