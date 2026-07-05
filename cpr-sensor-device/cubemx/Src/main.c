@@ -215,7 +215,7 @@ void MX_TIM1_Init(void)
   /* USER CODE BEGIN TIM1_Init 2 */
 
   /* USER CODE END TIM1_Init 2 */
-  //HAL_TIM_MspPostInit(&htim1);
+  HAL_TIM_MspPostInit(&htim1);
 
 }
 
