@@ -105,6 +105,7 @@ rt_err_t ws2812b_update(void);          // 非阻塞更新，返回 -RT_EBUSY �
 void update_sequence(uint8_t is_tc);    // HT/TC 更新逻辑
 void ws2812b_demo_effects(void);       // 演示效果函数
 void ws2812b_set_white(uint8_t level);
+void ws2812b_set_brightness(uint8_t brightness_percent);
 
 #endif
 

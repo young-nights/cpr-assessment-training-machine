@@ -40,8 +40,7 @@ int main(void)
 
   /* USER CODE BEGIN 2 */
 
-  //ws2812b_init();
-
+  ws2812b_init();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -49,8 +48,10 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-//      rt_kprintf("OK\n");
-      rt_thread_mdelay(500);
+
+      ws2812b_demo_effects();
+      rt_thread_mdelay(50);
+
     /* USER CODE BEGIN 3 */
   }
   /* USER CODE END 3 */
