@@ -397,7 +397,7 @@ static int rgb_test(int argc, char **argv)
     {
         rt_kprintf("[WS2812B] Color: %s (R=%d, G=%d, B=%d)\n",
                    test_colors[i].name, test_colors[i].r, test_colors[i].g, test_colors[i].b);
-        ws2812b_set_all((test_colors[i].r << 16) | (test_colors[i].g << 8) | test_colors[i].b);
+        ws2812b_set_all(test_colors[i].r, test_colors[i].g, test_colors[i].b);
         ws2812b_show();
         rt_thread_mdelay(1000);
     }
@@ -408,13 +408,13 @@ static int rgb_test(int argc, char **argv)
     {
         for (uint8_t brightness = 0; brightness < 255; brightness += 5)
         {
-            ws2812b_set_all((brightness << 16) | (brightness << 8) | brightness);
+            ws2812b_set_all(brightness, brightness, brightness);
             ws2812b_show();
             rt_thread_mdelay(20);
         }
         for (uint8_t brightness = 255; brightness > 0; brightness -= 5)
         {
-            ws2812b_set_all((brightness << 16) | (brightness << 8) | brightness);
+            ws2812b_set_all(brightness, brightness, brightness);
             ws2812b_show();
             rt_thread_mdelay(20);
         }
@@ -446,7 +446,7 @@ static int rgb_test(int argc, char **argv)
                 b = 255 - pos * 3;
             }
 
-            ws2812b_set_color(led, (r << 16) | (g << 8) | b);
+            ws2812b_set_color(led, r, g, b);
         }
         ws2812b_show();
         rt_thread_mdelay(100);
@@ -506,19 +506,17 @@ void ws2812b_init(void)
     __HAL_RCC_TIM1_CLK_ENABLE();
     __HAL_RCC_DMA1_CLK_ENABLE();
 
-    // RT-Thread signal semaphore
+    // RT-Thread信号量
     dma_complete_sem = rt_sem_create("ws_sem", 0, RT_IPC_FLAG_FIFO);
     RT_ASSERT(dma_complete_sem != RT_NULL);
 
-    // WS2812B mutex
+    // WS2812B SPI访问互斥锁
     if (ws2812_mutex == RT_NULL) {
         ws2812_mutex = rt_mutex_create("ws2812_mtx", RT_IPC_FLAG_FIFO);
         RT_ASSERT(ws2812_mutex != RT_NULL);
     }
 
-    // Enable DMA1 Channel4 NVIC for WS2812B PWM DMA transfer
-    HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+    // NVIC interrupt is configured by CubeMX in main.c
 }
 
 
@@ -648,36 +646,17 @@ void update_sequence(uint8_t is_tc)
     if (led_index >= RESET_PRE_MIN + LED_COUNT + RESET_POST_MIN + 20)  // 多加20个周期确保复位
     {
         HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);
+        // HAL_TIM_Base_Stop(&htim3);   // 可选
 
         is_updating = 0;
         led_index = 0;
         rt_sem_release(dma_complete_sem);
+        rt_kprintf("WS2812B 更新完成\n");
     }
 }
 
-/**
- * @brief DMA1 Channel4 IRQ handler (WS2812B PWM)
- * @note  Moved here from stm32f1xx_it.c (excluded from build)
- */
-void DMA1_Channel4_IRQHandler(void)
-{
-    uint32_t flag_it   = __HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
-    uint32_t flag_half = __HAL_DMA_GET_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_HT_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
-
-    /* Half Transfer */
-    if (flag_half != RESET)
-    {
-        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_HT_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
-        update_sequence(0);
-    }
-
-    /* Transfer Complete */
-    if (flag_it != RESET)
-    {
-        __HAL_DMA_CLEAR_FLAG(&hdma_tim1_ch4_trig_com, __HAL_DMA_GET_TC_FLAG_INDEX(&hdma_tim1_ch4_trig_com));
-        update_sequence(1);
-    }
-}
+/* DMA1_Channel4 IRQ handler is defined in cubemx/Src/stm32f1xx_it.c (CubeMX generated).
+ * It calls HAL_DMA_IRQHandler which triggers the callbacks below. */
 
 // [FIX3-6] DMA Half-Transfer callback (HT)
 void HAL_DMA_XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
@@ -820,86 +799,6 @@ void ws2812b_set_white(uint8_t state)
 }
 
 
-/**
- * @brief MSH command: cycle through pure R/G/B/W colors (2s each)
- * Usage: type "rgb_test" in MSH console
- */
-static int rgb_test(int argc, char **argv)
-{
-    RT_UNUSED(argc);
-    RT_UNUSED(argv);
-
-    rt_kprintf("[WS2812B] RGB Test Start\n");
-
-    ws2812b_init();
-
-    /* Red */
-    ws2812b_set_all(255, 0, 0);
-    ws2812b_update();
-    rt_sem_take(dma_complete_sem, RT_WAITING_FOREVER);
-    rt_kprintf("[WS2812B] Red\n");
-    rt_thread_mdelay(2000);
-
-    /* Green */
-    ws2812b_set_all(0, 255, 0);
-    ws2812b_update();
-    rt_sem_take(dma_complete_sem, RT_WAITING_FOREVER);
-    rt_kprintf("[WS2812B] Green\n");
-    rt_thread_mdelay(2000);
-
-    /* Blue */
-    ws2812b_set_all(0, 0, 255);
-    ws2812b_update();
-    rt_sem_take(dma_complete_sem, RT_WAITING_FOREVER);
-    rt_kprintf("[WS2812B] Blue\n");
-    rt_thread_mdelay(2000);
-
-    /* White */
-    ws2812b_set_all(255, 255, 255);
-    ws2812b_update();
-    rt_sem_take(dma_complete_sem, RT_WAITING_FOREVER);
-    rt_kprintf("[WS2812B] White\n");
-    rt_thread_mdelay(2000);
-
-    /* Off */
-    ws2812b_set_all(0, 0, 0);
-    ws2812b_update();
-    rt_sem_take(dma_complete_sem, RT_WAITING_FOREVER);
-
-    rt_kprintf("[WS2812B] RGB Test Done\n");
-    return RT_EOK;
-}
-MSH_CMD_EXPORT(rgb_test, WS2812B RGB color test (2s per color));
-
-
-/**
- * @brief MSH command: start full demo effect loop
- * Usage: type "ws_demo" in MSH console
- */
-static int ws_demo(int argc, char **argv)
-{
-    RT_UNUSED(argc);
-    RT_UNUSED(argv);
-
-    rt_kprintf("[WS2812B] Demo started, running 30 cycles...\n");
-
-    ws2812b_init();
-
-    for (uint16_t cycle = 0; cycle < 30; cycle++)
-    {
-        ws2812b_demo_effects();
-        rt_thread_mdelay(50);
-    }
-
-    /* Off */
-    ws2812b_set_all(0, 0, 0);
-    ws2812b_update();
-    rt_sem_take(dma_complete_sem, RT_WAITING_FOREVER);
-
-    rt_kprintf("[WS2812B] Demo finished\n");
-    return RT_EOK;
-}
-MSH_CMD_EXPORT(ws_demo, WS2812B full demo effect loop);
 
 
 #endif

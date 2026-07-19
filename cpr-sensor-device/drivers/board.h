@@ -5,7 +5,7 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2026-07-04     RealThread   first version
+ * 2026-07-09     RealThread   first version
  */
 
 #ifndef __BOARD_H__
@@ -69,10 +69,6 @@ extern "C"
 #define BSP_USING_UART1
 #define BSP_UART1_TX_PIN       "PA9"
 #define BSP_UART1_RX_PIN       "PA10"
-
-/* 强制让 USART1 使用中断模式，禁止 DMA（避开 DMA1_Channel4 和 TIM1 冲突） */
-#undef  BSP_UART1_TX_USING_DMA
-#undef  BSP_UART1_RX_USING_DMA
 
 /*-------------------------- UART CONFIG END --------------------------*/
 
@@ -165,7 +161,7 @@ extern "C"
  *
  */
 
-//#define BSP_USING_PWM1
+/*#define BSP_USING_PWM1*/
 /*#define BSP_USING_PWM2*/
 /*#define BSP_USING_PWM3*/
 

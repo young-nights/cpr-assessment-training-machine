@@ -67,7 +67,7 @@
 #define RT_USING_FINSH
 #define FINSH_USING_MSH
 #define FINSH_THREAD_NAME "tshell"
-#define FINSH_THREAD_PRIORITY 30
+#define FINSH_THREAD_PRIORITY 20
 #define FINSH_THREAD_STACK_SIZE 4096
 #define FINSH_USING_HISTORY
 #define FINSH_HISTORY_LINES 5
@@ -82,7 +82,7 @@
 #define RT_USING_DEVICE_IPC
 #define RT_USING_SERIAL
 #define RT_USING_SERIAL_V1
-#define RT_SERIAL_RB_BUFSZ 1024
+#define RT_SERIAL_RB_BUFSZ 64
 #define RT_USING_PIN
 
 /* Using USB */
@@ -104,7 +104,6 @@
 
 /* end of Interprocess Communication (IPC) */
 /* end of POSIX (Portable Operating System Interface) layer */
-#define RT_USING_CPLUSPLUS
 /* end of C/C++ and POSIX layer */
 
 /* Network */
@@ -113,20 +112,6 @@
 
 /* Utilities */
 
-#define RT_USING_ULOG
-#define ULOG_OUTPUT_LVL_D
-#define ULOG_OUTPUT_LVL 7
-#define ULOG_ASSERT_ENABLE
-#define ULOG_LINE_BUF_SIZE 128
-
-/* log format */
-
-#define ULOG_USING_COLOR
-#define ULOG_OUTPUT_TIME
-#define ULOG_OUTPUT_LEVEL
-#define ULOG_OUTPUT_TAG
-/* end of log format */
-#define ULOG_BACKEND_USING_CONSOLE
 /* end of Utilities */
 /* end of RT-Thread Components */
 

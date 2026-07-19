@@ -5,14 +5,12 @@
  *
  * Change Logs:
  * Date           Author       Notes
- * 2026-07-04     RealThread   first version
+ * 2026-07-09     RealThread   first version
  */
 
 #include <rtthread.h>
 #include <board.h>
 #include <drv_common.h>
-
-#include "bsp_sys.h"
 
 RT_WEAK void rt_hw_board_init()
 {
@@ -68,14 +66,14 @@ void HAL_MspInit(void)
 }
 
 /**
-  * @brief TIM_Base MSP Initialization
+  * @brief TIM_PWM MSP Initialization
   * This function configures the hardware resources used in this example
-  * @param htim_base: TIM_Base handle pointer
+  * @param htim_pwm: TIM_PWM handle pointer
   * @retval None
   */
-void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
+void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef* htim_pwm)
 {
-  if(htim_base->Instance==TIM1)
+  if(htim_pwm->Instance==TIM1)
   {
     /* USER CODE BEGIN TIM1_MspInit 0 */
 
@@ -100,9 +98,9 @@ void HAL_TIM_Base_MspInit(TIM_HandleTypeDef* htim_base)
 
     /* Several peripheral DMA handle pointers point to the same DMA handle.
      Be aware that there is only one channel to perform all the requested DMAs. */
-    __HAL_LINKDMA(htim_base,hdma[TIM_DMA_ID_CC4],hdma_tim1_ch4_trig_com);
-    __HAL_LINKDMA(htim_base,hdma[TIM_DMA_ID_TRIGGER],hdma_tim1_ch4_trig_com);
-    __HAL_LINKDMA(htim_base,hdma[TIM_DMA_ID_COMMUTATION],hdma_tim1_ch4_trig_com);
+    __HAL_LINKDMA(htim_pwm,hdma[TIM_DMA_ID_CC4],hdma_tim1_ch4_trig_com);
+    __HAL_LINKDMA(htim_pwm,hdma[TIM_DMA_ID_TRIGGER],hdma_tim1_ch4_trig_com);
+    __HAL_LINKDMA(htim_pwm,hdma[TIM_DMA_ID_COMMUTATION],hdma_tim1_ch4_trig_com);
 
     /* USER CODE BEGIN TIM1_MspInit 1 */
 
@@ -137,14 +135,14 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef* htim)
 
 }
 /**
-  * @brief TIM_Base MSP De-Initialization
+  * @brief TIM_PWM MSP De-Initialization
   * This function freeze the hardware resources used in this example
-  * @param htim_base: TIM_Base handle pointer
+  * @param htim_pwm: TIM_PWM handle pointer
   * @retval None
   */
-void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
+void HAL_TIM_PWM_MspDeInit(TIM_HandleTypeDef* htim_pwm)
 {
-  if(htim_base->Instance==TIM1)
+  if(htim_pwm->Instance==TIM1)
   {
     /* USER CODE BEGIN TIM1_MspDeInit 0 */
 
@@ -153,9 +151,9 @@ void HAL_TIM_Base_MspDeInit(TIM_HandleTypeDef* htim_base)
     __HAL_RCC_TIM1_CLK_DISABLE();
 
     /* TIM1 DMA DeInit */
-    HAL_DMA_DeInit(htim_base->hdma[TIM_DMA_ID_CC4]);
-    HAL_DMA_DeInit(htim_base->hdma[TIM_DMA_ID_TRIGGER]);
-    HAL_DMA_DeInit(htim_base->hdma[TIM_DMA_ID_COMMUTATION]);
+    HAL_DMA_DeInit(htim_pwm->hdma[TIM_DMA_ID_CC4]);
+    HAL_DMA_DeInit(htim_pwm->hdma[TIM_DMA_ID_TRIGGER]);
+    HAL_DMA_DeInit(htim_pwm->hdma[TIM_DMA_ID_COMMUTATION]);
     /* USER CODE BEGIN TIM1_MspDeInit 1 */
 
     /* USER CODE END TIM1_MspDeInit 1 */

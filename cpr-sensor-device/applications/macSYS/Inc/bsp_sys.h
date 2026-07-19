@@ -17,7 +17,6 @@
 #include <board.h>
 #include <rtdevice.h>
 #include <rthw.h>
-//#include <drv_spi.h>
 
 /* 标准库头文件 */
 #include "string.h"
@@ -33,17 +32,13 @@
 #include "rtt_system_work.h"
 /* macBSP 头文件 */
 #include "bsp_ws2812b.h"
-#include "bsp_oled_eye.h"
 
 /* macNRF 头文件 */
 
 /* macSYS 头文件 */
 #include "bsp_typedef.h"
-
-
+#include <rtt_system_work.h>
 /* macMPU中的头文件 */
-
-
 
 /* Packages头文件 */
 
