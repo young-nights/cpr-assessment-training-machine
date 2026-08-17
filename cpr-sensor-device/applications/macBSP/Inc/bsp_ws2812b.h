@@ -8,7 +8,7 @@
  * 2026-01-26     Administrator       the first version
  */
 #ifndef APPLICATIONS_MACBSP_INC_BSP_WS2812B_H_
-#define APPLICATIONS_MACBSP_INC_BSP_2812B_H_
+#define APPLICATIONS_MACBSP_INC_BSP_WS2812B_H_
 
 
 #include "bsp_sys.h"
@@ -94,17 +94,18 @@ int rgb_test(int argc, char **argv);
 // 缓冲区：双缓冲 (HT/TC)，每个部分 LEDS_PER_DMA_IRQ * 24 个 uint16_t
 extern uint16_t ws2812_buffer[2 * LEDS_PER_DMA_IRQ * 24];
 
-// [FIX2] 全局信号量声明，供 ws2812b_demo_effects() 等待 DMA 完成
+// Global semaphore for DMA completion notification
 extern rt_sem_t dma_complete_sem;
 
-// 函数声明
+// Function declarations
 void ws2812b_init(void);
 void ws2812b_set_color(uint16_t index, uint8_t g, uint8_t r, uint8_t b);
 void ws2812b_set_all(uint8_t g, uint8_t r, uint8_t b);
-rt_err_t ws2812b_update(void);          // 非阻塞更新，返回 -RT_EBUSY 如果正在传输
-void update_sequence(uint8_t is_tc);    // HT/TC 更新逻辑
-void ws2812b_demo_effects(void);       // 演示效果函数
-void ws2812b_set_white(uint8_t level);
+rt_err_t ws2812b_update(void);          // Non-blocking update, returns -RT_EBUSY if busy
+void update_sequence(uint8_t is_tc);    // HT/TC update logic (ISR context)
+void ws2812b_demo_effects(void);        // Demo effects function
+void ws2812b_set_white(uint8_t level);  // Set eye LED state
+void ws2812b_set_brightness(uint8_t brightness_percent);
 
 #endif
 

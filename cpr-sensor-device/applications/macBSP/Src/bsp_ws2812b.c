@@ -481,23 +481,40 @@ extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 #define DMA_HALF_LEN    (DMA_BUFF_LEN / 2)                     // 半长
 #define BITS_PER_IRQ    (LEDS_PER_DMA_IRQ * BITS_PER_LED)      // 每个中断处理的位数
 
-// 数据缓冲区：uint16_t (HAL PWM DMA用 HalfWord)
-// [FIX] 问题7: 添加aligned(4)确保DMA对齐
+// DMA传输缓冲区：uint16_t (HAL PWM DMA用 HalfWord)
+// [FIX] 添加aligned(4)确保DMA对齐
 __attribute__((aligned(4))) uint16_t ws2812_buffer[DMA_BUFF_LEN] = {0};
 
-// 控制变量
-static volatile uint8_t is_updating = 0;    // 传输中标志
-static volatile uint16_t led_index = 0;     // [FIX3-2] 当前已处理的LED周期计数
-rt_sem_t dma_complete_sem = RT_NULL; // [FIX2] 改为全局可见，供 ws2812b_demo_effects() 使用
+// Control variables
+static volatile uint8_t is_updating = 0;    // Transfer in progress flag
+static volatile uint16_t led_index = 0;     // Current LED cycle count
+rt_sem_t dma_complete_sem = RT_NULL;        // Global semaphore for DMA completion
 
-// 应用颜色缓冲区 (RGB, 用户修改此数组)
+// Application color buffer (GRB, user modifies this array)
 static uint8_t leds_color_data[BYTES_PER_LED * LED_COUNT] = {0};
 
-// [FIX] 问题1: 删除HAL_TIM_PWM_PulseFinishedCallback，避免与DMA1_Channel2_IRQHandler竞争
-// DMA完成逻辑统一在update_sequence()的完成分支中处理
+// [FIX] Problem 1 & 5: Separate mutex for leds_color_data[] protection
+static rt_mutex_t data_mutex = RT_NULL;
 
-// 前向声明
+// [FIX] Problem 1 & 5: Snapshot of leds_color_data[] taken before DMA start.
+// ISR reads from this snapshot, never from leds_color_data[] directly.
+// This completely decouples ISR from user-thread writes.
+static uint8_t snapshot_color_data[BYTES_PER_LED * LED_COUNT] = {0};
+
+// Forward declaration
 static void fill_led_pwm_data(uint16_t ledx, uint16_t *ptr);
+
+/**
+ * @brief Take a snapshot of leds_color_data[] into snapshot_color_data[] under data_mutex.
+ *        Must be called before DMA start. After this, ISR reads from snapshot_color_data[]
+ *        which is immutable during the DMA transfer, eliminating the race condition.
+ */
+static void snapshot_color_buffer(void)
+{
+    if (data_mutex) rt_mutex_take(data_mutex, RT_WAITING_FOREVER);
+    memcpy(snapshot_color_data, leds_color_data, sizeof(snapshot_color_data));
+    if (data_mutex) rt_mutex_release(data_mutex);
+}
 
 // 初始化
 void ws2812b_init(void)
@@ -506,14 +523,20 @@ void ws2812b_init(void)
     __HAL_RCC_TIM1_CLK_ENABLE();
     __HAL_RCC_DMA1_CLK_ENABLE();
 
-    // RT-Thread信号量
+    // RT-Thread semaphore for DMA completion notification
     dma_complete_sem = rt_sem_create("ws_sem", 0, RT_IPC_FLAG_FIFO);
     RT_ASSERT(dma_complete_sem != RT_NULL);
 
-    // WS2812B SPI访问互斥锁
+    // WS2812B SPI access mutex (shared across SPI/PWM implementations)
     if (ws2812_mutex == RT_NULL) {
         ws2812_mutex = rt_mutex_create("ws2812_mtx", RT_IPC_FLAG_FIFO);
         RT_ASSERT(ws2812_mutex != RT_NULL);
+    }
+
+    // [FIX] Problem 1 & 5: Separate data_mutex for leds_color_data[] protection
+    if (data_mutex == RT_NULL) {
+        data_mutex = rt_mutex_create("ws_dat_mtx", RT_IPC_FLAG_FIFO);
+        RT_ASSERT(data_mutex != RT_NULL);
     }
 
     // NVIC interrupt is configured by CubeMX in main.c
@@ -555,23 +578,26 @@ static void apply_brightness(uint8_t *g, uint8_t *r, uint8_t *b)
 }
 
 
-// 设置单个LED颜色 (GRB顺序)
+// Set single LED color (GRB order)
+// [FIX] Problem 1: Use data_mutex to protect leds_color_data[] instead of ws2812_mutex.
+// This allows set_color() to proceed even while DMA is running (DMA uses ws2812_buffer[],
+// not leds_color_data[]).
 void ws2812b_set_color(uint16_t index, uint8_t g, uint8_t r, uint8_t b)
 {
-    if (ws2812_mutex) rt_mutex_take(ws2812_mutex, RT_WAITING_FOREVER);
+    if (data_mutex) rt_mutex_take(data_mutex, RT_WAITING_FOREVER);
     if (index >= LED_COUNT) {
-        rt_kprintf("LED索引超出范围: %d (最大: %d)\n", index, LED_COUNT - 1);
-        if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
+        rt_kprintf("LED index out of range: %d (max: %d)\n", index, LED_COUNT - 1);
+        if (data_mutex) rt_mutex_release(data_mutex);
         return;
     }
 
-    // 应用全局亮度
+    // Apply global brightness
     apply_brightness(&g, &r, &b);
 
     leds_color_data[index * BYTES_PER_LED + 0] = g;
     leds_color_data[index * BYTES_PER_LED + 1] = r;
     leds_color_data[index * BYTES_PER_LED + 2] = b;
-    if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
+    if (data_mutex) rt_mutex_release(data_mutex);
 }
 
 // 设置所有LED同一颜色
@@ -583,82 +609,99 @@ void ws2812b_set_all(uint8_t g, uint8_t r, uint8_t b)
     }
 }
 
-// 启动更新 (非阻塞)
+// Start update (non-blocking)
+// [FIX] Problem 1 & 5: Snapshot leds_color_data[] into snapshot_color_data[] before DMA start.
+// ISR reads from snapshot_color_data[] (immutable during transfer), not leds_color_data[].
+// Other threads can freely modify leds_color_data[] during DMA transfer.
 rt_err_t ws2812b_update(void)
 {
-    if (ws2812_mutex) rt_mutex_take(ws2812_mutex, RT_WAITING_FOREVER);
     if (is_updating) {
-        rt_kprintf("WS2812B 正在更新中，跳过本次\n");
-        if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
+        rt_kprintf("WS2812B update in progress, skipping\n");
         return -RT_EBUSY;
     }
 
     is_updating = 1;
     led_index = 0;
 
-    HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);  // 确保干净启动
+    HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);  // Ensure clean start
 
+    // Zero out the entire DMA buffer first
     memset(ws2812_buffer, 0, sizeof(ws2812_buffer));
+
+    // Snapshot: copy leds_color_data[] -> snapshot_color_data[] under data_mutex.
+    // After this, ISR reads from snapshot_color_data[] which is immutable during DMA.
+    // Other threads can freely modify leds_color_data[] without affecting the transfer.
+    snapshot_color_buffer();
 
     if (HAL_TIM_PWM_Start_DMA(&htim1, TIM_CHANNEL_4, (uint32_t *)ws2812_buffer, DMA_BUFF_LEN) != HAL_OK)
     {
-        rt_kprintf("DMA启动失败\n");
+        rt_kprintf("DMA start failed\n");
         is_updating = 0;
-        if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
         return -RT_ERROR;
     }
 
-    if (ws2812_mutex) rt_mutex_release(ws2812_mutex);
-    rt_kprintf("WS2812B 更新启动成功\n");
+    rt_kprintf("WS2812B update started\n");
     return RT_EOK;
 }
 
-// [FIX3-2] 更新序列 (重构：用led_index替代led_cycles_cnt，语义更清晰)
+// Update sequence (called from DMA HT/TC callbacks in ISR context)
+// [FIX] Problem 4: Added boundary check before fill_led_pwm_data() call.
+// [FIX] Problem 1 & 5: update_sequence() now only reads from ws2812_buffer[] which was
+// snapshotted before DMA start. No access to leds_color_data[] at all.
 void update_sequence(uint8_t is_tc)
 {
     if (!is_updating) return;
 
     uint16_t *buf_ptr = is_tc ? &ws2812_buffer[DMA_HALF_LEN] : ws2812_buffer;
 
-    // 填充下一半缓冲区
+    // Fill next half of the buffer
     for (uint16_t i = 0; i < LEDS_PER_DMA_IRQ; i++)
     {
         if (led_index < RESET_PRE_MIN)
         {
-            // 前复位：全0
+            // Pre-reset: all zeros
             memset(&buf_ptr[i * BITS_PER_LED], 0, BITS_PER_LED * sizeof(uint16_t));
         }
         else if (led_index < RESET_PRE_MIN + LED_COUNT)
         {
-            // 数据区
+            // Data region: boundary check before calling fill_led_pwm_data
             uint16_t led_idx = led_index - RESET_PRE_MIN;
-            fill_led_pwm_data(led_idx, &buf_ptr[i * BITS_PER_LED]);
+            if (led_idx < LED_COUNT)
+            {
+                fill_led_pwm_data(led_idx, &buf_ptr[i * BITS_PER_LED]);
+            }
+            else
+            {
+                // Safety: zero fill if somehow out of range
+                memset(&buf_ptr[i * BITS_PER_LED], 0, BITS_PER_LED * sizeof(uint16_t));
+            }
         }
         else
         {
-            // 后复位：全0
+            // Post-reset: all zeros
             memset(&buf_ptr[i * BITS_PER_LED], 0, BITS_PER_LED * sizeof(uint16_t));
         }
         led_index++;
     }
 
-    // 全部发送完成 + 足够复位后停止
-    if (led_index >= RESET_PRE_MIN + LED_COUNT + RESET_POST_MIN + 20)  // 多加20个周期确保复位
+    // Stop after all data sent + sufficient reset time
+    if (led_index >= RESET_PRE_MIN + LED_COUNT + RESET_POST_MIN + 20)
     {
         HAL_TIM_PWM_Stop_DMA(&htim1, TIM_CHANNEL_4);
-        // HAL_TIM_Base_Stop(&htim3);   // 可选
 
         is_updating = 0;
         led_index = 0;
         rt_sem_release(dma_complete_sem);
-        rt_kprintf("WS2812B 更新完成\n");
+        rt_kprintf("WS2812B update complete\n");
     }
 }
 
 /* DMA1_Channel4 IRQ handler is defined in cubemx/Src/stm32f1xx_it.c (CubeMX generated).
  * It calls HAL_DMA_IRQHandler which triggers the callbacks below. */
 
-// [FIX3-6] DMA Half-Transfer callback (HT)
+// DMA Half-Transfer callback (HT) - ISR context
+// [FIX] Problem 5: Callbacks only operate on ws2812_buffer[],
+// which is independent of leds_color_data[]. No data race.
 void HAL_DMA_XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
 {
     if (hdma == &hdma_tim1_ch4_trig_com)
@@ -667,7 +710,8 @@ void HAL_DMA_XferHalfCpltCallback(DMA_HandleTypeDef *hdma)
     }
 }
 
-// [FIX3-6] DMA Transfer-Complete callback (TC)
+// DMA Transfer-Complete callback (TC) - ISR context
+// [FIX] Problem 5: Same as above, only operates on ws2812_buffer[].
 void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef *hdma)
 {
     if (hdma == &hdma_tim1_ch4_trig_com)
@@ -676,16 +720,19 @@ void HAL_DMA_XferCpltCallback(DMA_HandleTypeDef *hdma)
     }
 }
 
-// 填充单个LED PWM数据 (GRB, 参考文件适配)
+// Fill single LED PWM data (GRB order, MSB first)
+// [FIX] Problem 4: Boundary check retained as safety net.
+// [FIX] Problem 1 & 5: Reads from snapshot_color_data[] (immutable during DMA transfer),
+//        NOT from leds_color_data[] (which may be modified by other threads).
 static void fill_led_pwm_data(uint16_t ledx, uint16_t *ptr)
 {
     if (ledx >= LED_COUNT) return;
 
-    uint8_t g = leds_color_data[ledx * BYTES_PER_LED + 0];
-    uint8_t r = leds_color_data[ledx * BYTES_PER_LED + 1];
-    uint8_t b = leds_color_data[ledx * BYTES_PER_LED + 2];
+    uint8_t g = snapshot_color_data[ledx * BYTES_PER_LED + 0];
+    uint8_t r = snapshot_color_data[ledx * BYTES_PER_LED + 1];
+    uint8_t b = snapshot_color_data[ledx * BYTES_PER_LED + 2];
 
-    // GRB顺序，MSB先
+    // GRB order, MSB first
     for (uint8_t i = 0; i < 8; i++)
     {
         ptr[i] = (g & (1 << (7 - i))) ? PWM_HIGH_1 : PWM_HIGH_0;
@@ -769,6 +816,10 @@ void ws2812b_demo_effects(void)
 /**
  * @brief Set WS2812B eye LED state
  * @param state 0=dying(min brightness), 1=normal(full white)
+ *
+ * [FIX] Problem 2: Check ws2812b_update() return value before waiting on semaphore.
+ *       If update returns -RT_EBUSY, skip the semaphore wait to avoid blocking.
+ * [FIX] Problem 6: Handle case where semaphore or mutex may not be initialized yet.
  */
 void ws2812b_set_white(uint8_t state)
 {
@@ -777,24 +828,38 @@ void ws2812b_set_white(uint8_t state)
         case 0:  // Dying - minimum brightness
             ws2812b_set_brightness(3);
             ws2812b_set_all(255, 255, 255);
-            ws2812b_update();
-            LOG_I("WS2812B: dying state (min brightness)");
             break;
         case 1:  // Normal - full white
             ws2812b_set_brightness(100);
             ws2812b_set_all(255, 255, 255);
-            ws2812b_update();
-            LOG_I("WS2812B: normal state (full white)");
             break;
         default:
             ws2812b_set_brightness(0);
             ws2812b_set_all(0, 0, 0);
-            ws2812b_update();
             LOG_W("WS2812B set_white unknown state, turned off");
             break;
     }
-    if (dma_complete_sem != RT_NULL) {
-        rt_sem_take(dma_complete_sem, 300);
+
+    // [FIX] Problem 2: Only wait on semaphore if update was successfully started.
+    // [FIX] Problem 6: Check dma_complete_sem != RT_NULL before take.
+    rt_err_t ret = ws2812b_update();
+    if (ret == RT_EOK)
+    {
+        if (dma_complete_sem != RT_NULL)
+        {
+            if (rt_sem_take(dma_complete_sem, 300) != RT_EOK)
+            {
+                LOG_W("WS2812B set_white: DMA timeout");
+            }
+        }
+    }
+    else if (ret == -RT_EBUSY)
+    {
+        LOG_W("WS2812B set_white: DMA busy, update skipped");
+    }
+    else
+    {
+        LOG_E("WS2812B set_white: DMA start failed (%d)", ret);
     }
 }
 
