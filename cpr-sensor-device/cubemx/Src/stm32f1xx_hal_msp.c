@@ -63,4 +63,40 @@ extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
 
 /* USER CODE BEGIN 1 */
 
+/**
+  * @brief  TIM_PWM MSP Initialization
+n  *         Configures DMA channel for TIM1 CH4 (WS2812B)
+  * @param  htim: TIM handle pointer
+  * @retval None
+  */
+void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
+{
+    if (htim->Instance == TIM1)
+    {
+        /* DMA1 clock enable */
+        __HAL_RCC_DMA1_CLK_ENABLE();
+
+        /* TIM1 CH4 TRIG COM uses DMA1 Channel 4 */
+        hdma_tim1_ch4_trig_com.Instance                 = DMA1_Channel4;
+        hdma_tim1_ch4_trig_com.Init.Direction            = DMA_MEMORY_TO_PERIPH;
+        hdma_tim1_ch4_trig_com.Init.PeriphInc            = DMA_PINC_DISABLE;
+        hdma_tim1_ch4_trig_com.Init.MemInc               = DMA_MINC_ENABLE;
+        hdma_tim1_ch4_trig_com.Init.PeriphDataAlignment  = DMA_PDATAALIGN_HALFWORD;
+        hdma_tim1_ch4_trig_com.Init.MemDataAlignment     = DMA_MDATAALIGN_HALFWORD;
+        hdma_tim1_ch4_trig_com.Init.Mode                 = DMA_NORMAL;
+        hdma_tim1_ch4_trig_com.Init.Priority             = DMA_PRIORITY_HIGH;
+        if (HAL_DMA_Init(&hdma_tim1_ch4_trig_com) != HAL_OK)
+        {
+            Error_Handler();
+        }
+
+        /* Link DMA to TIM handle */
+        __HAL_LINKDMA(htim, hdma[TIM_DMA_ID_CC4], hdma_tim1_ch4_trig_com);
+
+        /* DMA1_Channel4 interrupt: same priority as SysTick (0,0) or slightly higher */
+        HAL_NVIC_SetPriority(DMA1_Channel4_IRQn, 1, 0);
+        HAL_NVIC_EnableIRQ(DMA1_Channel4_IRQn);
+    }
+}
+
 /* USER CODE END 1 */
