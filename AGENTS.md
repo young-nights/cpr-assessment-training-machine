@@ -17,7 +17,7 @@
 
 - 现状基准：`docs/hardware-interface-as-built.md`（代码反推，逐项标注 ✅已实现 / ⚠️仅定义零调用 / ❌缺失 / ❓存疑）
 - 硬件配置金标准：各板 `cubemx/cubemx.ioc` + `cubemx/MDK-ARM/*.uvprojx`；cpr-raster-board 例外——金标准为 `MDK_Project/raster_project.ewp`（IAR EWSTM8 工程，`MDK_*` 目录名是历史命名，不代表工具链）
-- 设计目标文档：`docs/hardware-interface.md`、`docs/cpr_business_framework.md` —— 与 as-built 冲突时以 as-built 为准，设计文档排期修订
+- 设计目标文档：`docs/硬件资源.md`（2026-09-20 由 hardware-interface.md 更名，内容与原文逐字节一致，仍为 2026-05-20 v1.0 三板口径，含 as-built 第 3 章所列 18 项漂移，待修订）、`docs/cpr_business_framework.md` —— 与 as-built 冲突时以 as-built 为准。`docs/hardware-interface.md`/`.en.md` 已于 2026-09-20 删除
 - 禁止依据设计文档声称"代码已有某外设/引脚"；接入新硬件前先查 as-built 的实现状态列
 
 ## 3. 语义多端同步（眼灯/意识状态红线）
@@ -50,3 +50,4 @@
 
 - 2026-09-19：初建。依据：2026-09-18 意识外设审查（眼灯语义四处矛盾、文档漂移、死代码）+ 2026-09-19 硬件接口 as-built 反推（raster 板完整摸底、README 型号漂移、LED 宏 6 组缺陷、双帧定义并存、sensor 外设零配置实锤）
 - 2026-09-19：第 1 节补充 origin SSH 约定（HTTPS push 无凭证认证失败实证，改用 SSH 后推送成功）
+- 2026-09-20：第 2 节更新设计文档引用（hardware-interface.md/.en.md 删除，内容并入 docs/硬件资源.md）；repo-hygiene 清理：cpr-raster-board IAR 构建产物 74 文件 untrack（磁盘保留），.gitignore 补 IAR 模式
