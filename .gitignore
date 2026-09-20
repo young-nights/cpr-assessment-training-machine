@@ -57,3 +57,14 @@ cpr-remote-device/.settings/projcfg.ini
 cpr-sensor-device/.settings/language.settings.xml
 cpr-sensor-device/.settings/projcfg.ini
 cpr-sensor-device/.settings/language.settings.xml
+
+# IAR EWSTM8 build artifacts (cpr-raster-board, 2026-09-20 hygiene)
+cpr-raster-board/MDK_Project/Debug/
+cpr-raster-board/MDK_Project/settings/
+cpr-raster-board/MDK_Project/*.dep
+*.pbi
+*.pbi.xcl
+*.xcl
+*.browse
+*.linf
+*.pbd
