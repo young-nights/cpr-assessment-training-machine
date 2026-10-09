@@ -9,8 +9,8 @@ USART_ReceiveDataTypedef    USART1_QueueBuf;
 /**
   * @brief  UART1
   * @param  None
-  * @retval UART1-RX   -->  PA4
-  *         UART1-TX   -->  PA5
+  * @retval UART1-RX   -->  PD6
+  *         UART1-TX   -->  PD5
   */
 void UART1_Config(void)
 {
@@ -33,8 +33,8 @@ void UART1_Config(void)
     UART1_Cmd(ENABLE);
     
 
-    GPIO_Init(GPIOA, GPIO_PIN_4, GPIO_MODE_IN_PU_NO_IT);
-    GPIO_Init(GPIOA, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST);
+    GPIO_Init(GPIOD, GPIO_PIN_6, GPIO_MODE_IN_PU_NO_IT);
+    GPIO_Init(GPIOD, GPIO_PIN_5, GPIO_MODE_OUT_PP_LOW_FAST);
 
 }
 
