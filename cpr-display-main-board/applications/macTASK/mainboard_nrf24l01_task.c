@@ -348,14 +348,14 @@ void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
                 }
             }
             // --------------------------------------------------------------------
-            /* 发送指令-step2：控制ws2812b的灯光亮度，开始后默认亮度1 */
+            /* Send command-step2: set eye LED to dying state at CPR start (pupils dilated, no pulse) */
             if(send_step_nums == 1 && Record.sensor_wsrgb_cmd_ack == 0)
             {
-                MySysCfg.eyes_rgb_level = 1;
+                MySysCfg.eyes_rgb_level = 0;
                 if(nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_WS2812_Level, NRF24_PIPE_1, 1) == RT_EOK) {
-                    LOG_I("step2：mainboard发送灯光亮度1指令到sensor成功");
+                    LOG_I("step2: sent eye state (arrest/dilated) to sensor OK");
                 } else {
-                    LOG_E("step2：mainboard发送灯光亮度1指令到sensor失败");
+                    LOG_E("step2: send eye state (arrest/dilated) to sensor FAIL");
                 }
             }
             // --------------------------------------------------------------------
@@ -398,7 +398,7 @@ void nRF24L01_Data_Transmit_Thread_entry(void* parameter)
         // Idle or completed state — only send on state change, not every loop
         else {
             if(Record.sensor_connected == 1 && Record.sensor_wsrgb_need_send == 1) {
-                MySysCfg.eyes_rgb_level = 1;
+                MySysCfg.eyes_rgb_level = 1;  // Resuscitation success: pupils return to normal
                 nrf24l01_send_with_retry(_nrf24, Order_nRF24L01_SEND_To_Sensor_WS2812_Level, NRF24_PIPE_1, 1);
                 Record.sensor_wsrgb_need_send = 0;
             }

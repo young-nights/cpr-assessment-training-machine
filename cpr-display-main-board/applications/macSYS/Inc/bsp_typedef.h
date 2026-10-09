@@ -81,7 +81,7 @@ typedef struct {
     uint8_t       reset_press_cnt;  // 复位按键按下次数
     uint8_t       setting_mode;     // 设置状态(0：正常模式   1：设置模式 )
     uint8_t       edit_index;       // 当前正在编辑哪个参数（0=倒计时，1=按压率，2=潮气率）
-    uint8_t       eyes_rgb_level;   // 眼部RGB灯的挡位(0：关闭  1：弱光[意识涣散]   2：强光[意识清醒])
+    uint8_t       eyes_rgb_level;   // Eye/pupil state: 0=arrest/dilated (pupils dilated, no pulse), 1=resuscitated/normal (pupils normal, pulse restored)
     uint8_t       motor_work_sta;   // 空心杯电机工作模式（0：关闭  1：随按压频率震动   2：正常自主震动）
     Mode_Params_t params[MODE_MAX];
 } System_Config_t;

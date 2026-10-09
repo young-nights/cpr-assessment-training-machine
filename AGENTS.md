@@ -22,7 +22,7 @@
 
 ## 3. 语义多端同步（眼灯/意识状态红线）
 
-- 眼灯状态字段 `eyes_rgb_level` 当前四处语义不一致：docs v2.1（0=濒死/1=正常）、mainboard `bsp_typedef.h:84` 注释（0=关闭/1=涣散/2=清醒）、测试用例表 TC-START-005（期望 CPR 开始=0 濒死）、运行现实（上电恒白光）。统一定义落地前，禁止任何一端单方面修改该字段语义或赋值
+- 眼灯/瞳孔状态字段 `eyes_rgb_level` 语义已统一（2026-09-21）：**0=濒死/瞳孔散大**（心跳骤停，脑缺氧，固定散大瞳孔），**1=正常/瞳孔恢复**（复苏有效，脑灌注改善，瞳孔恢复正常）。CPR 开始时设为 0，按压过程中保持不变，抢救成功后切换为 1。多端同步：mainboard `bsp_typedef.h` + mainboard `mainboard_nrf24l01_task.c` + sensor `bsp_typedef.h` + sensor `ws2812b_set_white()` + docs + 测试用例表
 - 协议命令（nRF24 命令码 0x01~0x22、raster UART `0xAA..0x55` 帧）变更必须同步六处：mainboard + sensor + remote + raster + docs + 测试用例表，同一提交内完成
 - 代码并存两套帧定义：实际收发路径用 `0x55 0xAA LEN ID_H ID_L TYPE STATE DATA CRC16`（message.c 组帧，设备 ID sensor=0x0005/remote=0x0004）；`mainboard_cpr_protocol.h` 的 `cpr_packet_t`（dev_type+seq 版）未在收发路径使用。确认废弃的一套须删除并同步 docs，禁止继续新增引用
 

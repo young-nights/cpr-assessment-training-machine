@@ -101,7 +101,7 @@ CPR(Cardiopulmonary Resuscitation)心肺复苏训练考核系统是一套用于�
 - **按压点位检测**:ADC128S102CIMTX 采集薄膜压力传感器,判断按压位置(上/中/下/左/右五个方位 + 气道开启 LED + 吹气进胃 LED)
 - **头部上仰检测**:MPU6050 安置在模拟人头部,测量吹气时头部上仰角度
 - **光栅数据接收**:UART2 连接光栅板,接收按压深度、按压频率、有效/无效按压次数、潮气深度、吹气参数等数据
-- **眼部状态显示**:OLED (0.66寸, PC10/PC11 I2C) + WS2812B (PA11 PWM) 协同控制眼睛状态(濒死: WS2812B最低亮度+OLED黑屏; 正常: WS2812B白灯全亮+OLED白底黑圆)
+- **眼部状态显示**: 头部板(STM32F103C6T6)承载 WS2812B RGB + OLED 眼屏，Sensor 板通过 GPIO(PC10/PC11/PC12→头部板PA2/PA3/PA4) 输出瞳孔状态编码。三种临床状态：初始/未复苏(瞳孔散大+无搏动, eyes_rgb_level=0)、按压中(保持散大+被动搏动, eyes_rgb_level=0)、抢救成功(瞳孔恢复+自主搏动, eyes_rgb_level=1)
 - **颈动脉模拟**:空心杯电机控制(颈动脉脉搏模拟,参见下方状态机)
 - **异物检测**:CC6201 霍尔传感器检测异物
 - **无线通信**:nRF24L01 与 Mainboard 通信
@@ -596,7 +596,7 @@ CRC:CRC16-Modbus 校验,计算范围从 LEN 字节开始到参数列表末尾
 |-----|--------|----------|------|
 | 0x02 | `FRAME_NRF24_SEND_TO_SENSOR_START_CMD` | `FRAME_TYPE_ACT` | 发送开始指令 |
 | 0x03 | `FRAME_NRF24_ACK_SHOKE_SENSOR_CMD` | `FRAME_TYPE_ACT` | 应答压电反馈 |
-| 0x04 | `FRAME_NRF24_ASK_WS2812B_LEVEL_CMD` | `FRAME_TYPE_ACT` | 设置眼部状态(濒死/正常, WS2812B+OLED联动) |
+| 0x04 | `FRAME_NRF24_ASK_WS2812B_LEVEL_CMD` | `FRAME_TYPE_ACT` | 设置眼部状态(0=arrest/dilated, 1=resuscitated/normal) |
 | 0x05 | `FRAME_NRF24_ASK_MOTOR_STATUS_CMD` | `FRAME_TYPE_ACT` | 设置空心杯电机工作模式 |
 | 0x06 | `FRAME_NRF24_ACK_CC6201_CMD` | `FRAME_TYPE_ACT` | 应答磁传感器状态 |
 
@@ -837,7 +837,7 @@ DM32 打印机 (用户触发打印)
 | 0x0005 | `REG_ANGLE_Y` | int16 | MPU6050 Y轴角度 |
 | 0x0006 | `REG_HALL_STATUS` | uint16 | 霍尔传感器状态 (0:有异物 1:无异物) |
 | 0x0007 | `REG_POSITION` | uint16 | 按压位置 1-7 |
-| 0x0008 | `REG_WS2812_LEVEL` | uint16 | 眼部状态 (0:濒死 WS2812B最低+OLED黑屏 1:正常 WS2812B白灯+OLED白底黑圆) |
+| 0x0008 | `REG_WS2812_LEVEL` | uint16 | Eye/pupil state (0=arrest/dilated, 1=resuscitated/normal) |
 | 0x0009 | `REG_MOTOR_STATUS` | uint16 | 电机状态 (0:关闭 1:随按压 2:自主) |
 | 0x000A | `REG_DEVICE_STATUS` | uint16 | 设备状态位图 |
 
@@ -1540,7 +1540,7 @@ typedef struct {
     System_Mode_t current_mode;     // 训练/考核/竞赛
     uint8_t       start_status;     // 0:未开始 1:已开始 2:已结束
     uint8_t       cc6201_state;     // 0:有异物  1:无异物
-    uint8_t       eyes_rgb_level;   // 0:濒死(WS2812B最低+OLED黑屏) 1:正常(WS2812B白灯+OLED白底黑圆)
+    uint8_t       eyes_rgb_level;   // Eye/pupil state: 0=arrest/dilated, 1=resuscitated/normal
     uint8_t       motor_work_sta;   // 0:关闭 1:随按压 2:自主震动
     Mode_Params_t params[MODE_MAX]; // 各模式参数(时间/达标率/计数)
 } System_Config_t;

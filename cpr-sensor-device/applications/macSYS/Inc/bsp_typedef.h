@@ -32,7 +32,7 @@ typedef struct {
     rt_uint8_t  setting_mode;                    // 设置模式(0：不处于设置模式   1：处于设置模式)
     rt_uint8_t  working_mode;                    // 工作模式(0：不处于工作模式   1：处于工作模式)
 
-    rt_uint8_t  ws2812b_levle;                   // WS2812B的灯光亮度等级：0~2
+    rt_uint8_t  ws2812b_levle;                   // Eye LED state: 0=arrest/dilated, 1=resuscitated/normal (mapped to head board via GPIO PC10/11/12)
     rt_uint8_t  motor_work_sta;                  // Motor的工作模式：0.关闭  1.随按压频率  2.正常心跳模式
     rt_uint8_t  body_led_type;                   // LED的类型：0.全关闭  1.上 2.下 3.左 4.右 5.中间 6.中偏下 7.中偏上
 }RecordStruct;
