@@ -125,7 +125,7 @@ void WT588D_Loop_Playback(void)
 void WT588D_Stop(void)
 {
     rt_thread_mdelay(2);
-    WT588D_Set_Cmd(WT588D_CMD_LOOP_PLAYBACK);
+    WT588D_Set_Cmd(WT588D_CMD_STOP_PLAYING);
 }
 
 

@@ -7,10 +7,10 @@ USART_ReceiveDataTypedef    USART1_QueueBuf;
 
 
 /**
-  * @brief  UART1 
+  * @brief  UART1
   * @param  None
-  * @retval UART1-RX   -->  PA4
-  *         UART1-TX   -->  PA5
+  * @retval UART1-RX   -->  PD6
+  *         UART1-TX   -->  PD5
   */
 void UART1_Config(void)
 {
