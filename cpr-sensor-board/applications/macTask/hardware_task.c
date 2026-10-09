@@ -28,13 +28,13 @@ void Hard_Thread_entry(void* parameter)
             // step1: eye/pupil state -> WS2812B + GPIO to head board
             switch(Record.ws2812b_levle)
             {
-                case 0:  /* Arrest/dilated: min brightness, pupil GPIO = 0 */
+                case 0:  /* Arrest/dilated: min brightness + pupil GPIO=0 */
                     ws2812b_set_white(0);
-                    /* TODO: output pupil state to head board via PC10/PC11/PC12 */
+                    Pupil_GPIO_Output(PUPIL_STATE_ARREST);
                     break;
-                case 1:  /* Resuscitated/normal: full white, pupil GPIO = 1 */
+                case 1:  /* Resuscitated/normal: full white + pupil GPIO=1 */
                     ws2812b_set_white(1);
-                    /* TODO: output pupil state to head board via PC10/PC11/PC12 */
+                    Pupil_GPIO_Output(PUPIL_STATE_NORMAL);
                     break;
                 default: break;
             }
