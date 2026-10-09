@@ -33,7 +33,6 @@ typedef enum
 #define PUPIL_STATE_NORMAL      1   /* Resuscitated/normal */
 
 
-void coreless_motor_ctrl(MOTOR_NAME_et name,SWITCH_et status);
 char coreless_motolr_read_key1(void);
 char coreless_motolr_read_key2(void);
 char CC6201_Hall_Sensor_Dout(void);
