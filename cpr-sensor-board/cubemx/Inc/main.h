@@ -42,26 +42,22 @@ extern SPI_HandleTypeDef hspi1;
 extern SPI_HandleTypeDef hspi2;
 extern SPI_HandleTypeDef hspi3;
 
-extern TIM_HandleTypeDef htim1;
-extern DMA_HandleTypeDef hdma_tim1_ch4_trig_com;
-
 extern UART_HandleTypeDef huart1;
 extern UART_HandleTypeDef huart2;
 extern UART_HandleTypeDef huart3;
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
 /* USER CODE BEGIN EC */
 void SystemClock_Config(void);
 void MX_GPIO_Init(void);
-void MX_DMA_Init(void);
 void MX_USART1_UART_Init(void);
 void MX_SPI3_Init(void);
 void MX_SPI1_Init(void);
 void MX_ADC1_Init(void);
 void MX_USART3_UART_Init(void);
 void MX_USART2_UART_Init(void);
-void MX_TIM1_Init(void);
 void MX_SPI2_Init(void);
 
 /* USER CODE END EC */
@@ -70,8 +66,6 @@ void MX_SPI2_Init(void);
 /* USER CODE BEGIN EM */
 
 /* USER CODE END EM */
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
 
@@ -96,6 +90,12 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 #define SPI2_NSS_GPIO_Port GPIOB
 #define DEBUG_LED_Pin GPIO_PIN_15
 #define DEBUG_LED_GPIO_Port GPIOA
+#define PUPIL_P1_Pin GPIO_PIN_10
+#define PUPIL_P1_GPIO_Port GPIOC
+#define PUPIL_P2_Pin GPIO_PIN_11
+#define PUPIL_P2_GPIO_Port GPIOC
+#define PUPIL_P3_Pin GPIO_PIN_12
+#define PUPIL_P3_GPIO_Port GPIOC
 #define nRF24_IRQ_Pin GPIO_PIN_2
 #define nRF24_IRQ_GPIO_Port GPIOD
 #define nRF24_CSN_Pin GPIO_PIN_6

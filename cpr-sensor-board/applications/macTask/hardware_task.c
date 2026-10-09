@@ -29,11 +29,9 @@ void Hard_Thread_entry(void* parameter)
             switch(Record.ws2812b_levle)
             {
                 case 0:  /* Arrest/dilated: min brightness + pupil GPIO=0 */
-                    ws2812b_set_white(0);
                     Pupil_GPIO_Output(PUPIL_STATE_ARREST);
                     break;
                 case 1:  /* Resuscitated/normal: full white + pupil GPIO=1 */
-                    ws2812b_set_white(1);
                     Pupil_GPIO_Output(PUPIL_STATE_NORMAL);
                     break;
                 default: break;

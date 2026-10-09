@@ -47,14 +47,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
   MX_USART1_UART_Init();
   MX_SPI3_Init();
   MX_SPI1_Init();
   MX_ADC1_Init();
   MX_USART3_UART_Init();
   MX_USART2_UART_Init();
-  MX_TIM1_Init();
   MX_SPI2_Init();
   /* USER CODE BEGIN 2 */
 
@@ -71,7 +69,6 @@ int main(void)
   bsp_mpu6xxx_calibrate_Thread_Init();
   mpu6xxxParameter.if_start_gyro_cali_process = 1;
 
-  ws2812b_init();
   Pupil_GPIO_Init();
   Hard_Thread_Init();
 

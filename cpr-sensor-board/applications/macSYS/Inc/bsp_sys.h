@@ -39,7 +39,6 @@
 #include "bsp_rs485_drv.h"
 #include "bsp_rs485_dev.h"
 #include "bsp_rs485_message.h"
-#include "bsp_ws2812b.h"
 
 
 /* macNRF 头文件 */
