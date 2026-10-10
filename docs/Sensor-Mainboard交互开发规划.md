@@ -1,164 +1,179 @@
-# Sensor ↔ Mainboard 交互功能开发规划
+# 光栅板 ↔ Sensor ↔ Mainboard 数据链路开发规划
 
-- **版本**: v1.0
+- **版本**: v2.0
 - **日期**: 2026-09-27
-- **范围**: 仅聚焦 Sensor 板与 Mainboard 板之间的通信交互与数据流
-- **进度**: 连接/开始序列/眼灯/电机/异物/震动 已完成 | 实时数据/成绩/显示 待开发
+- **范围**: 从光栅板数据采集到 Mainboard 实时显示的完整数据链路
+- **数据流**: `光栅板(Raster) → Sensor → Mainboard`
+- **进度**: 连接/控制指令已完成 | 数据采集→显示→成绩 待打通
 
 ---
 
-## 一、两端交互现状总览
+## 一、完整数据链路现状
 
-### 1.1 NRF24L01 命令矩阵（已完成 ✅ / 未完成 ❌）
+```
+光栅板(Raster)              Sensor 板                    Mainboard 板
+STM8S003F3                  STM32F103RC                  STM32F103ZE
+───────────                 ───────────                  ───────────
+A/B相中断计数                UART2 接收解析                NRF24L01 接收
+    │                           │                            │
+    │ 8字节脉冲帧(每100ms)       │                            │
+    ├──── UART1 ──────────────►│                            │
+    │  0xAA 0x04 TYPE CNT DIR   │ 累加脉冲→计算深度            │
+    │  CHK 0x55                 │ 计算频率/事件检测            │
+    │                           │ 计算成绩(RasterReport)      │
+    │                           │                            │
+    │ 开始/停止/模式切换指令       │                            │
+    │◄──── UART1 ───────────────┤                            │
+    │  0xAA 0x02 CMD DATA       │                            │
+    │  CHK 0x55                 │                            │
+    │                           │                            │
+    │                           │ 实时数据帧(CMD=0x10)         │
+    │                           ├──── NRF24L01 ────────────►│
+    │                           │  深度/频率/位置/次数          │ 数码管/光条显示
+    │                           │                            │
+    │                           │ 成绩帧(CMD=0x66)            │
+    │                           ├──── NRF24L01 ────────────►│
+    │                           │  RasterReport_t(64B)       │ Flash存储+打印
+    │                           │                            │
+    │                           │◄──── NRF24L01 ─────────────┤
+    │                           │  停止(CMD=0x07)/复位(0x08)  │
+    │                           │  眼灯(0x04)/电机(0x05)      │
+```
+
+---
+
+## 二、光栅板 ↔ Sensor 通信（UART2）
+
+### 2.1 帧协议现状
+
+| 方向 | 帧类型 | 格式 | Sensor 端 | Raster 端 | 状态 |
+|------|--------|------|-----------|-----------|------|
+| Raster→Sensor | 脉冲增量帧(100ms) | `0xAA 0x04 TYPE CNT_H CNT_L DIR CHK 0x55` | ✅ 解析+累加 | ✅ 发送 | ✅ |
+| Sensor→Raster | 开始采集 | `0xAA 0x02 0x01 0xFF CHK 0x55` | ✅ 发送 | ✅ 接收→ACTIVE | ✅ |
+| Sensor→Raster | 停止采集 | `0xAA 0x02 0x03 0xFF CHK 0x55` | ✅ 发送 | ✅ 接收→IDLE | ✅ |
+| Sensor→Raster | 模式切换(按压) | `0xAA 0x02 0x11 0x01 CHK 0x55` | ✅ 发送 | ✅ 切按压模式 | ✅ |
+| Sensor→Raster | 模式切换(空闲) | `0xAA 0x02 0x11 0x02 CHK 0x55` | ✅ 发送 | ✅ 切空闲模式 | ✅ |
+| Sensor→Raster | 模式切换(吹气) | `0xAA 0x02 0x11 0x03 CHK 0x55` | ✅ 发送 | ✅ 切吹气模式 | ✅ |
+
+### 2.2 数据字段语义
+
+**脉冲增量帧**（Raster→Sensor，每 100ms）:
+```
+TYPE:  0x01=按压数据, 0x02=吹气数据
+CNT:   int16_t, 自上次发送以来的脉冲增量（正=正向, 负=反向）
+DIR:   int8_t, -1=回弹/泄气, 0=静止, 1=下压/充气
+CHK:   Byte[0]~[5] 累加和
+```
+
+**Sensor 端处理**（`uart2_protocol.c`）:
+```
+按压: g_raster_press_cumulative += pulse_count
+      g_raster_press_depth_01mm = cumulative × 5  (每脉冲 0.5mm)
+吹气: g_raster_blow_cumulative += pulse_count
+      g_raster_blow_depth_01mm = cumulative × 5
+```
+
+### 2.3 待完善项
+
+- [ ] **传感器验证**: 光栅板上电→Sensor 接收脉冲帧→深度值正确（硬件测试）
+- [ ] **开始/停止联动**: Sensor 收到 Mainboard 开始指令后发送 Raster 开始帧
+- [ ] **停止联动**: Sensor 收到 Mainboard 停止指令后发送 Raster 停止帧
+- [ ] **模式切换集成**: 三路联合判别结果驱动 Raster 模式切换（已在 `uart2_protocol.c` 实现）
+
+---
+
+## 三、Sensor ↔ Mainboard 通信（NRF24L01）
+
+### 3.1 命令矩阵（✅/❌）
 
 | 命令 | CMD | 方向 | Sensor 端 | Mainboard 端 | 状态 |
 |------|-----|------|-----------|-------------|------|
-| 连接请求 | 0x01 | Sensor→MB | ✅ 发送+解析 | ✅ 接收+ACK | ✅ |
-| 开始指令 | 0x02 | MB→Sensor | ✅ 接收+ACK | ✅ 发送(step0) | ✅ |
-| 震动上报 | 0x03 | Sensor→MB | ✅ 发送 | ✅ 接收+ACK | ✅ |
-| 眼灯状态 | 0x04 | MB→Sensor | ✅ 接收+ACK | ✅ 发送(step1) | ✅ |
-| 电机状态 | 0x05 | MB→Sensor | ✅ 接收+ACK | ✅ 发送(step2) | ✅ |
-| 异物上报 | 0x06 | Sensor→MB | ✅ 发送 | ✅ 接收+ACK | ✅ |
-| **按压数据** | 0x10 | Sensor→MB | ❌ 未实现 | ❌ 未实现 | **❌** |
-| **吹气数据** | 0x10 | Sensor→MB | ❌ 未实现 | ❌ 未实现 | **❌** |
-| **成绩上报** | 0x66 | Sensor→MB | ❌ 未实现 | ❌ 未实现 | **❌** |
-| **停止指令** | 0x07 | MB→Sensor | ❌ 未实现 | ❌ 未实现 | **❌** |
-| **复位指令** | 0x08 | MB→Sensor | ❌ 未实现 | ❌ 未实现 | **❌** |
+| 连接请求 | 0x01 | Sensor→MB | ✅ | ✅ | ✅ |
+| 开始指令 | 0x02 | MB→Sensor | ✅ | ✅ | ✅ |
+| 震动上报 | 0x03 | Sensor→MB | ✅ | ✅ | ✅ |
+| 眼灯状态 | 0x04 | MB→Sensor | ✅ | ✅ | ✅ |
+| 电机状态 | 0x05 | MB→Sensor | ✅ | ✅ | ✅ |
+| 异物上报 | 0x06 | Sensor→MB | ✅ | ✅ | ✅ |
+| **实时数据** | **0x10** | Sensor→MB | ❌ | ❌ | **❌** |
+| **停止指令** | **0x07** | MB→Sensor | ❌ | ❌ | **❌** |
+| **复位指令** | **0x08** | MB→Sensor | ❌ | ❌ | **❌** |
+| **成绩上报** | **0x66** | Sensor→MB | ❌ | ❌ | **❌** |
 
-### 1.2 数据流现状
+### 3.2 待完善项（同 v1.0）
 
-```
-✅ 已通:  连接握手 → 开始序列 → 眼灯/电机控制 → 异物/震动上报
-❌ 断链:  按压/吹气实时数据 → Mainboard 显示
-❌ 断链:  成绩数据 → Mainboard 存储/打印
-❌ 断链:  停止/复位指令 → Sensor 状态切换
-```
+- [ ] 实时数据帧(CMD=0x10)上报与解析
+- [ ] Mainboard 定时回调+数码管/光条显示
+- [ ] 停止/复位指令(CMD=0x07/0x08)
+- [ ] 成绩数据上报(CMD=0x66)
+- [ ] 按压位置实时上报
 
 ---
 
-## 二、待开发任务（按依赖顺序）
+## 四、开发任务（按依赖顺序）
 
-### 任务 1: 实时按压/吹气数据上报（Sensor→Mainboard）
+### 任务 1: Raster↔Sensor 数据采集链路验证 ⭐前提
 
-> **临床意义**: 施救者按压时，Mainboard 数码管实时显示**按压深度光条**和**频率**，形成"操作→反馈→调整"闭环。
+> **临床意义**: 施救者按压胸部 → 光栅编码器检测 → Sensor 计算深度/频率。这是所有临床数据的**源头**。
+
+**当前状态**: 代码已实现（Raster 发送 + Sensor 解析），需**硬件联调验证**
+
+**验证步骤**:
+1. 光栅板上电 → 进入 IDLE 状态
+2. Sensor 发送开始帧 → Raster 进入 ACTIVE，每 100ms 发送脉冲帧
+3. 手动移动栅格条 → Sensor `g_raster_press_cumulative` 正确累加
+4. Sensor 发送模式切换帧 → Raster 正确切换按压/吹气/空闲模式
+5. Sensor 发送停止帧 → Raster 回到 IDLE
+
+**验证标准**: TC-RASTER-006~013 + TC-PRESS-004~008
+
+---
+
+### 任务 2: Sensor 开始/停止→Raster 联动
+
+> **临床意义**: Mainboard 按"开始"→ Sensor 启动采集 → Raster 开始计数；按"停止"→ 全链路停止。
+
+**当前状态**: `USART2_Send_Start_To_Raster()` / `USART2_Send_Stop_To_Raster()` 已实现，但**未接入 NRF 命令处理流程**
+
+**实施步骤**:
+1. Sensor 收到 Mainboard `START_CMD(0x02)` → 调用 `USART2_Send_Start_To_Raster()`
+2. Sensor 收到 Mainboard `STOP_CMD(0x07)` → 调用 `USART2_Send_Stop_To_Raster()`
+3. Sensor 收到 Mainboard `RESET_CMD(0x08)` → 发送停止帧 + 清零数据
+
+---
+
+### 任务 3: Sensor 实时数据上报→Mainboard
+
+> **临床意义**: 按压深度/频率实时传到 Mainboard 数码管/光条，施救者看到"操作→反馈"闭环。
 
 **Sensor 端**:
-- `sensor_nrf24l01_message.c` 新增 `CMD_SENSOR_DATA(0x10)` 帧构建函数
-- Payload 结构（20 字节）:
-  ```
-  [press_depth:2] [press_freq:2] [blow_depth:2] [body_led:1]
-  [press_total:2] [press_correct:2] [blow_total:2] [blow_correct:2]
-  [cycle_count:1] [reserved:2]
-  ```
-- 在 `hardware_task.c` 或 `uart2_protocol.c` 数据更新后触发发送（每 200ms 或事件驱动）
+- 新增 `CMD_SENSOR_DATA(0x10)` 帧构建
+- Payload: 深度/频率/位置/次数（见 §5.1）
+- 触发时机: 每 200ms 或按压事件后
 
 **Mainboard 端**:
-- `mainboard_nrf24l01_message.c` 新增 `CMD_SENSOR_DATA(0x10)` 解析分支
-- 解析 payload 到 `MySysCfg.params[]` 对应字段
-- 触发显示更新事件
-
-**验证**: 施救者按压 → Mainboard 数码管显示频率实时变化
+- 新增 `CMD_SENSOR_DATA(0x10)` 解析
+- 更新 `MySysCfg.params[]` 显示字段
 
 ---
 
-### 任务 2: Mainboard 定时回调与实时显示（Mainboard 端）
+### 任务 4: Mainboard 定时回调+显示
 
-> **临床意义**: 数码管/光条是施救者唯一的实时反馈界面。
+> **临床意义**: 数码管显示按压频率、光条显示按压深度、倒计时显示剩余时间。
 
-**`rtt_system_work.c` 回调填充**:
-```
-Timing_1ms():   LED_DrvScan() — LED 呼吸/闪烁
-Timing_10ms():  触摸按键扫描节拍
-Timing_500ms(): 心跳检测（sensor/remote last_heartbeat 超时 3s→断开）
-Timing_1s():    倒计时递减，0 时自动停止并触发成绩计算
-```
+**`rtt_system_work.c`**:
+- `Timing_1ms()`: LED 扫描
+- `Timing_500ms()`: 心跳检测
+- `Timing_1s()`: 倒计时递减
 
-**显示联动**:
-- 按压频率 → `nixietube_task.c` 数码管（已有函数待调用）
-- 按压深度 → `lightbar_task.c` 光条（`TM1638_Set_LEDBar()` 待调用）
-- 倒计时 → `nixietube_task.c`（已有函数待调用）
-
-**验证**: TC-MAIN-PER-008~009 通过
+**显示**: `nixietube_task.c` + `lightbar_task.c` 已有函数待调用
 
 ---
 
-### 任务 3: 停止/复位指令（Mainboard→Sensor）
+### 任务 5: 成绩数据上报
 
-> **临床意义**: 教官按"停止"→ 系统冻结数据、计算成绩；按"复位"→ 回到初始状态准备下一轮。
+> **临床意义**: 训练结束→成绩单→临床能力评定。
 
-**Mainboard 端**:
-- `nrf24l01_message.c` 新增停止(`0x07`)/复位(`0x08`)发送函数
-- `touch_task.c` TOUCH_STOP/TOUCH_RESET 触发发送
-
-**Sensor 端**:
-- `sensor_nrf24l01_message.c` 新增 `0x07`/`0x08` 接收处理
-- 停止: 置位 `Flag.stop`，停止数据采集，触发成绩计算
-- 复位: 清零所有数据，`Flag.start=0`，回到初始状态
-
-**验证**: Mainboard 按停止 → Sensor 停止采集并计算成绩
-
----
-
-### 任务 4: 成绩数据上报（Sensor→Mainboard）
-
-> **临床意义**: 训练结束后，成绩是评估施救者临床能力的最终依据。
-
-**Sensor 端**:
-- `app_calculator.c` 的 `Calculator_Finalize()` 已产出 `RasterReport_t`（64B）
-- 新增成绩 NRF 上报（`CMD_TYPE_POST=0x66`），payload=RasterReport_t
-- 停止指令触发后发送
-
-**Mainboard 端**:
-- 新增成绩帧解析 → 保存到 `cpr_record.c` Flash
-- 成绩完成后触发 `TOUCH_PRINTER` 打印
-
-**验证**: TC-CALC-001~019 + TC-MAIN-PER-013~014
-
----
-
-### 任务 5: 按压位置实时上报（Sensor→Mainboard）
-
-> **临床意义**: Mainboard Body1~7 LED 指示施救者按压位置是否正确（胸骨下半段）。
-
-**Sensor 端**:
-- ADC128S102 检测结果（`body_led_type`）打包到 `CMD_SENSOR_DATA` payload
-- 位置变化时立即上报
-
-**Mainboard 端**:
-- 解析 `body_led` 字段 → 驱动 Body1~7 GPIO LED
-
-**验证**: 按压不同位置 → Mainboard 对应 LED 亮
-
----
-
-## 三、开发顺序与依赖
-
-```
-任务2 (Mainboard 定时+显示)  ←── 最先做，无依赖，解锁显示基础
-     │
-任务1 (实时数据上报)         ←── 依赖任务2（数据到了要能显示）
-     │
-任务3 (停止/复位)            ←── 依赖任务1（数据流跑通后才能停）
-     │
-任务4 (成绩上报)             ←── 依赖任务3（停止后才计算成绩）
-     │
-任务5 (按压位置)             ←── 可与任务1 并行
-```
-
-**建议顺序**: 任务2 → 任务1 → 任务5 → 任务3 → 任务4
-
----
-
-## 四、新增命令码定义（需同步六处）
-
-| 命令码 | 宏名 | 方向 | 说明 |
-|--------|------|------|------|
-| 0x10 | `FRAME_NRF24_CMD_SENSOR_DATA` | Sensor→MB | 实时按压/吹气数据 |
-| 0x07 | `FRAME_NRF24_CMD_STOP` | MB→Sensor | 停止采集 |
-| 0x08 | `FRAME_NRF24_CMD_RESET` | MB→Sensor | 复位到初始状态 |
-| 0x66 | `FRAME_NRF24_CMD_REPORT_SCORE` | Sensor→MB | 成绩数据上报 |
-
-> ⚠️ 按 AGENTS.md 约束，命令码变更必须同步：mainboard + sensor + remote + raster + head + docs + 测试用例表
+**流程**: Mainboard 发停止 → Sensor 停止采集 → `Calculator_Finalize()` → 成绩 NRF 上报 → Mainboard Flash 存储 → 打印
 
 ---
 
@@ -167,32 +182,48 @@ Timing_1s():    倒计时递减，0 时自动停止并触发成绩计算
 ### 5.1 实时数据帧 (CMD=0x10, Sensor→Mainboard)
 
 ```
-字节   字段                类型      说明
-[0-1]  press_depth         uint16   当前按压深度 (0.1mm)
-[2-3]  press_freq          uint16   当前按压频率 (次/分)
-[4-5]  blow_depth          uint16   当前吹气深度 (0.1mm)
-[6]    body_led_type       uint8    按压位置 (0=无, 1~7=方位)
-[7-8]  press_total         uint16   按压总次数
-[9-10] press_correct       uint16   按压正确次数
+字节    字段                类型     说明
+[0-1]   press_depth         uint16   当前按压深度 (0.1mm)
+[2-3]   press_freq          uint16   当前按压频率 (次/分)
+[4-5]   blow_depth          uint16   当前吹气深度 (0.1mm)
+[6]     body_led_type       uint8    按压位置 (0=无, 1~7=方位)
+[7-8]   press_total         uint16   按压总次数
+[9-10]  press_correct       uint16   按压正确次数
 [11-12] blow_total          uint16   吹气总次数
 [13-14] blow_correct        uint16   吹气正确次数
-[15]   cycle_count          uint8    已完成循环数
+[15]    cycle_count          uint8    已完成循环数
 [16-17] reserved             uint16   预留
 ```
 
-### 5.2 成绩上报帧 (CMD=0x66, Sensor→Mainboard)
+### 5.2 成绩上报帧 (CMD=0x66)
 
 - Payload = `RasterReport_t`（64 字节，见 `app_calculator.h`）
-- 触发时机: 收到停止指令后
+- 触发: 收到停止指令后
 
 ---
 
-## 六、测试用例映射
+## 六、开发顺序
 
-| 任务 | 对应测试用例 |
-|------|------------|
-| 任务1 实时数据 | TC-PRESS-003 (触点位置上报) + TC-MAIN-PER-008 (数码管) |
-| 任务2 显示联动 | TC-MAIN-PER-008~009 (数码管+光条) |
-| 任务3 停止/复位 | TC-MAIN-PER-004 (复位) + TC-MODE-009 (限时停止) |
-| 任务4 成绩上报 | TC-CALC-001~019 + TC-MAIN-PER-013~014 |
-| 任务5 按压位置 | TC-PRESS-002~003 (触点检测+上报) |
+```
+任务1 (Raster↔Sensor 验证)    ←── 前提，确保数据源头正确
+     │
+任务2 (开始/停止联动)          ←── 联动控制采集生命周期
+     │
+任务3 (实时数据上报)           ←── 数据流入 Mainboard
+     │
+任务4 (Mainboard 显示)         ←── 施救者看到反馈
+     │
+任务5 (成绩上报)               ←── 训练结束输出成绩单
+```
+
+---
+
+## 七、测试用例映射
+
+| 任务 | 测试用例 |
+|------|---------|
+| 任务1 Raster↔Sensor | TC-RASTER-001~015 + TC-PRESS-004~008 + TC-BLOW-004~005 |
+| 任务2 联动 | TC-START-003/006/009 + TC-RASTER-010 (停止) |
+| 任务3 实时数据 | TC-PRESS-003 (位置上报) |
+| 任务4 显示 | TC-MAIN-PER-008~009 |
+| 任务5 成绩 | TC-CALC-001~019 + TC-MAIN-PER-013~014 |
