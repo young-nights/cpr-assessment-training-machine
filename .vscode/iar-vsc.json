@@ -1,0 +1,15 @@
+{
+  "workspace": {
+    "path": "${workspaceFolder}\\cpr-sensor-board\\cubemx\\EWARM\\Project.eww"
+  },
+  "workspaces": {
+    "${workspaceFolder}\\cpr-sensor-board\\cubemx\\EWARM\\Project.eww": {
+      "configs": {
+        "${workspaceFolder}\\cpr-sensor-board\\cubemx\\EWARM\\cubemx.ewp": "cubemx"
+      },
+      "selected": {
+        "path": "${workspaceFolder}\\cpr-sensor-board\\cubemx\\EWARM\\cubemx.ewp"
+      }
+    }
+  }
+}
