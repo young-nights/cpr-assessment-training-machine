@@ -58,6 +58,12 @@ cpr-sensor-device/.settings/language.settings.xml
 cpr-sensor-device/.settings/projcfg.ini
 cpr-sensor-device/.settings/language.settings.xml
 
+# Build outputs (all boards; never commit artifacts)
+build/
+
+# Local scons venv (project-local install)
+.venv-scons/
+
 # gcc build artifacts (cpr-raster-board)
 cpr-raster-board/build/
 
