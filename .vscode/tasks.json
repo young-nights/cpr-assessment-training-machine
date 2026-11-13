@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build all",
+      "dependsOn": ["head-board: build", "raster-board: build"],
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": []
+    },
+    {
+      "label": "head-board: build",
+      "type": "shell",
+      "command": "C:\\RT-ThreadStudio\\env-windows\\tools\\BuildTools\\2.12-20190422-1053\\bin\\make.exe",
+      "args": ["-C", "cpr-head-board"],
+      "group": "build",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "raster-board: build",
+      "type": "shell",
+      "command": "C:\\RT-ThreadStudio\\env-windows\\tools\\BuildTools\\2.12-20190422-1053\\bin\\make.exe",
+      "args": ["-C", "cpr-raster-board"],
+      "group": "build",
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "head-board: clean",
+      "type": "shell",
+      "command": "C:\\RT-ThreadStudio\\env-windows\\tools\\BuildTools\\2.12-20190422-1053\\bin\\make.exe",
+      "args": ["-C", "cpr-head-board", "clean"],
+      "problemMatcher": []
+    },
+    {
+      "label": "raster-board: clean",
+      "type": "shell",
+      "command": "C:\\RT-ThreadStudio\\env-windows\\tools\\BuildTools\\2.12-20190422-1053\\bin\\make.exe",
+      "args": ["-C", "cpr-raster-board", "clean"],
+      "problemMatcher": []
+    },
+    {
+      "label": "head-board: flash",
+      "type": "shell",
+      "command": "STM32_Programmer_CLI",
+      "args": ["-c", "port=SWD", "-w", "cpr-head-board/build/cpr-head-board.bin", "0x08000000", "-v", "-rst"],
+      "problemMatcher": []
+    },
+    {
+      "label": "raster-board: flash",
+      "type": "shell",
+      "command": "STM32_Programmer_CLI",
+      "args": ["-c", "port=SWD", "-w", "cpr-raster-board/build/cpr-raster-board.bin", "0x08000000", "-v", "-rst"],
+      "problemMatcher": []
+    }
+  ]
+}
