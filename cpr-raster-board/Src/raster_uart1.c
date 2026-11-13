@@ -30,8 +30,7 @@ void UART1_Init(void)
  */
 static void uart1_putc(char c)
 {
-    while (!(USART1->SR & USART_SR_TXE))
-        ;
+    while (!(USART1->SR & USART_SR_TXE));
     USART1->DR = (uint8_t)c;
 }
 
