@@ -91,6 +91,7 @@ void Delay_ms(uint32_t ms);
 
 /* raster_uart1.c (debug) */
 void UART1_Init(void);
+void UART1_Putc(char c);
 void UART1_Print(const char *str);
 void UART1_Printf(const char *fmt, ...);
 

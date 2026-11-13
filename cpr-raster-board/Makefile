@@ -58,9 +58,11 @@ ASFLAGS = $(CPU) -x assembler-with-cpp
 # 与 CMake 版 target_link_options 对应：
 #   -T 链接脚本；--gc-sections 裁剪；-Map 生成 map；
 #   nano.specs 精简 C 库；nosys.specs 提供空系统调用
+#   --no-warn-rwx-segments 静默 RWX 段告警（.data 镜像在 flash 段，Cortex-M 无害）
 LDFLAGS = $(CPU) -T$(LDSCRIPT) \
           -Wl,--gc-sections \
           -Wl,-Map=$(BUILD)/$(TARGET).map \
+          -Wl,--no-warn-rwx-segments \
           --specs=nano.specs \
           --specs=nosys.specs
 

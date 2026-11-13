@@ -26,9 +26,9 @@ void UART1_Init(void)
 }
 
 /**
- * @brief  Send a single character
+ * @brief  Send a single character (exported for newlib _write retarget)
  */
-static void uart1_putc(char c)
+void UART1_Putc(char c)
 {
     while (!(USART1->SR & USART_SR_TXE));
     USART1->DR = (uint8_t)c;
@@ -40,7 +40,7 @@ static void uart1_putc(char c)
 void UART1_Print(const char *str)
 {
     while (*str) {
-        uart1_putc(*str++);
+        UART1_Putc(*str++);
     }
 }
 
@@ -60,7 +60,7 @@ void UART1_Printf(const char *fmt, ...)
                 case 'd': {
                     int val = va_arg(args, int);
                     if (val < 0) {
-                        uart1_putc('-');
+                        UART1_Putc('-');
                         val = -val;
                     }
                     int i = 0;
@@ -69,7 +69,7 @@ void UART1_Printf(const char *fmt, ...)
                         buf[i++] = (char)('0' + (val % 10));
                         val /= 10;
                     }
-                    while (i > 0) uart1_putc(buf[--i]);
+                    while (i > 0) UART1_Putc(buf[--i]);
                     break;
                 }
                 case 'u': {
@@ -80,7 +80,7 @@ void UART1_Printf(const char *fmt, ...)
                         buf[i++] = (char)('0' + (val % 10));
                         val /= 10;
                     }
-                    while (i > 0) uart1_putc(buf[--i]);
+                    while (i > 0) UART1_Putc(buf[--i]);
                     break;
                 }
                 case 'x': {
@@ -92,26 +92,26 @@ void UART1_Printf(const char *fmt, ...)
                         buf[i++] = (char)((d < 10) ? ('0' + d) : ('a' + d - 10));
                         val >>= 4;
                     }
-                    while (i > 0) uart1_putc(buf[--i]);
+                    while (i > 0) UART1_Putc(buf[--i]);
                     break;
                 }
                 case 's': {
                     const char *s = va_arg(args, const char *);
-                    while (*s) uart1_putc(*s++);
+                    while (*s) UART1_Putc(*s++);
                     break;
                 }
                 case 'c': {
                     char c = (char)va_arg(args, int);
-                    uart1_putc(c);
+                    UART1_Putc(c);
                     break;
                 }
                 default:
-                    uart1_putc('%');
-                    uart1_putc(*fmt);
+                    UART1_Putc('%');
+                    UART1_Putc(*fmt);
                     break;
             }
         } else {
-            uart1_putc(*fmt);
+            UART1_Putc(*fmt);
         }
         fmt++;
     }

@@ -38,6 +38,7 @@ add_executable(${PROJECT_NAME}.elf
     Src/raster_task.c
     Src/raster_uart1.c
     Src/raster_uart2.c
+    Src/syscalls.c
     Src/sys_clock.c
     Drivers/startup_stm32f103c6.s
 )
@@ -62,11 +63,14 @@ target_compile_options(${PROJECT_NAME}.elf PRIVATE
 #   -Map=...                 生成 map 文件，便于分析内存占用
 #   --specs=nano.specs       使用 newlib-nano 精简 C 库
 #   --specs=nosys.specs      提供空实现的系统调用（裸机没有 OS，避免链接报错）
+#                            （_write/_read/_close/_lseek 已由 Src/syscalls.c 接管）
+#   --no-warn-rwx-segments   静默 RWX 段告警（.data 镜像在 flash 段，Cortex-M 无害）
 target_link_options(${PROJECT_NAME}.elf PRIVATE
     -mcpu=cortex-m3 -mthumb
     -T${CMAKE_CURRENT_SOURCE_DIR}/Linker/stm32f103c6_flash.ld
     -Wl,--gc-sections
     -Wl,-Map=${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}.map
+    -Wl,--no-warn-rwx-segments
     --specs=nano.specs --specs=nosys.specs)
 
 # 构建 .elf 之后自动执行的后续步骤（POST_BUILD）：
